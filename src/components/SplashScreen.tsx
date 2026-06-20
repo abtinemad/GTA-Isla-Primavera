@@ -12,8 +12,9 @@ interface SplashScreenProps {
 
 /**
  * Boot splash — affiche l'artwork GTA déjà titré (« GRAND TENERIFE AUTO /
- * Isla Primavera » baké dans l'image) plein cadre. Aucun wordmark / dédicace
- * en overlay : tout est dans l'illustration. Se rejoue à chaque chargement.
+ * Isla Primavera » baké dans l'image), centré et entier (object-contain) sur
+ * fond #0B0C10. Aucun wordmark / dédicace en overlay : tout est dans
+ * l'illustration. Se rejoue à chaque chargement.
  */
 export default function SplashScreen({ onComplete }: SplashScreenProps) {
   const reduceMotion = useReducedMotion();
@@ -25,8 +26,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
   return (
     <motion.div
-      // Brun chaud : évite un flash sombre avant le chargement de l'image.
-      className="fixed inset-0 z-[10000] bg-[#14100C] overflow-hidden"
+      // Fond app : évite tout flash et fait office de letterbox autour de l'image.
+      className="fixed inset-0 z-[10000] bg-[#0B0C10] overflow-hidden flex items-center justify-center"
       initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
       animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
       exit={{ opacity: 0 }}
@@ -43,9 +44,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         alt="Grand Tenerife Auto : Isla Primavera"
         loading="eager"
         fetchPriority="high"
-        className="absolute inset-0 w-full h-full object-cover"
-        // Protège le titre baké en haut du cadre.
-        style={{ objectPosition: 'center top' }}
+        // Image entière, centrée, jamais rognée — respecte les safe-area du parent.
+        className="max-w-full max-h-full w-auto h-auto object-contain"
       />
 
       {/* Discret indicateur de chargement (safe-area bas). Supprimable d'un bloc. */}
