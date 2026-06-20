@@ -74,8 +74,8 @@ export default function LocationsList({
   const sortedLocations = useMemo(() => {
     if (!userCoords) return filteredLocations;
     return [...filteredLocations].sort((a, b) => {
-      const distA = getDistance(a.lat, a.lng) || 999999;
-      const distB = getDistance(b.lat, b.lng) || 999999;
+      const distA = getDistance(a.lat, a.lng) ?? 999999;
+      const distB = getDistance(b.lat, b.lng) ?? 999999;
       return distA - distB;
     });
   }, [filteredLocations, userCoords]);
@@ -324,7 +324,7 @@ export default function LocationsList({
                     <span className="font-display">{cat.label}</span>
                   </span>
 
-                  {dist && (
+                  {dist != null && (
                     <span className="text-[10px] font-mono font-semibold text-[color:var(--text-muted)] bg-[color:var(--hairline)] px-1.5 py-0.5 rounded border border-[color:var(--hairline)] shrink-0">
                       {dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`}
                     </span>

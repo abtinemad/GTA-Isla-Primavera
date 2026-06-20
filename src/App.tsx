@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LocationItem, Category } from './types';
 import { INITIAL_LOCATIONS } from './locationsData';
@@ -64,6 +64,9 @@ export default function App() {
 
   // UI state
   const [showSplash, setShowSplash] = useState(true);
+  // Stable ref so re-renders during the splash (e.g. GPS updates) don't restart
+  // the splash timer — otherwise the splash could extend or stick indefinitely.
+  const handleSplashComplete = useCallback(() => setShowSplash(false), []);
   const [showGtaOverlay, setShowGtaOverlay] = useState(false);
   const [completedMissionName, setCompletedMissionName] = useState('');
   const [activeTab, setActiveTab] = useState<'map' | 'list' | 'trophies'>('map');
@@ -451,7 +454,7 @@ export default function App() {
 
       {/* BOOT SPLASH — artwork GTA déjà titré, plein cadre (fade out 0.5s) */}
       <AnimatePresence>
-        {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       </AnimatePresence>
 
       {/* FLOATING GLASSMORPHIC HUD HEADER */}

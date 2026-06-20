@@ -24,6 +24,9 @@ export default function CoverCamera({ slot, onClose, onCommit }: CoverCameraProp
   const fileRef = useRef<HTMLInputElement>(null);
   const [camError, setCamError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Synchronous guard: `busy` is async state, so two clicks in the same tick
+  // could both pass the check and double-commit. This ref blocks that.
+  const busyRef = useRef(false);
   const [flash, setFlash] = useState(false);
 
   const accent = slot ? CATEGORY_MAP[slot.category].accentColor : '#EA4423';
@@ -92,17 +95,26 @@ export default function CoverCamera({ slot, onClose, onCommit }: CoverCameraProp
   };
 
   const commit = (dataUrl: string) => {
-    if (!slot || !dataUrl) return;
+    if (!slot) return;
+    // Image processing failed (e.g. no 2D context): don't leave the overlay
+    // stuck disabled — surface an error and let the user retry.
+    if (!dataUrl) {
+      busyRef.current = false;
+      setBusy(false);
+      setCamError('Échec du traitement de l’image. Réessaie ou importe une photo.');
+      return;
+    }
     onCommit(slot, dataUrl);
   };
 
   const handleSnap = () => {
-    if (!slot || busy) return;
+    if (!slot || busyRef.current) return;
     const video = videoRef.current;
     if (!video || !video.videoWidth) {
       setCamError('Flux caméra non prêt — réessaie ou importe une photo.');
       return;
     }
+    busyRef.current = true;
     setBusy(true);
     setFlash(true);
     setTimeout(() => setFlash(false), 180);
@@ -112,16 +124,22 @@ export default function CoverCamera({ slot, onClose, onCommit }: CoverCameraProp
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !slot) return;
+    if (!file || !slot || busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
+    const fail = () => {
+      busyRef.current = false;
+      setBusy(false);
+      setCamError('Image illisible. Réessaie avec une autre photo.');
+    };
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
       img.onload = () => commit(gtaify(img, img.width, img.height));
-      img.onerror = () => setBusy(false);
+      img.onerror = fail;
       img.src = reader.result as string;
     };
-    reader.onerror = () => setBusy(false);
+    reader.onerror = fail;
     reader.readAsDataURL(file);
   };
 

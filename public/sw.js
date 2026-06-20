@@ -6,7 +6,7 @@
  *  - Map tiles (Esri / CARTO): cache-first with a capped tile store so the
  *    last-visited areas of Tenerife stay available without a connection.
  */
-const VERSION = 'v4';
+const VERSION = 'v5';
 const SHELL_CACHE = `gdrive-shell-${VERSION}`;
 const ASSET_CACHE = `gdrive-assets-${VERSION}`;
 const TILE_CACHE = `gdrive-tiles-${VERSION}`;
@@ -90,7 +90,8 @@ self.addEventListener('fetch', (event) => {
             if (res && res.status === 200) cache.put(req, res.clone());
             return res;
           })
-          .catch(() => hit);
+          // Offline + uncached: never resolve to undefined (respondWith would throw).
+          .catch(() => hit || Response.error());
         return hit || fetchPromise;
       })
     );
