@@ -35,6 +35,11 @@ const LOCATION_TROPHIES: Record<number, string> = {
   18: "Contraste Total"
 };
 
+// Co-validation photo radius for Escapades / Plages, in km. Wider than the
+// mission chrono geofence (50 m) because these spots are landscapes/beaches
+// that are photographed from a distance.
+const PHOTO_VALIDATION_RADIUS_KM = 0.5; // 500 m
+
 interface BottomSheetProps {
   location: LocationItem | null;
   onClose: () => void;
@@ -167,8 +172,9 @@ export default function BottomSheet({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Strict 50m geofence — co-validation requires real proximity (Spec §6.3)
-    const isWithinRange = rawDist !== null && rawDist <= 0.050; // 50 meters
+    // Photo spots (Escapades / Plages) are landscapes framed from a distance —
+    // a beach panorama or a mountain can't be shot from 50 m. Use a 500 m radius.
+    const isWithinRange = rawDist !== null && rawDist <= PHOTO_VALIDATION_RADIUS_KM;
 
     if (!isWithinRange) {
       setGpsErrorShow(true);
@@ -191,7 +197,7 @@ export default function BottomSheet({
     setAnalysisLogs([
       "[SYSTEM] Capture de la photo souvenir...",
       "[SYSTEM] Image acquise (résolution compressée).",
-      "[GPS] Co-validation géoréférencée : proximité < 50 m confirmée."
+      "[GPS] Co-validation géoréférencée : proximité < 500 m confirmée."
     ]);
 
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -205,7 +211,7 @@ export default function BottomSheet({
     await sleep(1000);
     setAnalysisLogs(prev => [
       ...prev,
-      JSON.stringify({ valide: true, distance: '< 50 m', spot: location.name, photo: 'enregistrée' }, null, 2)
+      JSON.stringify({ valide: true, distance: '< 500 m', spot: location.name, photo: 'enregistrée' }, null, 2)
     ]);
 
     await sleep(700);
@@ -401,7 +407,7 @@ export default function BottomSheet({
                     <span>Erreur : Hors de portée GPS</span>
                   </div>
                   <p className="text-xs text-rose-700 font-medium leading-relaxed leading-sans">
-                    Vous êtes actuellement situé à <span className="font-bold">{distance || 'plus de 5 km'}</span> de l'objectif. La co-validation par photo requiert une proximité stricte de <span className="font-bold">50 mètres</span> du spot. Rapprochez-vous pour débloquer le trophée.
+                    Vous êtes actuellement situé à <span className="font-bold">{distance || 'plus de 5 km'}</span> de l'objectif. La co-validation par photo requiert d'être à moins de <span className="font-bold">500 mètres</span> du spot. Rapprochez-vous pour débloquer le trophée.
                   </p>
                 </div>
               )}

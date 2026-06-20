@@ -163,7 +163,11 @@ export default function MapContainer({
     locations
       .filter((loc) => !loc.category.startsWith('🏆'))
       .forEach((loc) => {
-      const isSelected = selectedLocation?.id === loc.id;
+      // Match by coordinates, not id: a selected trophy entry (id 101-105)
+      // shares the exact coords of its physical twin, so the twin pin lights up.
+      const isSelected = !!selectedLocation
+        && selectedLocation.lat === loc.lat
+        && selectedLocation.lng === loc.lng;
       const isCompleted = completedLocations.includes(loc.id);
       
       const customIcon = L.divIcon({
@@ -211,10 +215,12 @@ export default function MapContainer({
     // Update marker size style cleanly
     Object.entries(markersRef.current).forEach(([idString, marker]: [string, any]) => {
       const id = parseInt(idString);
-      const isSelected = id === selectedLocation.id;
       const loc = locations.find((l) => l.id === id);
+      const isSelected = !!loc
+        && selectedLocation.lat === loc.lat
+        && selectedLocation.lng === loc.lng;
       const isCompleted = completedLocations.includes(id);
-      
+
       if (loc) {
         const updatedIcon = L.divIcon({
           html: getMarkerHtml(loc.category, isSelected, loc.name, isCompleted),

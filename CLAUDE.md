@@ -11,7 +11,8 @@ ravitaillement, bars, restaurants, plages et trophées sur une carte Leaflet.
 
 Pas de backend : tout tourne côté client. La progression est persistée en
 `localStorage`. La géolocalisation sert au tri par distance et au géofencing
-(validation à < 50 m d'un spot).
+(Missions : chrono qui s'arrête à < 50 m ; Escapades/Plages : photo validée à
+< 500 m, car ces paysages se cadrent de loin).
 
 ## Stack
 
@@ -74,8 +75,12 @@ Tout l'état vit dans `src/App.tsx` (composant racine, pas de lib d'état).
 ## Co-validation photo + GPS
 
 C'est le mécanisme réel de validation des Escapades/Plages :
-1. l'utilisateur doit être à **< 50 m** du spot (géofence) ;
+1. l'utilisateur doit être à **< 500 m** du spot (constante `PHOTO_VALIDATION_RADIUS_KM`
+   dans `BottomSheet.tsx` — large car ce sont des paysages cadrés de loin) ;
 2. il prend/charge une photo (compressée, stockée en base64 dans `localStorage`).
+
+Les **Missions** utilisent un géofence distinct et plus serré (**50 m**) dans
+`App.tsx` : c'est la ligne d'arrivée qui stoppe le chrono.
 
 La console animée dans `BottomSheet` est purement décorative : **il n'y a aucun
 appel à une IA / un LLM**. Ne pas réintroduire de fausses mentions « Gemini /
