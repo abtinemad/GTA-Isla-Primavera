@@ -1,0 +1,270 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Base resets & custom scrollbars */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f5; /* Light Grey Daylight */
+  color: #0c0a09; /* stone-950 */
+  font-family: var(--font-sans);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #f4f4f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8; /* zinc-300 */
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa; /* zinc-400 */
+}
+
+/* Map Overrides — bright daytime base (GTA San Andreas style) */
+.leaflet-container {
+  background-color: #6F9ABE !important; /* SA-style water blue fallback */
+  font-family: var(--font-sans) !important;
+  width: 100%;
+  height: 100%;
+}
+
+.leaflet-bar {
+  border: 1px solid #e4e4e7 !important; /* zinc-200 */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.leaflet-bar a {
+  background-color: #ffffff !important; /* White daylight panels */
+  color: #18181b !important; /* zinc-900 */
+  border-bottom: 1px solid #e4e4e7 !important;
+  transition: all 0.2s ease;
+  width: 38px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #f4f4f5 !important; /* zinc-100 */
+  color: #000000 !important;
+}
+
+.leaflet-bar a.leaflet-disabled {
+  background-color: #f4f4f5 !important;
+  color: #a1a1aa !important;
+}
+
+/* Custom Pulsing Markers & Map Items */
+@keyframes marker-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.pulse-marker-active {
+  animation: marker-pulse 2s infinite;
+}
+
+/* Sliding effects for bottom sheet */
+.bottom-sheet-transition {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Custom Marker Styling in pure CSS for simplicity and styling independence */
+.custom-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.custom-marker-pin {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9px !important; /* Stylized game radar rounded square */
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  position: relative !important;
+}
+
+.custom-marker-pin:hover {
+  transform: scale(1.1);
+}
+
+.custom-marker-pin-active {
+  transform: scale(1.15);
+  z-index: 1000 !important;
+}
+
+/* === Satellite (daytime) & GPS Vector layers === */
+
+/* Satellite: bright, vivid daytime imagery (no night tint) */
+.leaflet-dark-satellite-base {
+  filter: brightness(1.06) contrast(1.07) saturate(1.22) !important;
+  transition: opacity 0.4s ease;
+}
+
+/* Road reference overlay, readable over the daytime imagery */
+.leaflet-dark-satellite-roads {
+  filter: contrast(1.05) saturate(1.05) !important;
+  opacity: 0.85 !important;
+  transition: opacity 0.4s ease;
+}
+
+/* GPS Vector view fallback */
+.leaflet-gps-vector-tiles {
+  background-color: #6F9ABE !important;
+  transition: opacity 0.4s ease;
+}
+
+/* TF road tracks — subtle glow so the network reads as a HUD overlay */
+.tf-road-major {
+  filter: drop-shadow(0 0 3px rgba(229, 169, 60, 0.55));
+}
+.tf-road-mission {
+  filter: drop-shadow(0 0 3px rgba(200, 35, 51, 0.55));
+}
+
+/* Active itinerary track — pulsing neon cyan vector (Spec §2.2) */
+.neon-route {
+  filter: drop-shadow(0 0 6px rgba(0, 245, 212, 0.85)) drop-shadow(0 0 2px rgba(0, 245, 212, 0.9));
+  stroke-dasharray: 10 8;
+  animation: route-flow 0.9s linear infinite, route-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes route-flow {
+  to { stroke-dashoffset: -18; }
+}
+
+@keyframes route-glow {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+/* Ensure tooltips never intercept hover, tap, or click events on any interactive objects underneath */
+.leaflet-tooltip-pane,
+.leaflet-tooltip,
+.custom-map-tooltip {
+  pointer-events: none !important;
+}
+
+/* HIGHLY LEGIBLE OVERLAYS: Bold heavy uppercase sans-serif text in stark white, outlined with solid 2px black stroke */
+.custom-map-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #ffffff !important; /* Stark white default */
+  font-family: var(--font-display, "Space Grotesk", "Helvetica Bold", "Arial Black", sans-serif) !important;
+  font-weight: 900 !important; /* Heavy / ultra-bold */
+  font-size: 11.5px !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important; /* Stark uppercase */
+  /* Flawless solid 2px black stroke outline on all sides */
+  text-shadow: 
+    -2px -2px 0 #000000,  
+     2px -2px 0 #000000,
+    -2px  2px 0 #000000,
+     2px  2px 0 #000000,
+    -2px  0px 0 #000000,
+     2px  0px 0 #000000,
+     0px -2px 0 #000000,
+     0px  2px 0 #000000,
+     0px 1.5px 3px rgba(0,0,0,0.9) !important;
+  white-space: nowrap !important;
+  padding: 0 !important;
+}
+
+/* STARK NEON CATEGORY TOOLTIPS COLOR OVERRIDES */
+.custom-map-tooltip.tooltip-qg {
+  color: #F0C243 !important; /* Safehouse Yellow */
+}
+.custom-map-tooltip.tooltip-ravitaillement {
+  color: #39FF14 !important; /* Neon Green */
+}
+.custom-map-tooltip.tooltip-bars {
+  color: #FF00FF !important; /* Neon Magenta */
+}
+.custom-map-tooltip.tooltip-missions {
+  color: #FF1A43 !important; /* Neon Red */
+}
+.custom-map-tooltip.tooltip-escapades {
+  color: #00FFFF !important; /* Neon Cyan */
+}
+.custom-map-tooltip.tooltip-plages {
+  color: #00FFE2 !important; /* Neon Teal */
+}
+.custom-map-tooltip.tooltip-restaurants {
+  color: #FF8C00 !important; /* Stark Orange */
+}
+
+/* Hide leaflet attribution on ultra small mobile to save space */
+@media (max-width: 480px) {
+  .leaflet-control-attribution {
+    font-size: 8px !important;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Canarian Volcanic Basalt Pattern & Flag-themed Glows */
+.basalt-grid {
+  background-color: #fafafa; /* ultra light day background */
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.04) 0%, transparent 45%),
+    radial-gradient(rgba(120, 113, 108, 0.08) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 16px 16px;
+}
+
+.canary-gradient-border {
+  background: linear-gradient(90deg, #ffffff 0%, #0284c7 50%, #f59e0b 100%);
+}
+
+.canary-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.canary-card-hover:hover {
+  background-color: #ffffff !important; /* crisp day white */
+  border-color: rgba(225, 194, 51, 0.6) !important; /* Canary Yellow highlight */
+  box-shadow: 0 4px 20px -2px rgba(225, 194, 51, 0.12);
+}
+
+/* Push zoom and default leaflet control containers downwards to avoid being obscured by the absolute-positioned top-bar HUD */
+.leaflet-top.leaflet-right, .leaflet-top.leaflet-left {
+  margin-top: 135px !important;
+}
+
+/* Hide default Leaflet tooltip arrow */
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+  display: none !important;
+}
+

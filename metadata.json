@@ -1,0 +1,8 @@
+{
+  "name": "Tenerife Road Guide",
+  "description": "A mobile-first interactive guide and route Planner for driving missions, safehouses, and stops in Tenerife.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
