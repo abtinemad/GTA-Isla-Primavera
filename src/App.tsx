@@ -9,9 +9,12 @@ import { LocationItem, Category } from './types';
 import { INITIAL_LOCATIONS } from './locationsData';
 import QuickFilterBar from './components/QuickFilterBar';
 import MapContainer from './components/MapContainer';
-import { CATEGORY_MAP } from './utils/helper';
+import { CATEGORY_MAP, haversineKm } from './utils/helper';
 import LocationsList from './components/LocationsList';
 import BottomSheet from './components/BottomSheet';
+import CoverQuest from './components/CoverQuest';
+import CoverCamera from './components/CoverCamera';
+import { CoverSlot } from './coverData';
 import {
   Compass,
   Map,
@@ -95,6 +98,9 @@ export default function App() {
 
   // Character Narrative SMS State
   const [incomingSms, setIncomingSms] = useState<{ title: string; text: string; id: string } | null>(null);
+
+  // Cover Quest — camera overlay for the currently-targeted cover slot
+  const [coverCameraSlot, setCoverCameraSlot] = useState<CoverSlot | null>(null);
 
   // Automatically dismiss SMS after 6 seconds of visibility
   useEffect(() => {
@@ -255,6 +261,21 @@ export default function App() {
     localStorage.setItem('tenirife_captured_photos', JSON.stringify(nextPhotos));
   };
 
+  // Cover Quest snap = front-end of the existing validation. The camera only
+  // opens for a slot within the 50 m geofence (enforced in CoverQuest), so this
+  // routes straight through the shared souvenir + completion handlers — no
+  // parallel state. A timed mission records its elapsed run at the moment of snap.
+  const handleCoverCommit = (slot: CoverSlot, dataUrl: string) => {
+    handleSavePhotoSouvenir(slot.id, dataUrl);
+    let finishTime: string | undefined;
+    if (slot.category === 'Missions' && activeRunLocationId === slot.id) {
+      finishTime = getFormattedElapsedTime();
+      handleStopRun();
+    }
+    handleCompleteLocation(slot.location, finishTime);
+    setCoverCameraSlot(null);
+  };
+
   // Trigger game rewards
   const handleCompleteLocation = (location: LocationItem, finishTime?: string) => {
     if (completedLocationIds.includes(location.id)) return;
@@ -296,23 +317,13 @@ export default function App() {
     playSmsChirp();
   };
 
-  // Continuous geofencing watchdog
+  // Continuous geofencing watchdog — keeps userCoords fresh so cover slots and
+  // map proximity stay accurate. Subscribed once for the app's lifetime.
   useEffect(() => {
     if (!navigator.geolocation) return;
 
-    const computeDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-      const R = 6371; // Earth's radius in km
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLng = ((lng2 - lng1) * Math.PI) / 180;
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((lat1 * Math.PI) / 180) *
-          Math.cos((lat2 * Math.PI) / 180) *
-          Math.sin(dLng / 2) *
-          Math.sin(dLng / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c; // inside km
-    };
+    const computeDistance = (lat1: number, lng1: number, lat2: number, lng2: number) =>
+      haversineKm(lat1, lng1, lat2, lng2);
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -320,7 +331,9 @@ export default function App() {
         const userLng = position.coords.longitude;
         setUserCoords({ lat: userLat, lng: userLng });
 
-        // Check active stopwatch run completion (within 50 meters geofence)
+        // Mission completion = crossing the 50 m chrono finish line (canonical
+        // model, see CLAUDE.md). Cover Quest does NOT replace this; mission cover
+        // tiles fill from this completion. Escapades/Plages validate by photo.
         if (activeRunLocationId !== null) {
           const runTarget = allLocations.find(l => l.id === activeRunLocationId);
           if (runTarget) {
@@ -501,232 +514,13 @@ export default function App() {
 
         {/* UNIVERSALLY ACCESSIBLE Spectacular "SOCIAL CLUB / TROPHÉES" STANDALONE VIEW */}
         <section className={`app-bg absolute inset-0 z-[490] pt-12 pb-14 md:pb-0 overflow-y-auto ${activeTab === 'trophies' ? 'block' : 'hidden'}`}>
-          <div className="max-w-4xl mx-auto px-4 py-8 pb-24 flex flex-col gap-6">
-            
-            {/* Header section (theme-aware via design tokens) */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[color:var(--hairline)] pb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-400 flex items-center justify-center text-amber-400">
-                  <Trophy size={20} className="animate-pulse" />
-                </div>
-                <div className="text-left">
-                  <h2 className="font-display font-black text-xl text-[color:var(--text)] uppercase tracking-wider">Social Club Trophées</h2>
-                  <span className="text-[10px] uppercase tracking-wider font-mono font-black text-[#47a064]">
-                    Tenerife Drive Achievements & Souvenirs
-                  </span>
-                </div>
-              </div>
-
-              {/* Stats widget */}
-              <div className="bg-[var(--glass-bg)] backdrop-blur-md border border-[color:var(--hairline)] px-4 py-2 rounded-2xl flex items-center gap-4 text-left shadow-lg">
-                <div className="font-mono">
-                  <span className="block text-[8px] uppercase tracking-wider text-[color:var(--text-muted)]">Progression</span>
-                  <span className="text-base font-black text-[color:var(--text)]">{completedCount} / {completableLocations.length} validés</span>
-                </div>
-                <div className="w-px h-6 bg-[color:var(--hairline)]" />
-                <div className="font-mono text-right">
-                  <span className="block text-[8px] uppercase tracking-wider text-[color:var(--text-muted)]">Complété</span>
-                  <span className="text-base font-black text-amber-400">{completionPct.toFixed(0)}%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Grid Layout of Achievements */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                {
-                  id: 102,
-                  physicalId: 7,
-                  name: 'Au-dessus des Nuages',
-                  desc: 'Atteindre le plateau central du Teide par la TF-21.',
-                  road: 'Route TF-21 · Volcan',
-                  type: 'Missions'
-                },
-                {
-                  id: 101,
-                  physicalId: 8,
-                  name: 'Roi de la Gomme',
-                  desc: 'Dompter les épingles de Cherfe (TF-436) au sommet de Masca.',
-                  road: 'Route TF-436 · Masca',
-                  type: 'Missions'
-                },
-                {
-                  id: 9,
-                  physicalId: 9,
-                  name: 'Maître du Flow',
-                  desc: 'Compléter le run de la forêt humide d\'Anaga (TF-12).',
-                  road: 'TF-12 · Épreuve Anaga',
-                  type: 'Missions'
-                },
-                {
-                  id: 103,
-                  physicalId: 10,
-                  name: 'Chasseur de Fantômes',
-                  desc: 'Explorer le sanatorium abandonné d\'Abades (Preuve photo).',
-                  road: 'Sortie 42 TF-1 · Abades',
-                  type: 'Escapades'
-                },
-                {
-                  id: 104,
-                  physicalId: 12,
-                  name: 'Grand Tourer',
-                  desc: 'Effectuer la liaison côtière par Radazul ou El Médano.',
-                  road: 'Liaison TF-1 · Côte Est',
-                  type: 'Missions'
-                },
-                {
-                  id: 17,
-                  physicalId: 17,
-                  name: 'Chasseur de Criques',
-                  desc: 'Gagner la crique de Diego Hernández (Preuve photo).',
-                  road: 'Secteur Ouest · Diego Hernández',
-                  type: 'Plages'
-                },
-                {
-                  id: 18,
-                  physicalId: 18,
-                  name: 'Contraste Total',
-                  desc: 'Sanctuariser la plage de Las Teresitas (Preuve photo).',
-                  road: 'Anaga Est · S. Sahara',
-                  type: 'Plages'
-                },
-                {
-                  id: 105,
-                  physicalId: 2, // Cannabis Mr Bruno etc combined
-                  name: 'Ravitaillement Complet',
-                  desc: 'Valider Mr Bruno, secrets tasca ou Bloom Bar à La Caleta.',
-                  road: 'Secteur Ouest · La Caleta',
-                  type: 'Ravitaillement'
-                }
-              ].map((trophy) => {
-                // Determine completion status
-                const isTrophyCompleted = 
-                  trophy.id === 104 
-                    ? (completedLocationIds.includes(12) || completedLocationIds.includes(13))
-                    : trophy.id === 105
-                      ? (completedLocationIds.includes(2) || completedLocationIds.includes(3) || completedLocationIds.includes(5))
-                      : completedLocationIds.includes(trophy.physicalId);
-
-                const recordedTime = completedTimes[trophy.physicalId];
-                const capturedPhotoBase64 = capturedPhotos[trophy.physicalId];
-
-                // Resolve category mapping
-                const catName = trophy.type as Category;
-                const catInfo = CATEGORY_MAP[catName] || CATEGORY_MAP.Missions;
-                const designatedCategoryEmoji = catInfo.emoji;
-
-                // Category-specific Canarian accent colors
-                let cardBgStyle = 'border-zinc-800 bg-zinc-900/60';
-                let textAccent = 'text-zinc-500';
-                let badgeStyle = 'bg-zinc-800/50 border border-zinc-700/60 text-zinc-500/60 grayscale opacity-45';
-                let dynamicCardStyle = {};
-                let dynamicBadgeStyle = {};
-
-                if (isTrophyCompleted) {
-                  textAccent = 'text-white';
-                  cardBgStyle = '';
-                  badgeStyle = 'text-white border-white/20 animate-pulse';
-                  const activeColor = catInfo.accentColor;
-                  dynamicCardStyle = {
-                    borderColor: `${activeColor}60`,
-                    backgroundColor: `${activeColor}20`,
-                    boxShadow: `0 4px 20px ${activeColor}30`
-                  };
-                  dynamicBadgeStyle = {
-                    backgroundColor: activeColor,
-                    boxShadow: `0 0 15px ${activeColor}80`
-                  };
-                }
-
-                return (
-                  <div
-                    key={trophy.name}
-                    className={`relative rounded-3xl border p-5 flex flex-col gap-3 text-left transition-all duration-300 overflow-hidden min-h-[170px] ${cardBgStyle}`}
-                    style={dynamicCardStyle}
-                  >
-                    
-                    {/* User-uploaded custom photo background helper for Escapades / Plages */}
-                    {isTrophyCompleted && capturedPhotoBase64 && (
-                      <div className="absolute inset-0 z-0">
-                        <img 
-                          src={capturedPhotoBase64} 
-                          alt="" 
-                          className="w-full h-full object-cover opacity-25 filter blur-[1px]" 
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#121214] via-[#121214]/70 to-[#121214]/40" />
-                      </div>
-                    )}
-
-                    {/* Content Body */}
-                    <div className="relative z-10 flex flex-col gap-2.5 h-full justify-between flex-1">
-                      <div className="flex items-start justify-between w-full min-w-0">
-                        <div className="flex items-center gap-2.5">
-                          <div 
-                            className={`w-10 h-10 rounded-2xl flex items-center justify-center font-sans text-xl shadow-lg border ${badgeStyle}`}
-                            style={dynamicBadgeStyle}
-                          >
-                            {designatedCategoryEmoji}
-                          </div>
-                          <div className="text-left">
-                            <h4 className={`text-xs font-black font-display uppercase tracking-wider max-w-[170px] truncate ${textAccent}`}>
-                              {trophy.name}
-                            </h4>
-                            <span className="block text-[8px] font-mono text-zinc-400 font-bold uppercase tracking-wide">
-                              {trophy.road}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Top lock/checked status indicators */}
-                        {isTrophyCompleted ? (
-                          <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-black text-[7px] uppercase tracking-wider px-1.5 py-0.5 rounded">
-                            Débloqué
-                          </span>
-                        ) : (
-                          <span className="bg-zinc-800 border border-zinc-700 text-zinc-500 font-bold text-[7px] uppercase tracking-wider px-1.5 py-0.5 rounded">
-                            Verrouillé
-                          </span>
-                        )}
-                      </div>
-
-                      <p className={`text-[11px] font-sans leading-relaxed ${
-                        isTrophyCompleted ? 'text-zinc-300' : 'text-zinc-650'
-                      }`}>
-                        {trophy.desc}
-                      </p>
-
-                      {/* Score metrics if completed (stopwatch time details) */}
-                      {isTrophyCompleted && (
-                        <div className="pt-2 mt-auto border-t border-zinc-800/60 flex items-center justify-between text-[9px] font-mono text-zinc-400">
-                          <div className="flex items-center gap-1">
-                            <CheckCircle2 size={10} className="text-emerald-500 shrink-0" />
-                            <span>Run validé</span>
-                          </div>
-                          {recordedTime && (
-                            <div className="font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
-                              Score : {recordedTime}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Resume button */}
-            <div className="mt-4">
-              <button
-                onClick={() => setActiveTab('map')}
-                className="w-full sm:w-auto bg-[var(--surface)] hover:opacity-90 text-[color:var(--text)] font-extrabold uppercase px-8 py-3.5 rounded-2xl border border-[color:var(--hairline)] text-xs tracking-widest transition-all cursor-pointer shadow-lg mx-auto"
-              >
-                Retourner à la carte
-              </button>
-            </div>
-
-          </div>
+          <CoverQuest
+            completedLocationIds={completedLocationIds}
+            capturedPhotos={capturedPhotos}
+            completedTimes={completedTimes}
+            userCoords={userCoords}
+            onOpenCamera={(slot) => setCoverCameraSlot(slot)}
+          />
         </section>
 
       </main>
@@ -973,6 +767,13 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* COVER QUEST — full-screen geofenced camera overlay */}
+      <CoverCamera
+        slot={coverCameraSlot}
+        onClose={() => setCoverCameraSlot(null)}
+        onCommit={handleCoverCommit}
+      />
 
     </div>
   );
