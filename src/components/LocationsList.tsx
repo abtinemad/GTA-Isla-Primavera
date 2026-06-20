@@ -304,9 +304,11 @@ export default function LocationsList({
                 onClick={() => onSelectLocation(loc)}
                 style={{
                   borderLeft: `var(--rail-accent) solid ${railColor}`,
-                  background: 'var(--glass-bg)',
-                  backdropFilter: 'blur(var(--blur-glass))',
-                  WebkitBackdropFilter: 'blur(var(--blur-glass))',
+                  // Verre transparent : ~55% de surface → la fresque Manrique
+                  // transparaît, le flou (frosted) garde le texte lisible.
+                  background: 'color-mix(in srgb, var(--surface) 55%, transparent)',
+                  backdropFilter: 'blur(16px) saturate(1.3)',
+                  WebkitBackdropFilter: 'blur(16px) saturate(1.3)',
                 }}
                 className={`
                   relative p-3.5 rounded-2xl border text-left cursor-pointer flex flex-col gap-2 transition-all duration-200 shadow-sm
