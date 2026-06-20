@@ -571,7 +571,7 @@ export default function App() {
         </section>
 
         {/* UNIVERSALLY ACCESSIBLE Spectacular "SOCIAL CLUB / TROPHÉES" STANDALONE VIEW */}
-        <section className={`app-bg absolute inset-0 z-[490] pt-12 pb-14 md:pb-0 overflow-y-auto ${activeTab === 'trophies' ? 'block' : 'hidden'}`}>
+        <section className={`bg-[#0a0a0b] absolute inset-0 z-[490] pt-12 pb-14 md:pb-0 overflow-y-auto ${activeTab === 'trophies' ? 'block' : 'hidden'}`}>
           <CoverQuest
             completedLocationIds={completedLocationIds}
             capturedPhotos={capturedPhotos}

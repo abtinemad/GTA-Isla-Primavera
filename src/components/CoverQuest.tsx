@@ -75,8 +75,12 @@ export default function CoverQuest({
 
   return (
     <div className="relative min-h-full pb-28">
-      {/* Montage of unequal panels */}
-      <div className="px-3 pt-3 [column-count:2] sm:[column-count:3] lg:[column-count:4] gap-2.5">
+      {/* Dedicated dark backdrop — Corales illustration up top fading to black.
+          Fixed, but only visible while the Social Club section is displayed. */}
+      <div aria-hidden className="cq-bg" />
+
+      {/* Montage of unequal panels (above the backdrop) */}
+      <div className="relative z-[1] px-3 pt-3 [column-count:2] sm:[column-count:3] lg:[column-count:4] gap-2.5">
         {slots.map((slot, i) => {
           const accent = CATEGORY_MAP[slot.category].accentColor;
           const aspect = ASPECTS[i % ASPECTS.length];
@@ -205,6 +209,11 @@ export default function CoverQuest({
       </div>
 
       <style>{`
+        .cq-bg{position:fixed;inset:0;z-index:0;background:#0a0a0b;pointer-events:none}
+        .cq-bg::before{content:'';position:absolute;top:0;left:0;right:0;height:56vh;
+          background:url('/assets/corales-bg.webp') center top / cover no-repeat}
+        .cq-bg::after{content:'';position:absolute;top:0;left:0;right:0;height:56vh;
+          background:linear-gradient(180deg,rgba(10,10,11,.32) 0%,rgba(10,10,11,.55) 45%,#0a0a0b 100%)}
         .cover-logo{position:fixed;top:42%;left:50%;transform:translate(-50%,-50%);
           z-index:5;pointer-events:none;display:flex;flex-direction:column;align-items:center;
           filter:drop-shadow(0 8px 18px rgba(0,0,0,.55))}
