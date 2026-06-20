@@ -503,8 +503,8 @@ export default function App() {
       <main className="absolute inset-0 w-full h-full flex overflow-hidden z-0 bg-slate-950">
         
         {/* DESKTOP SPLIT VIEW: sidebar list (Padded to start below floating glassmorphic header) */}
-        <section className={`hidden md:block w-80 lg:w-96 h-full shrink-0 border-r border-slate-800/40 pt-12 bg-[#fafafa] z-10 transition-all ${activeTab === 'trophies' ? 'opacity-0 select-none pointer-events-none absolute' : ''}`}>
-          <div className="flex flex-col h-full bg-[#fafafa]">
+        <section className={`hidden md:block w-80 lg:w-96 h-full shrink-0 border-r border-[color:var(--hairline)] pt-12 z-10 transition-all ${activeTab === 'trophies' ? 'opacity-0 select-none pointer-events-none absolute' : ''}`}>
+          <div className="flex flex-col h-full">
             {/* Quick Filters blended inside sidebar */}
             <div className="bg-slate-900 py-1 border-b border-slate-800 shadow-md shrink-0">
               <QuickFilterBar
@@ -545,7 +545,7 @@ export default function App() {
 
         {/* MOBILE SLIDE-OVER LIST */}
         <section className={`absolute inset-0 z-40 md:hidden pt-12 pb-14 ${activeTab === 'list' ? 'block' : 'hidden'}`}>
-          <div className="w-full h-full bg-[#fafafa] flex flex-col">
+          <div className="w-full h-full flex flex-col">
             {/* Quick Filters blended inside mobile Spots page */}
             <div className="bg-slate-900 py-1 border-b border-slate-800 shadow-md shrink-0">
               <QuickFilterBar
@@ -571,7 +571,7 @@ export default function App() {
         </section>
 
         {/* UNIVERSALLY ACCESSIBLE Spectacular "SOCIAL CLUB / TROPHÉES" STANDALONE VIEW */}
-        <section className={`bg-[#0a0a0b] absolute inset-0 z-[490] pt-12 pb-14 md:pb-0 overflow-y-auto ${activeTab === 'trophies' ? 'block' : 'hidden'}`}>
+        <section className={`app-bg absolute inset-0 z-[490] pt-12 pb-14 md:pb-0 overflow-y-auto ${activeTab === 'trophies' ? 'block' : 'hidden'}`}>
           <CoverQuest
             completedLocationIds={completedLocationIds}
             capturedPhotos={capturedPhotos}

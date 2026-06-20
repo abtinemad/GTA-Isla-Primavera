@@ -90,7 +90,7 @@ export default function LocationsList({
   }, [physicalLocations]);
 
   return (
-    <div className="flex flex-col h-full bg-[#fafafa] basalt-grid border-r border-zinc-200 overflow-hidden w-full">
+    <div className="flex flex-col h-full bg-transparent border-r border-[color:var(--hairline)] overflow-hidden w-full">
       
       {/* Search Header (Hidden on mobile to avoid duplication and clutter beneath the global glassmorphic header) */}
       <div className="hidden md:flex p-4 border-b border-zinc-200 bg-white/95 backdrop-blur-md flex-col gap-3 shadow-xs">
@@ -275,8 +275,8 @@ export default function LocationsList({
 
       {/* Stats explanation text if looking at user's location */}
       {userCoords && (
-        <div className="bg-zinc-100/70 border-b border-zinc-200 px-4 py-2 flex items-center gap-2 text-[11px] font-semibold text-zinc-600 shadow-sm">
-          <Info size={12} className="text-zinc-550 shrink-0" />
+        <div className="bg-[var(--glass-bg)] backdrop-blur-md border-b border-[color:var(--hairline)] px-4 py-2 flex items-center gap-2 text-[11px] font-semibold text-[color:var(--text-muted)] shadow-sm">
+          <Info size={12} className="shrink-0 opacity-70" />
           <span>Spots triés du plus proche au plus éloigné</span>
         </div>
       )}
@@ -285,11 +285,11 @@ export default function LocationsList({
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {sortedLocations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center mb-3 border border-zinc-200 shadow-xs">
-              <Compass size={20} className="text-zinc-650 animate-spin-slow" />
+            <div className="w-12 h-12 rounded-full bg-[var(--glass-bg)] backdrop-blur-md flex items-center justify-center mb-3 border border-[color:var(--hairline)] shadow-xs">
+              <Compass size={20} className="text-[color:var(--text-muted)] animate-spin-slow" />
             </div>
-            <p className="text-sm font-semibold text-zinc-800">Aucun spot trouvé</p>
-            <p className="text-xs text-zinc-500 mt-1 max-w-[200px]">Modifiez vos caractéristiques de ciblage ou la recherche.</p>
+            <p className="text-sm font-semibold text-[color:var(--text)]">Aucun spot trouvé</p>
+            <p className="text-xs text-[color:var(--text-muted)] mt-1 max-w-[200px]">Modifiez vos caractéristiques de ciblage ou la recherche.</p>
           </div>
         ) : (
           sortedLocations.map((loc) => {
@@ -302,12 +302,17 @@ export default function LocationsList({
               <div
                 key={loc.id}
                 onClick={() => onSelectLocation(loc)}
-                style={{ borderLeft: `var(--rail-accent) solid ${railColor}` }}
+                style={{
+                  borderLeft: `var(--rail-accent) solid ${railColor}`,
+                  background: 'var(--glass-bg)',
+                  backdropFilter: 'blur(var(--blur-glass))',
+                  WebkitBackdropFilter: 'blur(var(--blur-glass))',
+                }}
                 className={`
-                  relative p-3.5 rounded-2xl border text-left cursor-pointer canary-card-hover flex flex-col gap-2 transition-all duration-200
+                  relative p-3.5 rounded-2xl border text-left cursor-pointer flex flex-col gap-2 transition-all duration-200 shadow-sm
                   ${isSelected
-                    ? 'bg-white border-amber-500 shadow-md ring-2 ring-amber-500/10'
-                    : 'bg-white border-zinc-200/80 hover:bg-zinc-50 shadow-xs'
+                    ? 'border-amber-500 ring-2 ring-amber-500/20'
+                    : 'border-[color:var(--hairline)] hover:brightness-105'
                   }
                 `}
               >
@@ -318,24 +323,24 @@ export default function LocationsList({
                   </span>
 
                   {dist && (
-                    <span className="text-[10px] font-mono font-semibold text-zinc-700 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200 shrink-0">
+                    <span className="text-[10px] font-mono font-semibold text-[color:var(--text-muted)] bg-[color:var(--hairline)] px-1.5 py-0.5 rounded border border-[color:var(--hairline)] shrink-0">
                       {dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`}
                     </span>
                   )}
                 </div>
 
                 {/* Name */}
-                <h4 className="font-display font-extrabold text-sm text-zinc-950 group-hover:text-black transition-colors leading-snug">
+                <h4 className="font-display font-extrabold text-sm text-[color:var(--text)] leading-snug">
                   {loc.name}
                 </h4>
 
                 {/* Snippet info */}
-                <p className="text-xs text-zinc-650 font-sans line-clamp-2 leading-relaxed">
+                <p className="text-xs text-[color:var(--text-muted)] font-sans line-clamp-2 leading-relaxed">
                   {loc.info}
                 </p>
 
                 {/* Control elements */}
-                <div className="flex items-center justify-between pt-1.5 mt-0.5 border-t border-zinc-200/60 text-[10px] font-mono text-zinc-550">
+                <div className="flex items-center justify-between pt-1.5 mt-0.5 border-t border-[color:var(--hairline)] text-[10px] font-mono text-[color:var(--text-muted)]">
                   <div className="flex items-center gap-1">
                     <MapPin size={9} />
                     <span>{loc.lat.toFixed(3)}, {loc.lng.toFixed(3)}</span>

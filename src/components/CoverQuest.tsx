@@ -75,11 +75,10 @@ export default function CoverQuest({
 
   return (
     <div className="relative min-h-full pb-28">
-      {/* Dedicated dark backdrop — Corales illustration up top fading to black.
-          Fixed, but only visible while the Social Club section is displayed. */}
-      <div aria-hidden className="cq-bg" />
+      {/* Backdrop = the section's .app-bg (Manrique fresco) — it breathes between
+          and through the theme-aware glass trophy tiles. No opaque layer here. */}
 
-      {/* Montage of unequal panels (above the backdrop) */}
+      {/* Montage of unequal panels (above the app-bg) */}
       <div className="relative z-[1] px-3 pt-3 [column-count:2] sm:[column-count:3] lg:[column-count:4] gap-2.5">
         {slots.map((slot, i) => {
           const accent = CATEGORY_MAP[slot.category].accentColor;
@@ -96,7 +95,7 @@ export default function CoverQuest({
                   ? 'cursor-pointer border-white/30 cover-pulse'
                   : slot.status === 'filled'
                     ? 'border-white/15 cursor-default'
-                    : 'border-white/10 cursor-not-allowed'
+                    : 'border-[color:var(--hairline)] cursor-not-allowed'
               }`}
               style={canShoot ? { boxShadow: `0 0 0 1.5px ${accent}, 0 0 18px ${accent}55` } : undefined}
             >
@@ -124,8 +123,16 @@ export default function CoverQuest({
                 </>
               ) : (
                 <>
-                  {/* Locked / unlockable dark plate + scanlines */}
-                  <div className="absolute inset-0 bg-[#121018]" />
+                  {/* Locked / unlockable plate — theme-aware glass so the backdrop
+                      breathes behind the trophy cards (dark ET light). */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'var(--glass-bg)',
+                      backdropFilter: 'blur(var(--blur-glass))',
+                      WebkitBackdropFilter: 'blur(var(--blur-glass))',
+                    }}
+                  />
                   <div
                     className="absolute inset-0 opacity-30"
                     style={{
@@ -148,16 +155,16 @@ export default function CoverQuest({
                         <Camera size={18} className="text-white" />
                       </span>
                     ) : (
-                      <span className="w-9 h-9 rounded-full bg-white/5 border border-white/15 flex items-center justify-center">
-                        <Lock size={15} className="text-white/50" />
+                      <span className="w-9 h-9 rounded-full bg-[color:var(--hairline)] border border-[color:var(--hairline)] flex items-center justify-center">
+                        <Lock size={15} className="text-[color:var(--text-muted)]" />
                       </span>
                     )}
-                    <span className="font-display font-black text-[11px] uppercase tracking-wide text-white/85 leading-tight">
+                    <span className="font-display font-black text-[11px] uppercase tracking-wide text-[color:var(--text)] leading-tight">
                       {slot.label}
                     </span>
                     <span
                       className={`flex items-center gap-1 font-mono text-[8px] uppercase tracking-wider ${
-                        canShoot ? 'font-black' : 'text-white/40'
+                        canShoot ? 'font-black' : 'text-[color:var(--text-muted)]'
                       }`}
                       style={canShoot ? { color: accent } : undefined}
                     >
@@ -209,11 +216,6 @@ export default function CoverQuest({
       </div>
 
       <style>{`
-        .cq-bg{position:fixed;inset:0;z-index:0;background:#0a0a0b;pointer-events:none}
-        .cq-bg::before{content:'';position:absolute;top:0;left:0;right:0;height:56vh;
-          background:url('/assets/corales-bg.webp') center top / cover no-repeat}
-        .cq-bg::after{content:'';position:absolute;top:0;left:0;right:0;height:56vh;
-          background:linear-gradient(180deg,rgba(10,10,11,.32) 0%,rgba(10,10,11,.55) 45%,#0a0a0b 100%)}
         .cover-logo{position:fixed;top:42%;left:50%;transform:translate(-50%,-50%);
           z-index:5;pointer-events:none;display:flex;flex-direction:column;align-items:center;
           filter:drop-shadow(0 8px 18px rgba(0,0,0,.55))}
