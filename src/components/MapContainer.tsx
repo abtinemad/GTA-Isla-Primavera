@@ -9,7 +9,6 @@ import 'leaflet/dist/leaflet.css';
 import { LocationItem } from '../types';
 import { getMarkerHtml } from '../utils/helper';
 import { TENERIFE_ROADS } from '../roadsData';
-import { ISLAND_RINGS, RELIEF_BANDS, OCEAN_COLOR, LAND_COLOR } from '../geoData';
 import { Compass, Navigation, Layers } from 'lucide-react';
 
 interface MapContainerProps {
@@ -35,11 +34,9 @@ export default function MapContainer({
   const userMarkerRef = useRef<L.Marker | null>(null);
 
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
-  // Spec §2.1: "Vue Satellite Sombre" is the default base layer.
-  const [mapStyle, setMapStyle] = useState<'dark-satellite' | 'gps-vector'>('dark-satellite');
+  const [mapStyle, setMapStyle] = useState<'satellite' | 'plan'>('satellite');
   const tileLayersRef = useRef<L.TileLayer[]>([]);
   const routeLineRef = useRef<L.Polyline | null>(null);
-  const vectorLayerRef = useRef<L.LayerGroup | null>(null);
 
   // Spawn point (QG — Royal Hideaway Corales Villas) used as the route origin
   // when no live GPS fix is available, so the neon track is always visible.
@@ -64,14 +61,8 @@ export default function MapContainer({
     mapRef.current = map;
     setMapInstance(map);
 
-    // Dedicated pane for the GPS-vector geometric fills, sitting above the
-    // tile pane (200) but below roads/markers so the TF network reads on top.
-    map.createPane('landPane');
-    const lp = map.getPane('landPane');
-    if (lp) lp.style.zIndex = '250';
-
-    // Spec §2.2 — High-Contrast Track: draw the TF network with a hard black
-    // casing under an amber (major axes) / crimson (mission roads) top line.
+    // High-Contrast Track: draw the TF network as continuous lines with a hard
+    // black casing under an amber (major axes) / crimson (mission) top line.
     const roadCasing = L.layerGroup().addTo(map);
     const roadTop = L.layerGroup().addTo(map);
     TENERIFE_ROADS.forEach((seg) => {
@@ -93,51 +84,31 @@ export default function MapContainer({
     };
   }, []);
 
-  // 1b. Switch base layer: night satellite (raster) vs GPS vector (geometric fills)
+  // 1b. Switch base layer: daytime satellite (raster) vs clean street plan
   useEffect(() => {
     if (!mapInstance) return;
 
-    // Clear previous base layers (tiles + vector group)
     tileLayersRef.current.forEach(layer => layer.remove());
     tileLayersRef.current = [];
-    if (vectorLayerRef.current) {
-      vectorLayerRef.current.remove();
-      vectorLayerRef.current = null;
-    }
 
-    if (mapStyle === 'dark-satellite') {
-      // Spec §2.1 — Vue Satellite Sombre (default): real imagery tinted to
-      // anthracite/night via CSS filter. Esri imagery carries no commercial
-      // POI labels, satisfying the "POI masking".
+    if (mapStyle === 'satellite') {
+      // Bright daytime satellite imagery (lightened in CSS so the sea isn't dark).
       const baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19, attribution: 'Imagery &copy; Esri', className: 'leaflet-dark-satellite-base'
+        maxZoom: 19, attribution: 'Imagery &copy; Esri', className: 'leaflet-satellite-base'
       }).addTo(mapInstance);
-      const roadsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19, attribution: '', className: 'leaflet-dark-satellite-roads'
+      const labelsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19, attribution: '', className: 'leaflet-satellite-roads'
       }).addTo(mapInstance);
-      tileLayersRef.current = [baseLayer, roadsLayer];
+      tileLayersRef.current = [baseLayer, labelsLayer];
 
     } else {
-      // Spec §2.1 — Vue GPS Vecteur: flat geometric fills (GTA pause-map).
-      // Land = pale sage, relief = sand/soft-brown over the real massifs,
-      // ocean = navy mask with the island punched out.
-      const grp = L.layerGroup();
-      const opt = { pane: 'landPane', stroke: false, fillOpacity: 1, interactive: false } as L.PolylineOptions;
-
-      ISLAND_RINGS.forEach((ring) =>
-        L.polygon(ring as L.LatLngExpression[], { ...opt, fillColor: LAND_COLOR }).addTo(grp)
-      );
-      RELIEF_BANDS.forEach((b) =>
-        L.polygon(b.ring as L.LatLngExpression[], { ...opt, fillColor: b.color }).addTo(grp)
-      );
-      const outer: L.LatLngExpression[] = [[27.5, -17.6], [27.5, -15.4], [29.1, -15.4], [29.1, -17.6]];
-      L.polygon([outer, ...(ISLAND_RINGS as L.LatLngExpression[][])], { ...opt, fillColor: OCEAN_COLOR }).addTo(grp);
-      ISLAND_RINGS.forEach((ring) =>
-        L.polygon(ring as L.LatLngExpression[], { pane: 'landPane', fill: false, color: '#3E6285', weight: 1.1, opacity: 0.8, interactive: false }).addTo(grp)
-      );
-
-      grp.addTo(mapInstance);
-      vectorLayerRef.current = grp;
+      // Clean street plan (Google/Apple-Maps style) — CARTO Voyager raster tiles.
+      const plan = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20, subdomains: 'abcd',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        className: 'leaflet-plan-tiles'
+      }).addTo(mapInstance);
+      tileLayersRef.current = [plan];
     }
   }, [mapInstance, mapStyle]);
 
@@ -312,7 +283,7 @@ export default function MapContainer({
 
   return (
     <div className={`relative w-full h-full overflow-hidden select-none ${
-      mapStyle === 'dark-satellite' ? 'bg-[#6F9ABE] map-satellite-theme' : 'bg-[#6F9ABE] map-gps-theme'
+      mapStyle === 'satellite' ? 'bg-[#6F9ABE] map-satellite-theme' : 'bg-[#e8e4dd] map-plan-theme'
     }`}>
       
       {/* Map Division Ref */}
@@ -333,21 +304,21 @@ export default function MapContainer({
         {/* Map Style Toggle Button */}
         <button
           onClick={() => {
-            setMapStyle(prev => prev === 'dark-satellite' ? 'gps-vector' : 'dark-satellite');
+            setMapStyle(prev => prev === 'satellite' ? 'plan' : 'satellite');
           }}
           className={`
             p-3.5 rounded-2xl border shadow-xl transition-all cursor-pointer flex items-center justify-center active:scale-95
-            ${mapStyle === 'gps-vector'
+            ${mapStyle === 'plan'
               ? 'bg-emerald-950/90 border-emerald-800 text-emerald-400 shadow-emerald-500/20'
               : 'bg-zinc-950 border-zinc-800 text-cyan-400 hover:text-white hover:bg-zinc-900 shadow-cyan-500/20'
             }
           `}
           title={
-            mapStyle === 'dark-satellite' ? "Vue GPS (Vecteur)" : "Vue Satellite (Jour)"
+            mapStyle === 'satellite' ? "Vue Plan" : "Vue Satellite"
           }
         >
           <Layers size={18} className={
-            mapStyle === 'gps-vector' ? "text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.5)]" :
+            mapStyle === 'plan' ? "text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.5)]" :
             "text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]"
           } />
         </button>

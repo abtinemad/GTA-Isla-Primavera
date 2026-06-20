@@ -120,24 +120,19 @@ html, body, #root {
   z-index: 1000 !important;
 }
 
-/* === Satellite (daytime) & GPS Vector layers === */
+/* === Satellite (daytime) & Plan layers === */
 
-/* Satellite: bright, vivid daytime imagery (no night tint) */
-.leaflet-dark-satellite-base {
-  filter: brightness(1.06) contrast(1.07) saturate(1.22) !important;
+.leaflet-satellite-base {
+  /* Brighter daytime imagery so the sea reads light, not dark */
+  filter: brightness(1.22) contrast(0.98) saturate(1.12) !important;
   transition: opacity 0.4s ease;
 }
-
-/* Road reference overlay, readable over the daytime imagery */
-.leaflet-dark-satellite-roads {
+.leaflet-satellite-roads {
   filter: contrast(1.05) saturate(1.05) !important;
-  opacity: 0.85 !important;
+  opacity: 0.8 !important;
   transition: opacity 0.4s ease;
 }
-
-/* GPS Vector view fallback */
-.leaflet-gps-vector-tiles {
-  background-color: #6F9ABE !important;
+.leaflet-plan-tiles {
   transition: opacity 0.4s ease;
 }
 
