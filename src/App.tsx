@@ -14,6 +14,7 @@ import LocationsList from './components/LocationsList';
 import BottomSheet from './components/BottomSheet';
 import CoverQuest from './components/CoverQuest';
 import CoverCamera from './components/CoverCamera';
+import SplashScreen from './components/SplashScreen';
 import { CoverSlot, approachRadiusKm, isPhotoSlot, shortLabel } from './coverData';
 import {
   Compass,
@@ -62,6 +63,7 @@ export default function App() {
   });
 
   // UI state
+  const [showSplash, setShowSplash] = useState(true);
   const [showGtaOverlay, setShowGtaOverlay] = useState(false);
   const [completedMissionName, setCompletedMissionName] = useState('');
   const [activeTab, setActiveTab] = useState<'map' | 'list' | 'trophies'>('map');
@@ -446,7 +448,12 @@ export default function App() {
 
   return (
     <div className="app-bg relative w-screen h-screen overflow-hidden select-none font-sans flex flex-col text-zinc-900">
-      
+
+      {/* BOOT SPLASH — artwork GTA déjà titré, plein cadre (fade out 0.5s) */}
+      <AnimatePresence>
+        {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      </AnimatePresence>
+
       {/* FLOATING GLASSMORPHIC HUD HEADER */}
       <div className="absolute top-0 left-0 right-0 z-[600] h-12 flex items-center bg-slate-900/60 backdrop-blur-md border-b border-slate-700/30 shadow-xl pointer-events-auto">
         <div className="w-full px-4 flex items-center justify-between gap-4 h-full">
