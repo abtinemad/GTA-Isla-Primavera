@@ -360,7 +360,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative w-screen h-screen bg-slate-950 overflow-hidden select-none font-sans flex flex-col text-zinc-900">
+    <div className="app-bg relative w-screen h-screen overflow-hidden select-none font-sans flex flex-col text-zinc-900">
       
       {/* FLOATING GLASSMORPHIC HUD HEADER */}
       <div className="absolute top-0 left-0 right-0 z-[600] h-12 flex items-center bg-slate-900/60 backdrop-blur-md border-b border-slate-700/30 shadow-xl pointer-events-auto">
@@ -469,7 +469,7 @@ export default function App() {
         </section>
 
         {/* UNIVERSALLY ACCESSIBLE Spectacular "SOCIAL CLUB / TROPHÉES" STANDALONE VIEW */}
-        <section className={`absolute inset-0 z-[490] bg-[#121214] pt-12 pb-14 md:pb-0 overflow-y-auto ${activeTab === 'trophies' ? 'block' : 'hidden'}`}>
+        <section className={`app-bg absolute inset-0 z-[490] pt-12 pb-14 md:pb-0 overflow-y-auto ${activeTab === 'trophies' ? 'block' : 'hidden'}`}>
           <div className="max-w-4xl mx-auto px-4 py-8 pb-24 flex flex-col gap-6">
             
             {/* Header section in Dark theme */}

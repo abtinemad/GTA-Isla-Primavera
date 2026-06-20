@@ -8,6 +8,19 @@ import { LocationItem, Category } from '../types';
 import { CATEGORY_MAP } from '../utils/helper';
 import { Compass, Info, Trophy, MapPin } from 'lucide-react';
 
+// Maps each category to its design-token accent (see src/styles/tokens.css)
+// used for the left "liseré" rail on every spot card.
+const CATEGORY_RAIL: Record<string, string> = {
+  // QG token is near-white (--cat-qg #EDEFF2); use a readable neutral on light cards.
+  QG: '#9A9CA4',
+  Ravitaillement: 'var(--cat-ravito)',
+  Bars: 'var(--cat-bars)',
+  Missions: 'var(--cat-missions)',
+  Escapades: 'var(--cat-escapades)',
+  Plages: 'var(--cat-plages)',
+  Restaurants: 'var(--cat-restaurants)',
+};
+
 interface LocationsListProps {
   locations: LocationItem[];
   selectedLocation: LocationItem | null;
@@ -282,12 +295,14 @@ export default function LocationsList({
           sortedLocations.map((loc) => {
             const isSelected = selectedLocation?.id === loc.id;
             const cat = CATEGORY_MAP[loc.category] || CATEGORY_MAP.QG;
+            const railColor = CATEGORY_RAIL[loc.category] || 'var(--cat-qg)';
             const dist = getDistance(loc.lat, loc.lng);
 
             return (
               <div
                 key={loc.id}
                 onClick={() => onSelectLocation(loc)}
+                style={{ borderLeft: `var(--rail-accent) solid ${railColor}` }}
                 className={`
                   relative p-3.5 rounded-2xl border text-left cursor-pointer canary-card-hover flex flex-col gap-2 transition-all duration-200
                   ${isSelected

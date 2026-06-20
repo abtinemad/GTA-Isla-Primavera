@@ -21,11 +21,12 @@ export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
   QG: {
     label: 'QG',
     emoji: '🏢',
-    colorClass: 'yellow',
-    bgClass: 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/25',
-    borderClass: 'border-[#D4AF37]',
-    textClass: 'text-[#D4AF37]',
-    accentColor: '#D4AF37', // Deep Amber Gold
+    colorClass: 'neutral',
+    // QG token (--cat-qg #EDEFF2) is near-white — readable neutral chip on light surfaces.
+    bgClass: 'bg-[#EDEFF2] text-[#5B5D66] border-zinc-300',
+    borderClass: 'border-[#EDEFF2]',
+    textClass: 'text-[#5B5D66]',
+    accentColor: '#EDEFF2', // Token --cat-qg (neutral, for dark surfaces)
     iconName: 'Home',
     desc: 'Safehouse Principal, point de spawn, sauvegarde et planification'
   },
@@ -33,21 +34,21 @@ export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
     label: 'Ravitaillement',
     emoji: '🌿',
     colorClass: 'green',
-    bgClass: 'bg-[#1E4620]/20 text-[#4ADE80] border-[#1E4620]/35', // Forest Dark Green desaturated background, bright text
-    borderClass: 'border-[#1E4620]',
-    textClass: 'text-[#4ADE80]',
-    accentColor: '#1E4620', // Forest Dark Green
+    bgClass: 'bg-[#46AE3C]/15 text-[#46AE3C] border-[#46AE3C]/30',
+    borderClass: 'border-[#46AE3C]',
+    textClass: 'text-[#46AE3C]',
+    accentColor: '#46AE3C', // Token --cat-ravito
     iconName: 'Leaf',
     desc: 'Dispensaire, recharge de matériel et drop-off'
   },
   Bars: {
     label: 'Bars',
     emoji: '🍸',
-    colorClass: 'purple',
-    bgClass: 'bg-[#4B0082]/15 text-[#C084FC] border-[#4B0082]/25', // Deep Neon Indigo desaturated background, bright text
-    borderClass: 'border-[#4B0082]',
-    textClass: 'text-[#C084FC]',
-    accentColor: '#4B0082', // Deep Neon Indigo
+    colorClass: 'pink',
+    bgClass: 'bg-[#E0479B]/15 text-[#E0479B] border-[#E0479B]/30',
+    borderClass: 'border-[#E0479B]',
+    textClass: 'text-[#E0479B]',
+    accentColor: '#E0479B', // Token --cat-bars
     iconName: 'GlassWater',
     desc: 'Cocktails premium, terrasse et mixologie avancée'
   },
@@ -55,32 +56,32 @@ export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
     label: 'Missions',
     emoji: '🌋',
     colorClass: 'red',
-    bgClass: 'bg-[#8B0000]/15 text-[#F87171] border-[#8B0000]/25', // Crimson Blood Red desaturated background, bright text
-    borderClass: 'border-[#8B0000]',
-    textClass: 'text-[#F87171]',
-    accentColor: '#8B0000', // Crimson Blood Red
+    bgClass: 'bg-[#EA4423]/15 text-[#EA4423] border-[#EA4423]/30',
+    borderClass: 'border-[#EA4423]',
+    textClass: 'text-[#EA4423]',
+    accentColor: '#EA4423', // Token --cat-missions / --isla-primary
     iconName: 'Flag',
     desc: 'Épreuves tactiques, tracés chronométrés et défis de conduite'
   },
   Escapades: {
     label: 'Escapades',
     emoji: '🧭', // Clean Exploration Compass
-    colorClass: 'blue',
-    bgClass: 'bg-[#008B8B]/15 text-[#22D3EE] border-[#008B8B]/25', // Stealth Steel Cyan desaturated background, bright text
-    borderClass: 'border-[#008B8B]',
-    textClass: 'text-[#22D3EE]',
-    accentColor: '#008B8B', // Stealth Steel Cyan
+    colorClass: 'purple',
+    bgClass: 'bg-[#9E7AD2]/15 text-[#9E7AD2] border-[#9E7AD2]/30',
+    borderClass: 'border-[#9E7AD2]',
+    textClass: 'text-[#9E7AD2]',
+    accentColor: '#9E7AD2', // Token --cat-escapades
     iconName: 'Compass',
     desc: 'Exploration de lieux insolites, insolites ou abandonnés'
   },
   Plages: {
     label: 'Plages',
     emoji: '🏖️',
-    colorClass: 'teal',
-    bgClass: 'bg-[#005F73]/15 text-[#22D3EE] border-[#005F73]/25', // Deep Marine Teal desaturated background, bright text
-    borderClass: 'border-[#005F73]',
-    textClass: 'text-[#22D3EE]',
-    accentColor: '#005F73', // Deep Marine Teal
+    colorClass: 'blue',
+    bgClass: 'bg-[#3F6CC4]/15 text-[#3F6CC4] border-[#3F6CC4]/30',
+    borderClass: 'border-[#3F6CC4]',
+    textClass: 'text-[#3F6CC4]',
+    accentColor: '#3F6CC4', // Token --cat-plages
     iconName: 'Trees',
     desc: 'Détente côtière, criques sauvages et plages du Sahara'
   },
@@ -88,10 +89,10 @@ export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
     label: 'Restaurants',
     emoji: '🍽️',
     colorClass: 'orange',
-    bgClass: 'bg-[#D9541E]/15 text-[#FB923C] border-[#D9541E]/25', // Dark Burnt Orange desaturated background, bright text
-    borderClass: 'border-[#D9541E]',
-    textClass: 'text-[#FB923C]',
-    accentColor: '#D9541E', // Dark Burnt Orange
+    bgClass: 'bg-[#F0941E]/15 text-[#C2710E] border-[#F0941E]/30',
+    borderClass: 'border-[#F0941E]',
+    textClass: 'text-[#C2710E]',
+    accentColor: '#F0941E', // Token --cat-restaurants
     iconName: 'Utensils',
     desc: 'Arrêt au stand pour restauration ou réapprovisionnement énergétique'
   },
@@ -158,13 +159,13 @@ export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
  * no inner white ring, distinct shape per category.
  */
 const BLIP_STYLE: Record<string, { color: string; emoji: string; shape: 'disk' | 'rounded' | 'diamond' }> = {
-  QG:             { color: '#D4AF37', emoji: '🏢', shape: 'rounded' },  // Or Ambré Profond
-  Ravitaillement: { color: '#1E4620', emoji: '🌿', shape: 'rounded' },  // Vert Forêt Sombre
-  Bars:           { color: '#4B0082', emoji: '🍸', shape: 'disk' },     // Indigo Néon Profond
-  Missions:       { color: '#8B0000', emoji: '🌋', shape: 'diamond' },  // Rouge Crimson Sombre
-  Escapades:      { color: '#008B8B', emoji: '🧭', shape: 'disk' },     // Cyan Acier / Stealth
-  Plages:         { color: '#005F73', emoji: '🏖️', shape: 'rounded' },  // Bleu Marine / Teal
-  Restaurants:    { color: '#D9541E', emoji: '🍽️', shape: 'disk' },     // Orange Brûlé Sombre
+  QG:             { color: '#EDEFF2', emoji: '🏢', shape: 'rounded' },  // Token --cat-qg (neutral)
+  Ravitaillement: { color: '#46AE3C', emoji: '🌿', shape: 'rounded' },  // Token --cat-ravito
+  Bars:           { color: '#E0479B', emoji: '🍸', shape: 'disk' },     // Token --cat-bars
+  Missions:       { color: '#EA4423', emoji: '🌋', shape: 'diamond' },  // Token --cat-missions
+  Escapades:      { color: '#9E7AD2', emoji: '🧭', shape: 'disk' },     // Token --cat-escapades
+  Plages:         { color: '#3F6CC4', emoji: '🏖️', shape: 'rounded' },  // Token --cat-plages
+  Restaurants:    { color: '#F0941E', emoji: '🍽️', shape: 'disk' },     // Token --cat-restaurants
 };
 
 /**
