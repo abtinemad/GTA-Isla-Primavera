@@ -80,6 +80,13 @@ export default function MapContainer({
         mapRef.current.remove();
         mapRef.current = null;
       }
+      // Reset every layer/marker handle so a remount (e.g. React StrictMode's
+      // mount→unmount→remount) doesn't reuse refs tied to the destroyed map —
+      // otherwise the user-position dot can silently fail to re-appear.
+      userMarkerRef.current = null;
+      markersRef.current = {};
+      tileLayersRef.current = [];
+      routeLineRef.current = null;
       setMapInstance(null);
     };
   }, []);
@@ -112,9 +119,10 @@ export default function MapContainer({
     }
   }, [mapInstance, mapStyle]);
 
-  // 2. Synchronize user's live position marker
+  // 2. Synchronize user's live position marker. Depends on mapInstance so it
+  // re-runs once the map exists (or is recreated), not only on userCoords change.
   useEffect(() => {
-    const map = mapRef.current;
+    const map = mapInstance;
     if (!map) return;
 
     if (userCoords) {
@@ -146,7 +154,7 @@ export default function MapContainer({
         userMarkerRef.current = null;
       }
     }
-  }, [userCoords]);
+  }, [userCoords, mapInstance]);
 
   // 3. Render / Update Location Markers on dataset/filter change
   useEffect(() => {
