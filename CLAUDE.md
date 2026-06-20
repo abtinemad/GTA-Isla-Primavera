@@ -4,7 +4,7 @@ Guide pour travailler sur ce dépôt. Lis-le avant de modifier le code.
 
 ## Le projet
 
-**Isla de la eterna primavera** (titre HTML : « Grand Tenerife Auto : Eterna Primavera ») :
+**Isla de la eterna primavera** (titre HTML : « Grand Tenerife Auto : Isla Primavera ») :
 PWA mobile-first, compagnon de route interactif pour Tenerife façon carte-pause
 de jeu vidéo (GTA-like). Missions de conduite chronométrées, safehouses,
 ravitaillement, bars, restaurants, plages et trophées sur une carte Leaflet.
@@ -90,7 +90,7 @@ Vision / confidence ». Aucune clé API n'est requise.
 
 L'onglet « Social Club » rend `src/components/CoverQuest.tsx` : une **jaquette
 façon GTA V** (montage inégal de panneaux + logo central fixe « GRAND TENERIFE
-AUTO · EP » + barre de progression). Une case = un des **11 spots complétables**,
+AUTO · IP » + barre de progression). Une case = un des **11 spots complétables**,
 dérivés au runtime (`src/coverData.ts`, `COVER_LOCATIONS`). Labels courts éditoriaux
 dans `COVER_LABELS`. **Pas de seconde source de vérité** : une case est `filled`
 quand `completedLocationIds` contient son id ; `progress = filled / 11`.

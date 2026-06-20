@@ -7,7 +7,7 @@ import { Category, LocationItem } from './types';
 import { INITIAL_LOCATIONS } from './locationsData';
 
 /**
- * Cover Quest — "jaquette GRAND TENERIFE AUTO · EP".
+ * Cover Quest — "jaquette GRAND TENERIFE AUTO · IP".
  *
  * The completable spots are DERIVED, not invented: a location is completable
  * iff its category has a real validation mechanism in the app. Today that is

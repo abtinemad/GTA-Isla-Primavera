@@ -180,10 +180,10 @@ export default function CoverQuest({
         </div>
         <div className="cshield">
           <span></span>
-          <b>EP</b>
+          <b>IP</b>
           <span></span>
         </div>
-        <div className="csub">ETERNA PRIMAVERA</div>
+        <div className="csub">ISLA PRIMAVERA</div>
       </div>
 
       {/* Footer: progress (pinned above the mobile nav) */}

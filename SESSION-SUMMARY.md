@@ -79,7 +79,7 @@ Ajout d'un **liseré gauche** par catégorie sur les cartes de spots
 ### Concept
 L'onglet « Social Club » ne montre plus une grille de trophées mais une **jaquette
 façon GTA V** : montage inégal de panneaux + **logo central fixe** « GRAND TENERIFE
-AUTO · EP » + barre de progression. Une case = un spot complétable.
+AUTO · IP » + barre de progression. Une case = un spot complétable.
 
 ### Décisions produit prises (NE PAS reposer ces questions)
 - **11 cases**, **dérivées au runtime** des catégories complétables

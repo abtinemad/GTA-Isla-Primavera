@@ -1,4 +1,4 @@
-# Isla de la eterna primavera — Grand Tenerife Auto : Eterna Primavera
+# Isla de la eterna primavera — Grand Tenerife Auto : Isla Primavera
 
 Compagnon de route interactif pour Tenerife, façon carte-pause de jeu vidéo :
 missions de conduite chronométrées, safehouses, ravitaillement, plages et
