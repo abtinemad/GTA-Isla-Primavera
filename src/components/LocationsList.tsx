@@ -25,13 +25,21 @@ export default function LocationsList({
 }: LocationsListProps) {
   const [showCanaryStats, setShowCanaryStats] = useState(true);
 
+  // Trophy entries (category "🏆 Trophées - …", id 101-105) duplicate the
+  // coordinates of a physical spot and only exist as fly-to targets for the
+  // "Trophées Disponibles" panel below — they must not appear as spot cards.
+  const physicalLocations = useMemo(
+    () => locations.filter((loc) => !loc.category.startsWith('🏆')),
+    [locations]
+  );
+
   // Filter locations based on category
   const filteredLocations = useMemo(() => {
-    return locations.filter((loc) => {
+    return physicalLocations.filter((loc) => {
       const matchesCategory = selectedCategory === 'Tous' || loc.category === selectedCategory;
       return matchesCategory;
     });
-  }, [locations, selectedCategory]);
+  }, [physicalLocations, selectedCategory]);
 
   // Calculate distance if available
   const getDistance = (lat: number, lng: number) => {
@@ -62,11 +70,11 @@ export default function LocationsList({
   // Count categories
   const categoryStats = useMemo(() => {
     const stats: Record<string, number> = {};
-    locations.forEach(l => {
+    physicalLocations.forEach(l => {
       stats[l.category] = (stats[l.category] || 0) + 1;
     });
     return stats;
-  }, [locations]);
+  }, [physicalLocations]);
 
   return (
     <div className="flex flex-col h-full bg-[#fafafa] basalt-grid border-r border-zinc-200 overflow-hidden w-full">
@@ -79,7 +87,7 @@ export default function LocationsList({
             <h2 className="font-display font-extrabold text-lg text-zinc-950 tracking-tight">Points d'intérêt</h2>
           </div>
           <span className="text-xs bg-zinc-100 border border-zinc-220 text-zinc-700 font-mono px-2 py-0.5 rounded-md shadow-inner">
-            {filteredLocations.length} / {locations.length}
+            {filteredLocations.length} / {physicalLocations.length}
           </span>
         </div>
 

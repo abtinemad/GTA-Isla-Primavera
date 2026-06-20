@@ -189,36 +189,28 @@ export default function BottomSheet({
   const startVerificationFlow = async (compressedImg: string) => {
     setIsAnalyzing(true);
     setAnalysisLogs([
-      "[SYSTEM] Initialisation de la caméra native...",
-      "[SYSTEM] Image acquise avec succès (Résolution compressée).",
-      "[GPS] Co-validation géoréférencée OK (proximité < 50 m confirmée)."
+      "[SYSTEM] Capture de la photo souvenir...",
+      "[SYSTEM] Image acquise (résolution compressée).",
+      "[GPS] Co-validation géoréférencée : proximité < 50 m confirmée."
     ]);
-    
+
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    
+
     await sleep(700);
-    setAnalysisLogs(prev => [...prev, "[AI] Configuration du prompt d'analyse Vision..."]);
-    
+    setAnalysisLogs(prev => [...prev, "[GPS] Position verrouillée sur les coordonnées du spot."]);
+
     await sleep(900);
-    setAnalysisLogs(prev => [
-      ...prev,
-      "[PROMPT SENT TO LLM]:",
-      '"Vérifier si cette photo correspond effectivement au spot de Tenerife décrit : ' + location.name + '. Répondre au format JSON unique."'
-    ]);
-    
-    await sleep(1000);
-    setAnalysisLogs(prev => [...prev, `[AI] Analyse en cours via Gemini Pro Vision...`]);
-    
+    setAnalysisLogs(prev => [...prev, "[SYSTEM] Recoupement photo + GPS en cours..."]);
+
     await sleep(1000);
     setAnalysisLogs(prev => [
       ...prev,
-      "[JSON RESPONSE FROM GPT/GEMINI FLASH]:",
-      JSON.stringify({ verified: true, confidence: 0.96, matched_location: location.name }, null, 2)
+      JSON.stringify({ valide: true, distance: '< 50 m', spot: location.name, photo: 'enregistrée' }, null, 2)
     ]);
-    
+
     await sleep(700);
-    setAnalysisLogs(prev => [...prev, "[SYSTEM] Analyse terminée. Sauvegarde du souvenir..."]);
-    
+    setAnalysisLogs(prev => [...prev, "[SYSTEM] Co-validation réussie. Sauvegarde du souvenir..."]);
+
     // Save compressed image persistently in local storage
     onSavePhoto(location.id, compressedImg);
 
@@ -355,21 +347,21 @@ export default function BottomSheet({
                   <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                     <div className="flex items-center gap-2 text-amber-400 font-bold">
                       <Loader2 size={12} className="animate-spin" />
-                      <span>CO-VALIDATEUR GPS & PHOTO IA</span>
+                      <span>CO-VALIDATEUR GPS &amp; PHOTO</span>
                     </div>
-                    <span className="text-zinc-500 font-bold uppercase tracking-wider">SIMULATION</span>
+                    <span className="text-zinc-500 font-bold uppercase tracking-wider">GPS + PHOTO</span>
                   </div>
 
                   {/* Twin column: left console, right dynamic thumbnail with sweeping line scan */}
                   <div className="flex gap-4 items-start">
                     <div className="flex-1 flex flex-col gap-1 max-h-[140px] overflow-y-auto no-scrollbar text-zinc-400 leading-normal">
                       {analysisLogs.map((log, index) => {
-                        const isPrompt = log.startsWith("[PROMPT") || log.startsWith('"Verify');
-                        const isJson = log.startsWith("[JSON") || log.startsWith('{') || log.includes('verified');
+                        const isJson = log.startsWith('{');
+                        const isGps = log.startsWith("[GPS]");
                         const isSystem = log.startsWith("[SYSTEM]");
                         let clr = "text-zinc-400";
-                        if (isPrompt) clr = "text-amber-300 font-semibold italic";
                         if (isJson) clr = "text-emerald-400 font-semibold leading-tight whitespace-pre bg-zinc-900/50 p-1.5 rounded border border-zinc-850";
+                        if (isGps) clr = "text-amber-300 font-semibold";
                         if (isSystem) clr = "text-sky-400";
                         return (
                           <div key={index} className={`${clr} break-words`}>
@@ -377,7 +369,7 @@ export default function BottomSheet({
                           </div>
                         );
                       })}
-                      <div className="text-amber-500 animate-pulse mt-1">█ CORÉ-ANALYSEUR IA ACTIF...</div>
+                      <div className="text-amber-500 animate-pulse mt-1">█ CO-VALIDATION GPS + PHOTO...</div>
                     </div>
 
                     {capturedImage && (

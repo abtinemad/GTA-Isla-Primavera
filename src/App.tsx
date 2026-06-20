@@ -89,11 +89,14 @@ export default function App() {
     return INITIAL_LOCATIONS;
   }, []);
 
+  // Trophy markers (id 101-105, "🏆 Trophées - …") duplicate physical spots and
+  // are surfaced via the trophy panels, not as map pins / list spots.
   const filteredListLocations = useMemo(() => {
+    const physical = allLocations.filter((loc) => !loc.category.startsWith('🏆'));
     if (selectedCategory === 'Tous') {
-      return allLocations;
+      return physical;
     }
-    return allLocations.filter((loc) => loc.category === selectedCategory);
+    return physical.filter((loc) => loc.category === selectedCategory);
   }, [allLocations, selectedCategory]);
 
   // Only Missions / Escapades / Plages have an in-app completion flow (chrono
