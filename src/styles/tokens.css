@@ -1,0 +1,24 @@
+/* Isla de la eterna primavera — Design Tokens · Manrique · Vice (Dark + Light) */
+:root {
+  --isla-primary:#EA4423; --isla-primary-bright:#FF6A4A;
+  --isla-cash:#46AE3C; --isla-cash-bright:#7CE86C;
+  --cat-qg:#EDEFF2; --cat-ravito:#46AE3C; --cat-bars:#E0479B; --cat-missions:#EA4423;
+  --cat-escapades:#9E7AD2; --cat-plages:#3F6CC4; --cat-restaurants:#F0941E;
+  --isla-gold-a:#F7C84A; --isla-gold-b:#E08A1E;
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --radius-card:16px; --radius-pill:99px; --radius-badge:8px; --rail-accent:3px; --blur-glass:14px;
+}
+:root,[data-theme="dark"]{
+  --bg-base:#160E22; --bg-screen:#17101F; --surface:#1D1530; --surface-2:#241636;
+  --text:#EFF0F2; --text-muted:#9A9CA4; --text-faint:#6A6C74;
+  --hairline:rgba(255,255,255,.07); --glass-bg:rgba(20,12,32,.96);
+  --scrim:rgba(14,8,20,.50); --neutral-art:#F2F2F2;
+}
+[data-theme="light"]{
+  --bg-base:#F7EFE6; --bg-screen:#F1EAD9; --surface:#FFFFFF; --surface-2:#FAF9F6;
+  --text:#16161A; --text-muted:#5B5D66; --text-faint:#9A9CA4;
+  --hairline:rgba(0,0,0,.07); --glass-bg:rgba(255,255,255,.96);
+  --scrim:rgba(247,243,233,.58); --neutral-art:#0A0A0A; --isla-cash:#2F8A2A;
+}
+.app-bg{background:linear-gradient(var(--scrim),var(--scrim)),url('/assets/manrique-fields.svg') center/cover no-repeat,var(--bg-screen);}
+[data-theme="light"] .app-bg{background:linear-gradient(var(--scrim),var(--scrim)),url('/assets/manrique-fields-light.svg') center/cover no-repeat,var(--bg-screen);}
