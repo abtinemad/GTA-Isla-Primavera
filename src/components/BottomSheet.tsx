@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { LocationItem } from '../types';
 import { CATEGORY_MAP } from '../utils/helper';
 import { motion, AnimatePresence } from 'motion/react';
@@ -74,6 +74,16 @@ export default function BottomSheet({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [gpsErrorShow, setGpsErrorShow] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Verification-flow cancellation token. Bumped whenever the targeted spot
+  // changes or the sheet closes, so an in-flight (decorative) analysis can't
+  // complete a stale location or save its photo after the user has moved on.
+  const verifyTokenRef = useRef(0);
+  useEffect(() => {
+    return () => {
+      verifyTokenRef.current++;
+    };
+  }, [location?.id]);
 
   // Hooks must run on every render — bail out only after they are declared,
   // otherwise the hook count changes between renders (Rules of Hooks).
@@ -193,6 +203,11 @@ export default function BottomSheet({
   };
 
   const startVerificationFlow = async (compressedImg: string) => {
+    // Snapshot a token; if the sheet closes / spot changes, alive() turns false
+    // and we abort before any persistence — no stale completion.
+    const myToken = ++verifyTokenRef.current;
+    const alive = () => verifyTokenRef.current === myToken;
+
     setIsAnalyzing(true);
     setAnalysisLogs([
       "[SYSTEM] Capture de la photo souvenir...",
@@ -203,24 +218,29 @@ export default function BottomSheet({
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
     await sleep(700);
+    if (!alive()) return;
     setAnalysisLogs(prev => [...prev, "[GPS] Position verrouillée sur les coordonnées du spot."]);
 
     await sleep(900);
+    if (!alive()) return;
     setAnalysisLogs(prev => [...prev, "[SYSTEM] Recoupement photo + GPS en cours..."]);
 
     await sleep(1000);
+    if (!alive()) return;
     setAnalysisLogs(prev => [
       ...prev,
       JSON.stringify({ valide: true, distance: '< 500 m', spot: location.name, photo: 'enregistrée' }, null, 2)
     ]);
 
     await sleep(700);
+    if (!alive()) return;
     setAnalysisLogs(prev => [...prev, "[SYSTEM] Co-validation réussie. Sauvegarde du souvenir..."]);
 
     // Save compressed image persistently in local storage
     onSavePhoto(location.id, compressedImg);
 
     await sleep(600);
+    if (!alive()) return;
     setIsAnalyzing(false);
     setCapturedImage(null);
     setAnalysisLogs([]);
