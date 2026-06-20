@@ -12,36 +12,15 @@ import MapContainer from './components/MapContainer';
 import { CATEGORY_MAP } from './utils/helper';
 import LocationsList from './components/LocationsList';
 import BottomSheet from './components/BottomSheet';
-import { 
-  Compass, 
-  Map, 
-  List, 
-  MapPin, 
-  Info,
+import {
+  Compass,
+  Map,
   Trophy,
   Wallet,
-  Smartphone,
   CheckCircle2,
-  AlertTriangle,
-  Play,
-  Square,
-  Sparkles,
-  Eye,
-  EyeOff,
   X,
   MessageSquare
 } from 'lucide-react';
-
-const LOCATION_TROPHIES: Record<number, string> = {
-  7: "Au-dessus des Nuages",
-  8: "Roi de la Gomme",
-  9: "Maître du Flow",
-  10: "Chasseur de Fantômes",
-  12: "Grand Tourer",
-  13: "Grand Tourer",
-  17: "Chasseur de Criques",
-  18: "Contraste Total"
-};
 
 export default function App() {
   // --- CORE GAMEPLAY STATE ---

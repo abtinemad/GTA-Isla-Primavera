@@ -357,7 +357,7 @@ export default function BottomSheet({
                       <Loader2 size={12} className="animate-spin" />
                       <span>CO-VALIDATEUR GPS & PHOTO IA</span>
                     </div>
-                    <span className="text-zinc-500 font-bold uppercase tracking-wider">GEMINI v2.4</span>
+                    <span className="text-zinc-500 font-bold uppercase tracking-wider">SIMULATION</span>
                   </div>
 
                   {/* Twin column: left console, right dynamic thumbnail with sweeping line scan */}
