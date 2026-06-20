@@ -19,7 +19,9 @@ import {
   Wallet,
   CheckCircle2,
   X,
-  MessageSquare
+  MessageSquare,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export default function App() {
@@ -62,6 +64,25 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'map' | 'list' | 'trophies'>('map');
   const [walletAmount, setWalletAmount] = useState(1500);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+
+  // Theme (Manrique/Vice design tokens — see src/styles/tokens.css)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('isla_theme');
+      return saved === 'light' ? 'light' : 'dark';
+    } catch (e) {
+      return 'dark';
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('isla_theme', theme);
+    } catch (e) {
+      /* persistence best-effort */
+    }
+  }, [theme]);
   
   // Custom HUD states
   const [activeRunLocationId, setActiveRunLocationId] = useState<number | null>(null);
@@ -382,7 +403,16 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Displays: Emerald green wealth wallet indicator */}
+          {/* Right Displays: theme toggle + emerald green wealth wallet indicator */}
+          <div className="flex items-center gap-2">
+          <button
+            onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+            className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950/90 border-2 border-slate-700/50 text-amber-300 transition-all shadow-lg active:scale-95 cursor-pointer hover:border-amber-400/50"
+            aria-label={theme === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
+            title={theme === 'dark' ? 'Thème clair' : 'Thème sombre'}
+          >
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
           <button
             onClick={() => setIsWalletModalOpen(true)}
             className="flex items-center gap-2 bg-slate-950/90 border-2 border-emerald-500/40 text-[#4ade80] font-mono text-xs sm:text-sm font-black px-3 py-1 rounded-lg transition-all shadow-2xl active:scale-95 cursor-pointer select-none shadow-[0_0_12px_rgba(74,222,128,0.25)] hover:border-emerald-500/60 h-7"
@@ -393,6 +423,7 @@ export default function App() {
           >
             <span>{walletAmount} €</span>
           </button>
+          </div>
 
         </div>
       </div>
@@ -472,14 +503,14 @@ export default function App() {
         <section className={`app-bg absolute inset-0 z-[490] pt-12 pb-14 md:pb-0 overflow-y-auto ${activeTab === 'trophies' ? 'block' : 'hidden'}`}>
           <div className="max-w-4xl mx-auto px-4 py-8 pb-24 flex flex-col gap-6">
             
-            {/* Header section in Dark theme */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+            {/* Header section (theme-aware via design tokens) */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[color:var(--hairline)] pb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-400 flex items-center justify-center text-amber-400">
                   <Trophy size={20} className="animate-pulse" />
                 </div>
                 <div className="text-left">
-                  <h2 className="font-display font-black text-xl text-white uppercase tracking-wider">Social Club Trophées</h2>
+                  <h2 className="font-display font-black text-xl text-[color:var(--text)] uppercase tracking-wider">Social Club Trophées</h2>
                   <span className="text-[10px] uppercase tracking-wider font-mono font-black text-[#47a064]">
                     Tenerife Drive Achievements & Souvenirs
                   </span>
@@ -487,14 +518,14 @@ export default function App() {
               </div>
 
               {/* Stats widget */}
-              <div className="bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-2xl flex items-center gap-4 text-left">
+              <div className="bg-[var(--glass-bg)] backdrop-blur-md border border-[color:var(--hairline)] px-4 py-2 rounded-2xl flex items-center gap-4 text-left shadow-lg">
                 <div className="font-mono">
-                  <span className="block text-[8px] uppercase tracking-wider text-zinc-500">Progression</span>
-                  <span className="text-base font-black text-white">{completedCount} / {completableLocations.length} validés</span>
+                  <span className="block text-[8px] uppercase tracking-wider text-[color:var(--text-muted)]">Progression</span>
+                  <span className="text-base font-black text-[color:var(--text)]">{completedCount} / {completableLocations.length} validés</span>
                 </div>
-                <div className="w-px h-6 bg-zinc-800" />
+                <div className="w-px h-6 bg-[color:var(--hairline)]" />
                 <div className="font-mono text-right">
-                  <span className="block text-[8px] uppercase tracking-wider text-zinc-500">Complété</span>
+                  <span className="block text-[8px] uppercase tracking-wider text-[color:var(--text-muted)]">Complété</span>
                   <span className="text-base font-black text-amber-400">{completionPct.toFixed(0)}%</span>
                 </div>
               </div>
@@ -689,7 +720,7 @@ export default function App() {
             <div className="mt-4">
               <button
                 onClick={() => setActiveTab('map')}
-                className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 text-white font-extrabold uppercase px-8 py-3.5 rounded-2xl border border-zinc-850 text-xs tracking-widest transition-all cursor-pointer shadow-lg mx-auto"
+                className="w-full sm:w-auto bg-[var(--surface)] hover:opacity-90 text-[color:var(--text)] font-extrabold uppercase px-8 py-3.5 rounded-2xl border border-[color:var(--hairline)] text-xs tracking-widest transition-all cursor-pointer shadow-lg mx-auto"
               >
                 Retourner à la carte
               </button>
