@@ -70,8 +70,24 @@ export default function App() {
   const [showGtaOverlay, setShowGtaOverlay] = useState(false);
   const [completedMissionName, setCompletedMissionName] = useState('');
   const [activeTab, setActiveTab] = useState<'map' | 'list' | 'trophies'>('map');
-  const [walletAmount, setWalletAmount] = useState(1500);
+  const [walletAmount, setWalletAmount] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('tenirife_wallet');
+      return saved !== null ? JSON.parse(saved) : 1500;
+    } catch (e) {
+      return 1500;
+    }
+  });
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+
+  // Persist the wallet like the rest of the game state (completions/photos/times).
+  useEffect(() => {
+    try {
+      localStorage.setItem('tenirife_wallet', JSON.stringify(walletAmount));
+    } catch (e) {
+      /* persistence best-effort */
+    }
+  }, [walletAmount]);
 
   // Theme (Manrique/Vice design tokens — see src/styles/tokens.css)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
