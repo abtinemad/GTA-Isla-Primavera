@@ -14,7 +14,7 @@ import LocationsList from './components/LocationsList';
 import BottomSheet from './components/BottomSheet';
 import CoverQuest from './components/CoverQuest';
 import CoverCamera from './components/CoverCamera';
-import { CoverSlot } from './coverData';
+import { CoverSlot, approachRadiusKm, isPhotoSlot, shortLabel } from './coverData';
 import {
   Compass,
   Map,
@@ -101,6 +101,8 @@ export default function App() {
 
   // Cover Quest — camera overlay for the currently-targeted cover slot
   const [coverCameraSlot, setCoverCameraSlot] = useState<CoverSlot | null>(null);
+  // Slots we've already pinged for proximity (fire-once until the player leaves).
+  const approachAlertedRef = useRef<Set<number>>(new Set());
 
   // Automatically dismiss SMS after 6 seconds of visibility
   useEffect(() => {
@@ -353,6 +355,29 @@ export default function App() {
             }
           }
         }
+
+        // Approach notification — ping once when entering an incomplete slot's
+        // zone (Missions 100 m, Escapades/Plages 500 m). Reuses the QG toast.
+        completableLocations.forEach((loc) => {
+          if (completedLocationIds.includes(loc.id)) return;
+          const d = computeDistance(userLat, userLng, loc.lat, loc.lng);
+          const radius = approachRadiusKm(loc.category);
+          const alerted = approachAlertedRef.current.has(loc.id);
+          if (d <= radius && !alerted) {
+            approachAlertedRef.current.add(loc.id);
+            const label = shortLabel(loc);
+            setIncomingSms({
+              title: 'Zone atteinte',
+              text: isPhotoSlot(loc.category)
+                ? `Tu es sur ${label}. Ouvre la jaquette (Social Club) et prends ta photo pour valider.`
+                : `Tu approches de ${label}. Prépare ton run chrono.`,
+              id: `approach_${loc.id}`,
+            });
+            playSmsChirp();
+          } else if (alerted && d > radius * 1.6) {
+            approachAlertedRef.current.delete(loc.id); // left the zone → re-armable
+          }
+        });
       },
       (err) => {
         console.warn("Geofence watchPosition telemetry error:", err);

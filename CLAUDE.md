@@ -86,6 +86,34 @@ La console animée dans `BottomSheet` est purement décorative : **il n'y a aucu
 appel à une IA / un LLM**. Ne pas réintroduire de fausses mentions « Gemini /
 Vision / confidence ». Aucune clé API n'est requise.
 
+## Cover Quest — la jaquette (vue Social Club)
+
+L'onglet « Social Club » rend `src/components/CoverQuest.tsx` : une **jaquette
+façon GTA V** (montage inégal de panneaux + logo central fixe « GRAND TENERIFE
+AUTO · EP » + barre de progression). Une case = un des **11 spots complétables**,
+dérivés au runtime (`src/coverData.ts`, `COVER_LOCATIONS`). Labels courts éditoriaux
+dans `COVER_LABELS`. **Pas de seconde source de vérité** : une case est `filled`
+quand `completedLocationIds` contient son id ; `progress = filled / 11`.
+
+États d'une case et **rayons de déverrouillage** (alignés sur le modèle ci-dessus) :
+- **Escapades/Plages** → `unlockable` à **< 500 m** (`PHOTO_UNLOCK_KM`). La caméra
+  plein écran `src/components/CoverCamera.tsx` (live `getUserMedia` + secours import
+  galerie) applique le filtre catégorie sur `<canvas>` puis route par les handlers
+  **existants** (`handleSavePhotoSouvenir` + `handleCompleteLocation`). C'est le
+  front-end de la co-validation, pas un système parallèle.
+- **Missions** → **jamais** déverrouillables à la caméra. Elles se valident par le
+  chrono 50 m sur la carte (inchangé) ; leur case se remplit depuis cette complétion.
+- Une **notification d'approche** (toast QG, `App.tsx` watchPosition) se déclenche à
+  l'entrée de zone d'une case non faite : **100 m** missions, **500 m** Escapades/Plages.
+
+## Thème & design tokens
+
+`src/styles/tokens.css` (+ miroir JS `src/styles/tokens.js`) définit la palette
+Manrique/Vice et les variables par catégorie (`--cat-*`). Le thème se bascule via
+`data-theme="dark|light"` sur `<html>` (toggle dans le HUD, persisté en
+`localStorage` clé `isla_theme`). `CATEGORY_MAP[cat].accentColor` (dans `helper.ts`)
+porte les couleurs catégorie ; `haversineKm`/`GEOFENCE_KM` y centralisent la distance.
+
 ## Workflow git — ⚠️ pushes externes
 
 Le dépôt `abtinemad/Isla-de-la-eterna-primavera` est **aussi édité depuis Google

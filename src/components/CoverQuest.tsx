@@ -5,8 +5,15 @@
 
 import { useMemo } from 'react';
 import { Lock, Camera, MapPin } from 'lucide-react';
-import { CATEGORY_MAP, haversineKm, GEOFENCE_KM } from '../utils/helper';
-import { COVER_LOCATIONS, shortLabel, CoverSlot, CoverSlotStatus } from '../coverData';
+import { CATEGORY_MAP, haversineKm } from '../utils/helper';
+import {
+  COVER_LOCATIONS,
+  shortLabel,
+  CoverSlot,
+  CoverSlotStatus,
+  isPhotoSlot,
+  PHOTO_UNLOCK_KM,
+} from '../coverData';
 
 interface CoverQuestProps {
   completedLocationIds: number[];
@@ -33,8 +40,11 @@ export default function CoverQuest({
       if (filled) {
         status = 'filled';
       } else if (
+        // Only photo slots (Escapades/Plages) are camera-unlockable, at < 500 m.
+        // Missions are validated by the 50 m chrono on the map, never here.
+        isPhotoSlot(loc.category) &&
         userCoords &&
-        haversineKm(userCoords.lat, userCoords.lng, loc.lat, loc.lng) <= GEOFENCE_KM
+        haversineKm(userCoords.lat, userCoords.lng, loc.lat, loc.lng) <= PHOTO_UNLOCK_KM
       ) {
         status = 'unlockable';
       }
@@ -58,7 +68,9 @@ export default function CoverQuest({
   const distanceHint = (slot: CoverSlot): string => {
     if (!userCoords) return 'Active le GPS';
     const km = haversineKm(userCoords.lat, userCoords.lng, slot.location.lat, slot.location.lng);
-    return km < 1 ? `Approche · ${Math.round(km * 1000)} m` : `Approche · ${km.toFixed(1)} km`;
+    // Missions are validated by the chrono on the map, not a photo here.
+    const verb = isPhotoSlot(slot.category) ? 'Approche' : 'Chrono';
+    return km < 1 ? `${verb} · ${Math.round(km * 1000)} m` : `${verb} · ${km.toFixed(1)} km`;
   };
 
   return (
