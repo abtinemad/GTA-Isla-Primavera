@@ -1,8 +1,7 @@
 {
-  "name": "Tenerife Road Guide",
-  "description": "A mobile-first interactive guide and route Planner for driving missions, safehouses, and stops in Tenerife.",
+  "name": "Grand Tenerife Auto : Eterna Primavera",
+  "description": "Compagnon de route interactif mobile-first pour Tenerife : missions chronométrées, safehouses et trophées.",
   "requestFramePermissions": [
     "geolocation"
-  ],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  ]
 }

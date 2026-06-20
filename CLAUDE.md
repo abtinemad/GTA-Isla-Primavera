@@ -4,7 +4,7 @@ Guide pour travailler sur ce dépôt. Lis-le avant de modifier le code.
 
 ## Le projet
 
-**Isla de la eterna primavera** (titre HTML : « G-Drive Companion — Tenerife ») :
+**Isla de la eterna primavera** (titre HTML : « Grand Tenerife Auto : Eterna Primavera ») :
 PWA mobile-first, compagnon de route interactif pour Tenerife façon carte-pause
 de jeu vidéo (GTA-like). Missions de conduite chronométrées, safehouses,
 ravitaillement, bars, restaurants, plages et trophées sur une carte Leaflet.
