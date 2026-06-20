@@ -89,6 +89,9 @@ export default function App() {
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const startTimeRef = useRef<number | null>(null);
   const stopwatchIntervalRef = useRef<any>(null);
+  // Mirror of elapsedTime read by the geofence effect, so that effect does not
+  // need elapsedTime in its deps (which would re-subscribe watchPosition ~30x/s).
+  const elapsedTimeRef = useRef<number>(0);
 
   // Character Narrative SMS State
   const [incomingSms, setIncomingSms] = useState<{ title: string; text: string; id: string } | null>(null);
@@ -184,12 +187,15 @@ export default function App() {
   const handleStartRun = (locId: number) => {
     setActiveRunLocationId(locId);
     setElapsedTime(0);
+    elapsedTimeRef.current = 0;
     startTimeRef.current = Date.now();
-    
+
     if (stopwatchIntervalRef.current) clearInterval(stopwatchIntervalRef.current);
     stopwatchIntervalRef.current = setInterval(() => {
       if (startTimeRef.current) {
-        setElapsedTime(Date.now() - startTimeRef.current);
+        const ms = Date.now() - startTimeRef.current;
+        elapsedTimeRef.current = ms;
+        setElapsedTime(ms);
       }
     }, 33);
   };
@@ -201,6 +207,7 @@ export default function App() {
     }
     setActiveRunLocationId(null);
     startTimeRef.current = null;
+    elapsedTimeRef.current = 0;
     setElapsedTime(0);
   };
 
@@ -289,7 +296,7 @@ export default function App() {
                 const h = Math.floor((ms % 1000) / 10);
                 return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${h.toString().padStart(2, '0')}`;
               };
-              const finishScore = formatTime(elapsedTime);
+              const finishScore = formatTime(elapsedTimeRef.current);
               handleCompleteLocation(runTarget, finishScore);
               handleStopRun();
             }
@@ -305,7 +312,9 @@ export default function App() {
     return () => {
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [completedLocationIds, allLocations, activeRunLocationId, elapsedTime]);
+    // elapsedTime intentionally excluded — read via elapsedTimeRef so the watch
+    // is not torn down and re-registered on every stopwatch tick (~30x/s).
+  }, [completedLocationIds, allLocations, activeRunLocationId]);
 
   // When a spot is targeted
   const handleSelectLocation = (location: LocationItem) => {
@@ -837,7 +846,7 @@ export default function App() {
             <div className="text-center">
               <h3 className="font-display font-black text-sm text-zinc-950 tracking-wide uppercase">Recharge de Solde</h3>
               <p className="text-xs text-zinc-600 font-sans mt-2 leading-relaxed">
-                Déclencher un rechargement de 50€ via passerelle Paypal sécurisée ?
+                Ajouter 50 € de crédits de jeu (fictifs) à ton solde ? Aucun paiement réel n'est effectué.
               </p>
               <div className="bg-zinc-50 rounded-xl p-2.5 border border-zinc-150 mt-3 font-mono text-[11px] text-zinc-650">
                 Solde actuel : <span className="text-[#47a064] font-black">{walletAmount} €</span>
@@ -853,9 +862,9 @@ export default function App() {
               </button>
               <button
                 onClick={() => {
+                  // In-game fictional credit only — no real payment is triggered.
                   setWalletAmount(prev => prev + 50);
                   setIsWalletModalOpen(false);
-                  window.open('https://paypal.me/abtine.mad/50', '_blank', 'noopener,noreferrer');
                 }}
                 className="flex-1 bg-[#47a064] hover:bg-[#3f8e58] text-white font-bold py-2 rounded-xl text-xs transition-all cursor-pointer shadow-lg active:scale-95"
               >

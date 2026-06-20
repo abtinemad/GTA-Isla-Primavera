@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { LocationItem } from '../types';
 import { CATEGORY_MAP } from '../utils/helper';
 import { motion, AnimatePresence } from 'motion/react';
@@ -64,13 +64,15 @@ export default function BottomSheet({
   elapsedTime,
   onSavePhoto
 }: BottomSheetProps) {
-  if (!location) return null;
-
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisLogs, setAnalysisLogs] = useState<string[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [gpsErrorShow, setGpsErrorShow] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Hooks must run on every render — bail out only after they are declared,
+  // otherwise the hook count changes between renders (Rules of Hooks).
+  if (!location) return null;
 
   const catInfo = CATEGORY_MAP[location.category];
   const associatedTrophy = LOCATION_TROPHIES[location.id];
