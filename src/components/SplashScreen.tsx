@@ -44,8 +44,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         alt="Grand Tenerife Auto : Isla Primavera"
         loading="eager"
         fetchPriority="high"
-        // Image entière, centrée, jamais rognée — respecte les safe-area du parent.
-        className="max-w-full max-h-full w-auto h-auto object-contain"
+        // Plein écran sans bandes : couvre tout l'overlay (rogne si besoin).
+        className="absolute inset-0 w-full h-full object-cover"
       />
 
       {/* Discret indicateur de chargement (safe-area bas). Supprimable d'un bloc. */}
