@@ -117,17 +117,51 @@ export default function App() {
     return allLocations.filter((loc) => loc.category === selectedCategory);
   }, [allLocations, selectedCategory]);
 
-  // Proportional completion over the full 21-point official dataset (Spec §3.1)
+  // Only Missions / Escapades / Plages have an in-app completion flow (chrono
+  // geofence or photo). Other categories and the trophy markers (id 101-105)
+  // are never completable, so they must not inflate the completion denominator.
+  const completableLocations = useMemo(
+    () => allLocations.filter(
+      (l) => l.category === 'Missions' || l.category === 'Escapades' || l.category === 'Plages'
+    ),
+    [allLocations]
+  );
+
+  const completedCount = useMemo(
+    () => completedLocationIds.filter(id => completableLocations.some(l => l.id === id)).length,
+    [completedLocationIds, completableLocations]
+  );
+
+  // Proportional completion over the completable dataset.
   const completionPct = useMemo(() => {
-    const total = allLocations.length;
-    const done = completedLocationIds.filter(id => allLocations.some(l => l.id === id)).length;
-    return total > 0 ? (done / total) * 100 : 0;
-  }, [completedLocationIds, allLocations]);
+    const total = completableLocations.length;
+    return total > 0 ? (completedCount / total) * 100 : 0;
+  }, [completedCount, completableLocations]);
+
+  // Single shared AudioContext, lazily created on first sound. Browsers cap the
+  // number of live contexts (~6), so creating one per chime eventually goes silent.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const getAudioContext = (): AudioContext | null => {
+    try {
+      if (!audioCtxRef.current) {
+        const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+        if (!Ctor) return null;
+        audioCtxRef.current = new Ctor();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+      return audioCtxRef.current;
+    } catch (e) {
+      return null;
+    }
+  };
 
   // Synthesis engine: Celebratory retro 8-bit sound chime (Zero API dependency)
   const playSuccessChime = () => {
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = getAudioContext();
+      if (!ctx) return;
       const now = ctx.currentTime;
       const freqs = [392.00, 523.25, 659.25, 783.99, 1046.50]; // G4 - C5 - E5 - G5 - C6
       freqs.forEach((freq, idx) => {
@@ -150,7 +184,8 @@ export default function App() {
   // SMS chirp sound
   const playSmsChirp = () => {
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = getAudioContext();
+      if (!ctx) return;
       const now = ctx.currentTime;
       const osc1 = ctx.createOscillator();
       const gain1 = ctx.createGain();
@@ -473,7 +508,7 @@ export default function App() {
               <div className="bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-2xl flex items-center gap-4 text-left">
                 <div className="font-mono">
                   <span className="block text-[8px] uppercase tracking-wider text-zinc-500">Progression</span>
-                  <span className="text-base font-black text-white">{completedLocationIds.length} / {allLocations.length} débloqués</span>
+                  <span className="text-base font-black text-white">{completedCount} / {completableLocations.length} validés</span>
                 </div>
                 <div className="w-px h-6 bg-zinc-800" />
                 <div className="font-mono text-right">

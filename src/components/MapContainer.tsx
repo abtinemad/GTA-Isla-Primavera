@@ -157,8 +157,12 @@ export default function MapContainer({
     Object.values(markersRef.current).forEach((marker: any) => marker.remove());
     markersRef.current = {};
 
-    // Spawn markers for current visible locations
-    locations.forEach((loc) => {
+    // Spawn markers for current visible locations. Trophy entries (id 101-105)
+    // share the exact coordinates of their physical mission/spot, so rendering
+    // them would stack a duplicate pin on top of the real one — skip them here.
+    locations
+      .filter((loc) => !loc.category.startsWith('🏆'))
+      .forEach((loc) => {
       const isSelected = selectedLocation?.id === loc.id;
       const isCompleted = completedLocations.includes(loc.id);
       
