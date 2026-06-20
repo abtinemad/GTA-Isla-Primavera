@@ -67,7 +67,8 @@ export default function MapContainer({
     const roadTop = L.layerGroup().addTo(map);
     TENERIFE_ROADS.forEach((seg) => {
       const isMajor = seg.tier === 'major';
-      const color = isMajor ? '#E5A93C' : '#C82333';
+      // Vice palette: gold TF axes, Manrique-red mission roads.
+      const color = isMajor ? '#e7b53a' : '#EA4423';
       const topW = isMajor ? 4.5 : 3.5;
       const casingW = topW + 3;
       L.polyline(seg.path, { color: '#000000', weight: casingW, opacity: 0.9, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(roadCasing);
@@ -181,8 +182,8 @@ export default function MapContainer({
       const customIcon = L.divIcon({
         html: getMarkerHtml(loc.category, isSelected, loc.name, isCompleted),
         className: 'custom-div-icon',
-        iconSize: [44, 48],
-        iconAnchor: [22, 48],
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
       });
 
       const marker = L.marker([loc.lat, loc.lng], {
@@ -233,8 +234,8 @@ export default function MapContainer({
         const updatedIcon = L.divIcon({
           html: getMarkerHtml(loc.category, isSelected, loc.name, isCompleted),
           className: 'custom-div-icon',
-          iconSize: [44, 48],
-          iconAnchor: [22, 48],
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
         });
         marker.setIcon(updatedIcon);
         if (isSelected) {
@@ -306,6 +307,9 @@ export default function MapContainer({
       
       {/* Map Division Ref */}
       <div ref={mapContainerRef} className="w-full h-full z-10" />
+
+      {/* Vice/Manrique sunset wash over the tiles (below the HUD controls) */}
+      <div className="map-tint" aria-hidden />
 
       {/* Embedded floating control hub */}
       <div className="absolute left-4 bottom-22 md:bottom-6 flex flex-col gap-2 z-[500]">

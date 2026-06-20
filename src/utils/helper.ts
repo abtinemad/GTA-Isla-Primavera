@@ -189,11 +189,14 @@ const BLIP_STYLE: Record<string, { color: string; emoji: string; shape: 'disk' |
 };
 
 /**
- * Generates a custom flat gaming "blip" marker (Spec §4): solid category
- * background, hard black border, distinct shape, no inner white ring.
+ * Vice / Manrique category marker (divIcon HTML).
+ *  - Mission   → red diamond, white rim, white centre dot.
+ *  - QG        → white teardrop pin with a black "H".
+ *  - others    → rounded tile in the category colour + white rim + emoji glyph.
+ * Active = cyan rim + cyan ping ring. Completed = green check badge.
  */
 export function getMarkerHtml(category: Category, isActive: boolean, label: string, isCompleted?: boolean): string {
-  // Normalize category to one of the seven primary blip families
+  // Normalize category to one of the seven primary families
   let cleanCategory = 'Escapades';
   if (category.includes('QG')) cleanCategory = 'QG';
   else if (category.includes('Ravitaillement')) cleanCategory = 'Ravitaillement';
@@ -204,34 +207,32 @@ export function getMarkerHtml(category: Category, isActive: boolean, label: stri
   else if (category.includes('Restaurants')) cleanCategory = 'Restaurants';
 
   const blip = BLIP_STYLE[cleanCategory];
-  const radius = blip.shape === 'disk' ? '9999px' : blip.shape === 'rounded' ? '11px' : '7px';
-  const badgeRotation = blip.shape === 'diamond' ? 'rotate(45deg)' : 'none';
-  const emojiRotation = blip.shape === 'diamond' ? 'rotate(-45deg)' : 'none';
+  const rim = isActive ? '#00F5D4' : '#FFFFFF';
+  const scale = isActive ? 'scale(1.16)' : 'scale(1)';
 
-  // Active state lifts the blip, swaps the border to white and adds a cyan pulse ring
-  const activeBorder = isActive ? '#FFFFFF' : '#000000';
-  const activeScale = isActive ? 'scale(1.18)' : 'scale(1)';
+  let body: string;
+  if (cleanCategory === 'Missions') {
+    // Red diamond + white centre dot
+    body = `<div style="width:26px;height:26px;background:${blip.color};border:2px solid ${rim};border-radius:6px;transform:rotate(45deg) ${scale};box-shadow:0 2px 6px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:auto;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#fff;"></span>
+    </div>`;
+  } else if (cleanCategory === 'QG') {
+    // White teardrop pin + black H
+    body = `<div style="width:26px;height:26px;background:#EDEFF2;border:2px solid ${isActive ? rim : '#0a0a0b'};border-radius:50% 50% 50% 0;transform:rotate(-45deg) ${scale};box-shadow:0 2px 6px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:auto;">
+      <span style="transform:rotate(45deg);font:800 13px 'Space Grotesk',sans-serif;color:#0a0a0b;">H</span>
+    </div>`;
+  } else {
+    // Rounded tile + emoji glyph
+    body = `<div style="width:26px;height:26px;background:${blip.color};border:1.8px solid ${rim};border-radius:9px;transform:${scale};box-shadow:0 2px 6px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:auto;">
+      <span style="font-size:15px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.55));">${blip.emoji}</span>
+    </div>`;
+  }
 
   return `
-    <div class="flex items-center justify-center relative select-none" style="background:none!important;border:none!important;padding:0!important;outline:none!important;box-shadow:none!important;cursor:pointer;pointer-events:auto!important;width:44px;height:44px;">
-
-      ${isActive ? `
-        <div class="absolute rounded-full bg-cyan-400/20 animate-ping" style="width:44px;height:44px;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1;pointer-events:none!important;"></div>
-        <div class="absolute rounded-full border border-cyan-400/60" style="width:50px;height:50px;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1;pointer-events:none!important;box-shadow:0 0 14px rgba(34,211,238,0.55);"></div>
-      ` : ''}
-
-      <!-- Flat category blip body -->
-      <div class="flex items-center justify-center transition-all duration-300" 
-           style="width:38px;height:38px;background-color:${blip.color};border:2px solid ${activeBorder};border-radius:${radius};transform:${badgeRotation} ${activeScale};box-shadow:0 3px 8px rgba(0,0,0,0.55);pointer-events:auto!important;">
-        <span class="select-none leading-none" style="font-size:18px;line-height:1;transform:${emojiRotation};pointer-events:none!important;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.6));">${blip.emoji}</span>
-      </div>
-
-      <!-- Completion checkmark -->
-      ${isCompleted ? `
-        <div class="absolute bg-emerald-500 text-white rounded-full border border-black w-4 h-4 flex items-center justify-center font-sans font-black text-[9px] shadow-md z-50" 
-             style="top:-2px;right:-2px;pointer-events:none!important;">✓</div>
-      ` : ''}
-
+    <div class="relative flex items-center justify-center select-none" style="width:34px;height:34px;background:none!important;border:none!important;pointer-events:auto!important;">
+      ${isActive ? `<div class="absolute rounded-full animate-ping" style="width:34px;height:34px;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,245,212,.25);z-index:-1;pointer-events:none!important;"></div>` : ''}
+      ${body}
+      ${isCompleted ? `<div style="position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;background:#46AE3C;border:1.5px solid #0a0a0b;color:#fff;font:800 9px sans-serif;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none;">✓</div>` : ''}
     </div>
   `;
 }

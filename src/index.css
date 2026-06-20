@@ -136,6 +136,65 @@ html, body, #root {
   transition: opacity 0.4s ease;
 }
 
+/* === Vice / Manrique map skin (Option B: tint the real tiles) === */
+/* Dark — crépuscule : assombrit + réchauffe les tuiles. */
+[data-theme="dark"] .leaflet-satellite-base {
+  filter: saturate(0.72) brightness(0.6) contrast(1.06) sepia(0.12) !important;
+}
+[data-theme="dark"] .leaflet-satellite-roads {
+  filter: brightness(0.7) saturate(0.8) !important;
+  opacity: 0.55 !important;
+}
+[data-theme="dark"] .leaflet-plan-tiles {
+  filter: saturate(0.7) brightness(0.62) contrast(1.05) hue-rotate(-8deg) !important;
+}
+/* Light — Vice daytime : plus doux, légèrement chaud. */
+[data-theme="light"] .leaflet-satellite-base {
+  filter: saturate(1.12) brightness(1.08) contrast(0.98) sepia(0.06) !important;
+}
+[data-theme="light"] .leaflet-plan-tiles {
+  filter: saturate(1.05) brightness(1.02) hue-rotate(-4deg) !important;
+}
+
+/* Sunset wash overlay above the tiles, below the HUD controls. */
+.map-tint {
+  position: absolute;
+  inset: 0;
+  z-index: 400;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  background: linear-gradient(
+    180deg,
+    rgba(234, 68, 35, 0.30) 0%,
+    rgba(180, 73, 154, 0.26) 45%,
+    rgba(63, 108, 196, 0.42) 100%
+  );
+}
+.map-tint::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(140% 90% at 50% 0%, rgba(255, 157, 92, 0.22), transparent 55%);
+}
+[data-theme="light"] .map-tint {
+  mix-blend-mode: soft-light;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 184, 146, 0.32) 0%,
+    rgba(243, 166, 207, 0.24) 45%,
+    rgba(98, 200, 216, 0.32) 100%
+  );
+}
+
+/* Discreet attribution on the Vice backdrop. */
+.leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.3) !important;
+  color: #aab !important;
+}
+.leaflet-control-attribution a {
+  color: #cdd !important;
+}
+
 /* TF road tracks — subtle glow so the network reads as a HUD overlay */
 .tf-road-major {
   filter: drop-shadow(0 0 3px rgba(229, 169, 60, 0.55));
