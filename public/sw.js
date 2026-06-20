@@ -6,7 +6,7 @@
  *  - Map tiles (Esri / CARTO): cache-first with a capped tile store so the
  *    last-visited areas of Tenerife stay available without a connection.
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = `gdrive-shell-${VERSION}`;
 const ASSET_CACHE = `gdrive-assets-${VERSION}`;
 const TILE_CACHE = `gdrive-tiles-${VERSION}`;
@@ -91,4 +91,19 @@ self.addEventListener('fetch', (event) => {
       })
     );
   }
+});
+
+// Tapping an approach notification focuses the running app (or opens it).
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((list) => {
+        for (const client of list) {
+          if ('focus' in client) return client.focus();
+        }
+        if (self.clients.openWindow) return self.clients.openWindow('/');
+      })
+  );
 });

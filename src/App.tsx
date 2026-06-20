@@ -211,6 +211,34 @@ export default function App() {
     } catch (e) {}
   };
 
+  // Ask for OS notification permission (must follow a user gesture on iOS).
+  const ensureNotifPermission = () => {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  };
+
+  // Surface an OS-level notification (real banner, even if the tab is backgrounded
+  // while the app stays open). NOTE: a PWA cannot geofence in the background — the
+  // GPS watch only runs while the app is foreground — so this fires from the live
+  // watchPosition, not from a closed app. The in-app toast remains the fallback.
+  const notifyOS = async (title: string, body: string, tag: string) => {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          reg.showNotification(title, { body, tag, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' });
+          return;
+        }
+      }
+      new Notification(title, { body, tag, icon: '/icons/icon-192.png' });
+    } catch (e) {
+      /* notifications best-effort */
+    }
+  };
+
   // Trigger geolocation checks
   const requestGeolocation = () => {
     if (navigator.geolocation) {
@@ -366,14 +394,12 @@ export default function App() {
           if (d <= radius && !alerted) {
             approachAlertedRef.current.add(loc.id);
             const label = shortLabel(loc);
-            setIncomingSms({
-              title: 'Zone atteinte',
-              text: isPhotoSlot(loc.category)
-                ? `Tu es sur ${label}. Ouvre la jaquette (Social Club) et prends ta photo pour valider.`
-                : `Tu approches de ${label}. Prépare ton run chrono.`,
-              id: `approach_${loc.id}`,
-            });
+            const body = isPhotoSlot(loc.category)
+              ? `Tu es sur ${label}. Ouvre la jaquette (Social Club) et prends ta photo pour valider.`
+              : `Tu approches de ${label}. Prépare ton run chrono.`;
+            setIncomingSms({ title: 'Zone atteinte', text: body, id: `approach_${loc.id}` });
             playSmsChirp();
+            void notifyOS(`Zone atteinte · ${label}`, body, `approach_${loc.id}`);
           } else if (alerted && d > radius * 1.6) {
             approachAlertedRef.current.delete(loc.id); // left the zone → re-armable
           }
@@ -639,7 +665,7 @@ export default function App() {
 
         {/* 3. Social Club standalone trigger */}
         <button
-          onClick={() => setActiveTab('trophies')}
+          onClick={() => { setActiveTab('trophies'); ensureNotifPermission(); }}
           className={`flex-1 h-full flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
             activeTab === 'trophies' ? 'text-amber-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
           }`}
