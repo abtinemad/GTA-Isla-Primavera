@@ -51,7 +51,7 @@ export function migrateLegacyKeys(): void {
 // --- 2. Photos de course en IndexedDB --------------------------------------
 
 const DB_NAME = 'tenerife';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const PHOTO_STORE = 'course_photos';
 // Photos "ambiance" libres sur les spots (beach clubs/restos/ravito/bars/plages),
 // indexées par l'id numérique du spot.
@@ -59,8 +59,11 @@ const SPOT_STORE = 'spot_photos';
 // Photos d'Escapades (co-validation) — migrées de localStorage vers IndexedDB
 // (les originaux 1280 px feraient sauter le quota localStorage). Clé = id du spot.
 const CAPTURED_STORE = 'captured_photos';
-// Versions stylisées GTA (proxy API), clé composite "course:<id>" / "loc:<id>".
-// L'original n'est JAMAIS écrasé — il vit dans son store dédié à côté.
+// Photos PERSO ajoutées librement par l'utilisatrice (hors missions), clé = id
+// unique stable (uuid). Supplémentaires, non décomptées.
+const FREE_STORE = 'free_photos';
+// Versions stylisées GTA (proxy API), clé composite "course:<id>" / "loc:<id>" /
+// "free:<id>". L'original n'est JAMAIS écrasé — il vit dans son store dédié à côté.
 const GTA_STORE = 'gta_photos';
 // Anciens emplacements localStorage du blob photos (les deux orthographes).
 const LEGACY_PHOTO_KEYS = ['tenerife_course_photos', 'tenirife_course_photos'];
@@ -73,7 +76,7 @@ function openDB(): Promise<IDBDatabase> {
     // de delete/clear. Chaque version ne fait qu'AJOUTER des stores.
     req.onupgradeneeded = () => {
       const db = req.result;
-      for (const store of [PHOTO_STORE, SPOT_STORE, CAPTURED_STORE, GTA_STORE]) {
+      for (const store of [PHOTO_STORE, SPOT_STORE, CAPTURED_STORE, FREE_STORE, GTA_STORE]) {
         if (!db.objectStoreNames.contains(store)) {
           db.createObjectStore(store);
         }
@@ -113,6 +116,20 @@ async function putInStore(store: string, key: IDBValidKey, value: string): Promi
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(store, 'readwrite');
       tx.objectStore(store).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+async function deleteFromStore(store: string, key: IDBValidKey): Promise<void> {
+  const db = await openDB();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(store, 'readwrite');
+      tx.objectStore(store).delete(key);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
@@ -306,4 +323,28 @@ export async function loadGtaPhotos(): Promise<Record<string, string>> {
   } catch {
     return {};
   }
+}
+
+// --- 6. Photos PERSO (ajoutées par l'utilisatrice, clé = id unique stable) ----
+
+/** Persiste une photo perso (original base64) indexée par son id unique. */
+export async function putFreePhoto(id: string, base64: string): Promise<void> {
+  await putInStore(FREE_STORE, id, base64);
+}
+
+/** Charge toutes les photos perso sous la forme { [id]: base64 }. */
+export async function loadFreePhotos(): Promise<Record<string, string>> {
+  try {
+    const out: Record<string, string> = {};
+    for (const [k, v] of await getAllFromStore(FREE_STORE)) out[String(k)] = v;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Supprime une photo perso : l'original ET sa version GTA (clé "free:<id>"). */
+export async function deleteFreePhoto(id: string): Promise<void> {
+  await deleteFromStore(FREE_STORE, id);
+  await deleteFromStore(GTA_STORE, `free:${id}`);
 }

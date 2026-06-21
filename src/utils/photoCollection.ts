@@ -23,18 +23,24 @@ export type PhotoEntry = {
 
 export const courseKey = (id: string): string => `course:${id}`;
 export const locKey = (id: number): string => `loc:${id}`;
+export const freeKey = (id: string): string => `free:${id}`;
+
+// Accent neutre pour les photos perso (supplémentaires, hors catégorie).
+const FREE_ACCENT = '#8A8F9A';
 
 /**
- * Merge the THREE original stores into deduped, coherently-sorted entries:
- * course photos (data order, RUN 0 included) → secondary Escapades → ambiance.
- * Location-keyed photos (capturedPhotos + spotPhotos) dedup by spot id; the
- * ambiance store wins for a shared id (the newer, intentional shot).
+ * Merge the FOUR original stores into deduped, coherently-sorted entries:
+ * course photos (data order, RUN 0 included) → secondary Escapades → ambiance →
+ * perso. Location-keyed photos (capturedPhotos + spotPhotos) dedup by spot id;
+ * the ambiance store wins for a shared id (the newer, intentional shot). Perso
+ * photos (freePhotos) have unique uuid keys — no dedup, appended at the end.
  * Single source of truth shared by the gallery AND the styling queue.
  */
 export function buildPhotoCollection(
   coursePhotos: Record<string, string>,
   capturedPhotos: Record<number, string>,
   spotPhotos: Record<number, string>,
+  freePhotos: Record<string, string> = {},
 ): PhotoEntry[] {
   const items: PhotoEntry[] = [];
 
@@ -52,6 +58,10 @@ export function buildPhotoCollection(
     const isSecondary = loc.category === 'Escapades';
     const accent = CATEGORY_MAP[loc.category]?.accentColor ?? '#9aa0ab';
     items.push({ key: locKey(id), original: url, label: loc.name, accent, rank: (isSecondary ? 200 : 300) + id });
+  });
+
+  Object.entries(freePhotos).forEach(([id, url], i) => {
+    if (url) items.push({ key: freeKey(id), original: url, label: 'Perso', accent: FREE_ACCENT, rank: 400 + i });
   });
 
   return items.sort((a, b) => a.rank - b.rank);

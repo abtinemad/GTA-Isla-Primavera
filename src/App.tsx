@@ -44,6 +44,7 @@ import {
   loadCoursePhotos, putCoursePhoto,
   loadSpotPhotos, putSpotPhoto,
   loadCapturedPhotos, putCapturedPhoto,
+  loadFreePhotos, putFreePhoto, deleteFreePhoto,
   loadGtaPhotos, putGtaPhoto,
 } from './utils/storage';
 import { buildPhotoCollection } from './utils/photoCollection';
@@ -108,6 +109,10 @@ export default function App() {
   // plages) — IndexedDB, keyed by spot id. Joins the Social Club + jaquette pool.
   const [spotPhotos, setSpotPhotos] = useState<Record<number, string>>({});
 
+  // PERSO photos added freely from the Social Club (not tied to any mission) —
+  // IndexedDB, keyed by a stable uuid. Supplémentaires, non décomptées.
+  const [freePhotos, setFreePhotos] = useState<Record<string, string>>({});
+
   // GTA-styled versions (IndexedDB), keyed by composite key (course:<id> /
   // loc:<id>). The original is never overwritten; display prefers the GTA one.
   const [gtaPhotos, setGtaPhotos] = useState<Record<string, string>>({});
@@ -124,6 +129,7 @@ export default function App() {
     loadCoursePhotos().then(setCoursePhotos).catch(() => {});
     loadSpotPhotos().then(setSpotPhotos).catch(() => {});
     loadCapturedPhotos().then(setCapturedPhotos).catch(() => {});
+    loadFreePhotos().then(setFreePhotos).catch(() => {});
     loadGtaPhotos().then(setGtaPhotos).catch(() => {});
   }, []);
 
@@ -188,12 +194,12 @@ export default function App() {
   // hydrated, after each new capture, and after each success). Same merge source
   // as the gallery.
   useEffect(() => {
-    const entries = buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos);
+    const entries = buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos, freePhotos);
     for (const e of entries) {
       if (!gtaPhotos[e.key]) enqueueGta(e.key, e.original);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coursePhotos, capturedPhotos, spotPhotos, gtaPhotos]);
+  }, [coursePhotos, capturedPhotos, spotPhotos, freePhotos, gtaPhotos]);
 
   // Resume the queue when connectivity returns (offline → reste sur l'original).
   useEffect(() => {
@@ -205,8 +211,25 @@ export default function App() {
 
   // Manual "régénérer" — force a fresh proxy call for one photo (keeps original).
   const regenerateGta = (key: string) => {
-    const entry = buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos).find((e) => e.key === key);
+    const entry = buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos, freePhotos).find((e) => e.key === key);
     if (entry) enqueueGta(key, entry.original, true);
+  };
+
+  // Photos perso ajoutées depuis le Social Club (déjà compressées ~1280 px).
+  const handleAddFreePhoto = (base64: string) => {
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setFreePhotos((prev) => ({ ...prev, [id]: base64 }));
+    void putFreePhoto(id, base64); // la file de stylisation l'enverra au proxy
+  };
+
+  // Suppression d'une photo perso : retire l'original ET sa version GTA.
+  const handleDeleteFreePhoto = (id: string) => {
+    setFreePhotos((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setGtaPhotos((prev) => { const n = { ...prev }; delete n[`free:${id}`]; return n; });
+    void deleteFreePhoto(id);
   };
 
   // DEV flag — gates the geofence simulator (kept for a full dry-run before the
@@ -919,9 +942,12 @@ export default function App() {
             coursePhotos={coursePhotos}
             capturedPhotos={capturedPhotos}
             spotPhotos={spotPhotos}
+            freePhotos={freePhotos}
             gtaPhotos={gtaPhotos}
             gtaStatus={gtaStatus}
             onRegenerate={regenerateGta}
+            onAddFreePhoto={handleAddFreePhoto}
+            onDeleteFreePhoto={handleDeleteFreePhoto}
           />
         </section>
 

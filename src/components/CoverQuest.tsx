@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { useMemo, useState, useRef, type ChangeEvent } from 'react';
+import { RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { CATEGORY_MAP } from '../utils/helper';
 import { courses } from '../data/coursesData';
 import { INITIAL_LOCATIONS } from '../locationsData';
 import { buildPhotoCollection } from '../utils/photoCollection';
+import { compressImage } from '../utils/imageCompress';
 
 interface CoverQuestProps {
   /** Course completion (run done) — feeds the 🏁 counter. */
@@ -19,13 +20,19 @@ interface CoverQuestProps {
   capturedPhotos: Record<number, string>;
   /** Free "ambiance" photos (IndexedDB), keyed by spot id. */
   spotPhotos: Record<number, string>;
-  /** GTA-styled versions, keyed by composite key (course:<id> / loc:<id>).
+  /** Perso photos (IndexedDB), keyed by uuid — supplémentaires, supprimables. */
+  freePhotos: Record<string, string>;
+  /** GTA-styled versions, keyed by composite key (course:<id> / loc:<id> / free:<id>).
    *  The display prefers the GTA version when present, else the original. */
   gtaPhotos: Record<string, string>;
   /** Styling status per key: 'pending' (en cours) | 'error'. */
   gtaStatus: Record<string, 'pending' | 'error'>;
   /** Re-run the proxy for one photo (keeps the original). */
   onRegenerate: (key: string) => void;
+  /** Add a perso photo (already compressed ~1280 px). */
+  onAddFreePhoto: (base64: string) => void;
+  /** Delete a perso photo by its uuid (original + GTA version). */
+  onDeleteFreePhoto: (id: string) => void;
 }
 
 // Course brand red (route line / El Jefe).
@@ -69,12 +76,28 @@ export default function CoverQuest({
   coursePhotos,
   capturedPhotos,
   spotPhotos,
+  freePhotos,
   gtaPhotos,
   gtaStatus,
   onRegenerate,
+  onAddFreePhoto,
+  onDeleteFreePhoto,
 }: CoverQuestProps) {
   // Per-tile "show the original" override (default: show GTA when available).
   const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleAddFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const compressed = await compressImage(reader.result as string, 1280, 0.85);
+      onAddFreePhoto(compressed);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // re-pick the same file possible
+  };
   // Counters (informative X/Y, no global completion). Totals derived from data.
   const nonTutorialCourses = useMemo(() => courses.filter((c) => !c.tutorial), []);
   const courseTotal = nonTutorialCourses.length; // 7
@@ -92,8 +115,8 @@ export default function CoverQuest({
   // Gallery = ALL photos, merged/deduped/sorted by the shared collection helper
   // (same source the styling queue uses). Display prefers the GTA version.
   const photos = useMemo(
-    () => buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos),
-    [coursePhotos, capturedPhotos, spotPhotos],
+    () => buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos, freePhotos),
+    [coursePhotos, capturedPhotos, spotPhotos, freePhotos],
   );
 
   return (
@@ -121,19 +144,25 @@ export default function CoverQuest({
         </div>
       </div>
 
-      {/* Galerie de TOUTES les photos. Affiche la version GTA si dispo (toggle
-          possible vers l'original), statut de stylisation + bouton régénérer.
-          L'original est TOUJOURS conservé intact. */}
-      {photos.length === 0 ? (
-        <div className="rounded-xl border border-[color:var(--hairline)] px-4 py-10 text-center" style={GLASS}>
-          <p className="text-[color:var(--text-muted)] text-xs leading-relaxed">
-            Ta collection est vide. Capture des clichés : à l'arrivée des runs, sur les spots photo,
-            et via « 📸 Photo ici » sur les lieux.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          {photos.map((p) => {
+      {/* Galerie de TOUTES les photos (course + secondaires + ambiance + perso).
+          Affiche la version GTA si dispo (toggle vers l'original), statut + régénérer.
+          L'original est TOUJOURS conservé. Tuile « + » en tête pour ajouter ses
+          propres photos (supplémentaires, supprimables). */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        {/* + Ajouter une photo perso (sélecteur OS : appareil ou pellicule) */}
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="relative aspect-[4/5] rounded-xl border-2 border-dashed border-[color:var(--hairline)] flex flex-col items-center justify-center gap-1.5 text-[color:var(--text-muted)] hover:text-[color:var(--text)] hover:border-white/40 transition-colors cursor-pointer"
+          style={GLASS}
+        >
+          <Plus size={22} />
+          <span className="font-mono text-[9px] uppercase tracking-wider text-center px-2 leading-tight">
+            Ajouter une photo
+          </span>
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" onChange={handleAddFile} className="hidden" />
+
+        {photos.map((p) => {
             const hasGta = !!gtaPhotos[p.key];
             const showOrig = !hasGta || !!showOriginal[p.key];
             const status = gtaStatus[p.key];
@@ -170,6 +199,16 @@ export default function CoverQuest({
                   >
                     <RefreshCw size={10} className={status === 'pending' ? 'animate-spin' : ''} />
                   </button>
+                  {p.key.startsWith('free:') && (
+                    <button
+                      onClick={() => onDeleteFreePhoto(p.key.slice('free:'.length))}
+                      title="Supprimer cette photo perso"
+                      aria-label="Supprimer"
+                      className="w-5 h-5 rounded-md bg-red-950/70 border border-red-500/50 text-red-300 flex items-center justify-center active:scale-95 cursor-pointer"
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  )}
                 </div>
 
                 {/* Statut de stylisation */}
@@ -195,8 +234,7 @@ export default function CoverQuest({
               </div>
             );
           })}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
