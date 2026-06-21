@@ -177,6 +177,22 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "info": "Plage sauvage du Nord-Est (Anaga / Taganana). Sable noir volcanique et roques battus par l'Atlantique."
   },
   {
+    "id": 25,
+    "name": "Drago Milenario (Icod de los Vinos)",
+    "category": "Escapades",
+    "lat": 28.366547, "lng": -16.722216,
+    "info": "Le dragonnier millénaire d'Icod — 800 à 1000 ans, symbole vivant de Ténérife, dressé au-dessus de la ville.",
+    "missionType": "photo-annexe"
+  },
+  {
+    "id": 26,
+    "name": "Mirador de Archipenque (Los Gigantes)",
+    "category": "Escapades",
+    "lat": 28.240415, "lng": -16.837012,
+    "info": "Le balcon sur les Acantilados de los Gigantes : des falaises de basalte de 800 m plongeant à pic dans l'Atlantique. Spot coucher de soleil.",
+    "missionType": "photo-annexe"
+  },
+  {
     "id": 101,
     "name": "Trophée: Roi de la Gomme",
     "category": "🏆 Trophées - Time Attack",

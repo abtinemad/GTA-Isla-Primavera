@@ -50,6 +50,8 @@ export const COVER_LABELS: Record<number, string> = {
   19: 'DUQUE',      // Playa del Duque (Plage)
   20: 'ENRAMADA',   // Playa de la Enramada (Plage)
   24: 'BENIJO',     // Playa de Benijo (Plage NE Anaga / Taganana)
+  25: 'DRAGO',      // Drago Milenario, Icod de los Vinos (Escapade photo)
+  26: 'GIGANTES',   // Mirador de Archipenque, Los Gigantes (Escapade photo)
 };
 
 export type CoverSlotStatus = 'locked' | 'unlockable' | 'filled';
