@@ -270,6 +270,9 @@ html, body, #root {
 .custom-map-tooltip.tooltip-restaurants {
   color: #FF8C00 !important; /* Stark Orange */
 }
+.custom-map-tooltip.tooltip-beachclub {
+  color: #FF6F61 !important; /* Corail */
+}
 
 /* Hide leaflet attribution on ultra small mobile to save space */
 @media (max-width: 480px) {

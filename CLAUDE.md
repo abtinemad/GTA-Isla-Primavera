@@ -60,7 +60,7 @@ Tout l'état vit dans `src/App.tsx` (composant racine, pas de lib d'état).
 
 ## Modèle de données — important
 
-`INITIAL_LOCATIONS` contient **25 entrées** = **20 spots physiques** (id 1-20)
+`INITIAL_LOCATIONS` contient **28 entrées** = **23 spots physiques** (id 1-23)
 + **5 entrées trophées** (id 101-105, catégorie commençant par `🏆`).
 
 - Les entrées trophées **dupliquent les coordonnées** d'un spot physique et ne
@@ -70,7 +70,8 @@ Tout l'état vit dans `src/App.tsx` (composant racine, pas de lib d'état).
 - Seules les catégories **Missions / Escapades / Plages** sont **complétables**
   (chrono géofencé pour Missions ; co-validation photo pour Escapades/Plages) →
   **11 spots complétables**. Le `% complétion` se calcule sur ce sous-ensemble,
-  pas sur les 25 entrées.
+  pas sur les 28 entrées. (Beach Club, comme QG/Bars/Restaurants/Ravitaillement,
+  n'est **pas** complétable.)
 
 ## Co-validation photo + GPS
 

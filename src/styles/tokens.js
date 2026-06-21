@@ -4,6 +4,7 @@ export const categories = {
   bars:{label:'Bars',color:'#E0479B'}, missions:{label:'Missions',color:'#EA4423'},
   escapades:{label:'Escapades',color:'#9E7AD2'}, plages:{label:'Plages',color:'#3F6CC4'},
   restaurants:{label:'Restaurants',color:'#F0941E'},
+  beachclub:{label:'Beach Club',color:'#FF6F61'},
 };
 export const typography = {
   fonts:{ display:"'Space Grotesk',sans-serif", body:"'Inter',sans-serif", mono:"'JetBrains Mono',monospace" },

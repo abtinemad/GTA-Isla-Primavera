@@ -19,6 +19,7 @@ export type FilterGroup =
   | 'QG'
   | 'Restaurants'
   | 'Ville' // coctelería + cannabis (Bars + Ravitaillement)
+  | 'Beach Club'
   | 'Plages'
   | 'Photos' // missions photo (Escapades)
   | 'Courses'; // missions chronométrées (Missions)
@@ -34,6 +35,7 @@ export interface FilterGroupDef {
 export const FILTER_GROUPS: FilterGroupDef[] = [
   { id: 'QG', label: 'QG', emoji: '🏠', color: '#EAC54F', categories: ['QG'] },
   { id: 'Restaurants', label: 'Restaurants', emoji: '🍴', color: '#F0941E', categories: ['Restaurants'] },
+  { id: 'Beach Club', label: 'Beach Club', emoji: '🍹', color: '#FF6F61', categories: ['Beach Club'] },
   { id: 'Ville', label: 'Ville', emoji: '🍸', color: '#00E0CB', categories: ['Bars', 'Ravitaillement'] },
   { id: 'Plages', label: 'Plages', emoji: '🏖️', color: '#FFD60A', categories: ['Plages'] },
   { id: 'Photos', label: 'Photos', emoji: '📸', color: '#FF2E9A', categories: ['Escapades'] },

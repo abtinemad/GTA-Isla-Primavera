@@ -20,6 +20,7 @@ const CATEGORY_RAIL: Record<string, string> = {
   Escapades: 'var(--cat-escapades)',
   Plages: 'var(--cat-plages)',
   Restaurants: 'var(--cat-restaurants)',
+  'Beach Club': 'var(--cat-beachclub)',
 };
 
 interface LocationsListProps {

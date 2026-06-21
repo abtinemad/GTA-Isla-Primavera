@@ -149,6 +149,27 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "info": "Plage rattachée au QG de La Caleta. Galets, sable volcanique et ambiance décontractée au coucher de soleil."
   },
   {
+    "id": 21,
+    "name": "Kaluna Beach Club",
+    "category": "Beach Club",
+    "lat": 28.081027, "lng": -16.735901,
+    "info": "Beach club premium (Costa Adeje). Transats, DJ sets et cocktails face à l'océan."
+  },
+  {
+    "id": 22,
+    "name": "Papagayo Beach Club",
+    "category": "Beach Club",
+    "lat": 28.066523, "lng": -16.732473,
+    "info": "Beach club iconique (Playa de Troya, Las Américas). Ambiance lounge et sunset sessions."
+  },
+  {
+    "id": 23,
+    "name": "Monkey Beach Club",
+    "category": "Beach Club",
+    "lat": 28.069213, "lng": -16.732520,
+    "info": "Beach club festif (Las Américas). Piscine, musique et cocktails au bord de l'eau."
+  },
+  {
     "id": 101,
     "name": "Trophée: Roi de la Gomme",
     "category": "🏆 Trophées - Time Attack",

@@ -116,6 +116,17 @@ export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
     iconName: 'Utensils',
     desc: 'Arrêt au stand pour restauration ou réapprovisionnement énergétique'
   },
+  'Beach Club': {
+    label: 'Beach Club',
+    emoji: '🍹',
+    colorClass: 'coral',
+    bgClass: 'bg-[#FF6F61]/15 text-[#D14B3C] border-[#FF6F61]/30',
+    borderClass: 'border-[#FF6F61]',
+    textClass: 'text-[#D14B3C]',
+    accentColor: '#FF6F61', // Token --cat-beachclub (corail, inédit)
+    iconName: 'Umbrella',
+    desc: 'Beach clubs premium : transats, DJ et cocktails face à l\'océan'
+  },
   '🏆 Trophées - Time Attack': {
     label: 'Trophées - Time Attack',
     emoji: '🏆',
@@ -190,6 +201,7 @@ export type MarkerVariant =
   | 'cocktail'
   | 'cannabis'
   | 'plage'
+  | 'beach-club'             // beach club : parasol + cocktail tropical, corail
   | 'mission-photo-principale' // mission photo principale (appareil photo plein)
   | 'mission-photo-annexe'     // mission photo annexe (contour, atténué, plus petit)
   | 'course-depart'         // course : ligne de départ (fanion)
@@ -228,6 +240,11 @@ const MARKER_VARIANTS: Record<MarkerVariant, MarkerVariantStyle> = {
     fill: '#FFD60A', glyphColor: '#3A2D00', scale: 1,
     glyph: (g) => `<path d="M3 10a7 7 0 0 1 14 0ZM10 4V2.5M10 10v7M10 17h2.6" fill="none" stroke="${g}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
+  // Beach club — CORAIL, cocktail tropical sous parasol
+  'beach-club': {
+    fill: '#FF6F61', glyphColor: '#3A0F08', scale: 1,
+    glyph: (g) => `<path d="M9.5 4Q13 0.2 16.5 4Z" fill="${g}"/><path d="M13 4 11.4 9" fill="none" stroke="${g}" stroke-width="1.6" stroke-linecap="round"/><path d="M6.5 9H13.5L12 16H8Z" fill="none" stroke="${g}" stroke-width="1.7" stroke-linejoin="round"/>`,
+  },
   // Mission photo principale — rose néon vif, appareil photo plein
   'mission-photo-principale': {
     fill: '#FF2E9A', glyphColor: '#FFFFFF', scale: 1,
@@ -258,6 +275,7 @@ const MARKER_VARIANTS: Record<MarkerVariant, MarkerVariantStyle> = {
  */
 export function categoryToVariant(category: Category): MarkerVariant {
   if (category.includes('QG')) return 'qg';
+  if (category.includes('Beach Club')) return 'beach-club';
   if (category.includes('Restaurants')) return 'restaurant';
   if (category.includes('Bars')) return 'cocktail';
   if (category.includes('Ravitaillement')) return 'cannabis';
