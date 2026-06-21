@@ -24,6 +24,7 @@ import {
   getDenzelPhotoPrompt,
   getDenzelChronoPrompt,
   denzelTutorial,
+  DenzelLine,
 } from './data/denzelMessages';
 import {
   Compass,
@@ -95,7 +96,7 @@ export default function App() {
   const handleSplashComplete = useCallback(() => setShowSplash(false), []);
 
   // Denzel Sag — narrator handler messages (src/data/denzelMessages).
-  const [denzelMessage, setDenzelMessage] = useState<string | null>(null);
+  const [denzelMessage, setDenzelMessage] = useState<DenzelLine | null>(null);
   const ambientFiredRef = useRef(false);
   // Set when the player launches navigation; the reopen prompt fires only when
   // they actually come BACK to the app (visibilitychange), not at launch.
