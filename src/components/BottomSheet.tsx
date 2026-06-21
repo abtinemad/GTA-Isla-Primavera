@@ -126,7 +126,10 @@ export default function BottomSheet({
 
     return (
       <AnimatePresence>
-        <div className="fixed inset-0 z-[1000] pointer-events-none flex items-end justify-center px-4 pb-4 md:pb-6">
+        <div
+          className="fixed inset-0 z-[1000] pointer-events-none flex items-end justify-center px-4"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.4 }}
@@ -152,7 +155,7 @@ export default function BottomSheet({
               <X size={16} />
             </button>
 
-            <div className="p-6 pt-2 overflow-y-auto max-h-[75vh]">
+            <div className="p-6 pt-2 overflow-y-auto max-h-[75dvh]">
               {/* Badge course + tutorial tag */}
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-lg border flex items-center gap-1.5 bg-[#EA4423]/15 text-[#C2371B] border-[#EA4423]/30">
@@ -528,7 +531,7 @@ export default function BottomSheet({
           />
 
           {/* Body Content */}
-          <div className="p-6 pt-2 overflow-y-auto max-h-[75vh]">
+          <div className="p-6 pt-2 overflow-y-auto max-h-[75dvh]">
             
             {/* Category badge */}
             <div className="flex items-center gap-2 mb-3">

@@ -320,9 +320,10 @@ export default function CoverQuest({
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/92"
           onClick={() => setLightboxKey(null)}
         >
-          {/* Barre haute : Enregistrer + Fermer */}
+          {/* Barre haute : Enregistrer + Fermer (sous l'encoche) */}
           <div
-            className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3"
+            className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 pb-3"
+            style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -349,7 +350,7 @@ export default function CoverQuest({
             onClick={(e) => e.stopPropagation()}
             onPointerDown={onLbPointerDown}
             onPointerUp={onLbPointerUp}
-            className="max-w-[94vw] max-h-[82vh] object-contain rounded-lg shadow-2xl select-none"
+            className="max-w-[94vw] max-h-[82dvh] object-contain rounded-lg shadow-2xl select-none"
             style={{ touchAction: 'none' }}
           />
 

@@ -10,6 +10,7 @@
 /* Base resets & custom scrollbars */
 html, body, #root {
   height: 100%;
+  height: 100dvh; /* iOS : suit la barre Safari dynamique (fallback 100% au-dessus) */
   width: 100%;
   margin: 0;
   padding: 0;
@@ -181,6 +182,10 @@ html, body, #root {
 .leaflet-control-attribution a {
   color: #cdd !important;
 }
+
+/* ─── Safe-area (encoche iPhone + barre d'accueil) ─── */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
 
 /* Aphorisme Isla Primavera (bas de carte) — fondu doux à chaque rotation. */
 @keyframes isla-phrase-in {

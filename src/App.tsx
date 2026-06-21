@@ -130,6 +130,9 @@ export default function App() {
   // Bandeau discret affiché seulement si la persistance est refusée/indispo.
   const [showStorageBanner, setShowStorageBanner] = useState(false);
   const persistCheckedRef = useRef(false);
+  // Passe à true au PREMIER geste utilisateur. iOS (surtout en PWA standalone)
+  // déclenche la géoloc/persistance de façon fiable après un tap → on gate dessus.
+  const [interacted, setInteracted] = useState(false);
 
   // Hydrate IndexedDB photo stores once on mount (course photos also migrate any
   // old localStorage blob the first time).
@@ -394,9 +397,10 @@ export default function App() {
     }
   };
 
-  // Premier geste utilisateur dans l'app → tente la persistance (une fois).
+  // Premier geste utilisateur dans l'app → marque `interacted` (débloque la géoloc)
+  // et tente la persistance (une fois). iOS exige un geste pour ces permissions.
   useEffect(() => {
-    const onFirstGesture = () => void ensurePersistentStorage();
+    const onFirstGesture = () => { setInteracted(true); void ensurePersistentStorage(); };
     window.addEventListener('pointerdown', onFirstGesture, { once: true });
     return () => window.removeEventListener('pointerdown', onFirstGesture);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -799,9 +803,10 @@ export default function App() {
   };
 
   // Continuous geofencing watchdog — keeps userCoords fresh + runs the geofence
-  // checks. Subscribed once for the app's lifetime.
+  // checks. Démarré seulement APRÈS le premier geste utilisateur (iOS exige un
+  // tap pour un prompt de géoloc fiable, surtout en PWA standalone).
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    if (!interacted || !navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         const userLat = position.coords.latitude;
@@ -819,7 +824,7 @@ export default function App() {
     };
     // applyGeofence reads live state via closure; deps re-subscribe on the state
     // it needs. elapsedTime read via elapsedTimeRef to avoid ~30x/s churn.
-  }, [completedLocationIds, completedCourseIds, allLocations, activeRunLocationId, activeRunCourseId, coursePhotos]);
+  }, [interacted, completedLocationIds, completedCourseIds, allLocations, activeRunLocationId, activeRunCourseId, coursePhotos]);
 
   // When a spot is targeted (closes any open race sheet — one sheet at a time).
   const handleSelectLocation = (location: LocationItem) => {
@@ -849,7 +854,7 @@ export default function App() {
   };
 
   return (
-    <div className="app-bg relative w-screen h-screen overflow-hidden select-none font-sans flex flex-col text-zinc-900">
+    <div className="app-bg relative w-screen h-full overflow-hidden select-none font-sans flex flex-col text-zinc-900">
 
       {/* BOOT SPLASH — artwork GTA déjà titré, plein cadre (fade out 0.5s) */}
       <AnimatePresence>
@@ -1069,7 +1074,10 @@ export default function App() {
       )}
 
       {/* 4. MOBILE PERSISTENT BOTTOM NAVIGATION SWITCHER FOOTER */}
-      <footer className="fixed bottom-0 left-0 right-0 h-14 bg-slate-900/80 backdrop-blur-md border-t border-slate-800 z-[9999] pb-safe flex items-center justify-around select-none md:hidden">
+      <footer
+        className="fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-md border-t border-slate-800 z-[9999] pb-safe flex items-center justify-around select-none md:hidden"
+        style={{ height: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}
+      >
         
         {/* 1. Carte / GPS Tab trigger */}
         <button
