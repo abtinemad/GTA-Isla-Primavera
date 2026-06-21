@@ -27,7 +27,6 @@ import {
   getDenzelReopenPrompt,
   getDenzelPhotoPrompt,
   getDenzelChronoPrompt,
-  getDenzelCoursePhotoPrompt,
   denzelTutorial,
   DenzelLine,
   PanelKey,
@@ -41,6 +40,11 @@ import {
   X,
   MessageSquare
 } from 'lucide-react';
+import { migrateLegacyKeys, loadCoursePhotos, putCoursePhoto } from './utils/storage';
+
+// Renomme les clés héritées « tenirife_* » → « tenerife_* » une fois, AVANT que
+// les initialiseurs d'état (ci-dessous) ne lisent les nouvelles clés.
+migrateLegacyKeys();
 
 export default function App() {
   // --- CORE GAMEPLAY STATE ---
@@ -56,7 +60,7 @@ export default function App() {
   // Persistence state
   const [completedLocationIds, setCompletedLocationIds] = useState<number[]>(() => {
     try {
-      const saved = localStorage.getItem('tenirife_completed_locations');
+      const saved = localStorage.getItem('tenerife_completed_locations');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
@@ -65,7 +69,7 @@ export default function App() {
 
   const [capturedPhotos, setCapturedPhotos] = useState<Record<number, string>>(() => {
     try {
-      const saved = localStorage.getItem('tenirife_captured_photos');
+      const saved = localStorage.getItem('tenerife_captured_photos');
       return saved ? JSON.parse(saved) : {};
     } catch (e) {
       return {};
@@ -74,7 +78,7 @@ export default function App() {
 
   const [completedTimes, setCompletedTimes] = useState<Record<number, string>>(() => {
     try {
-      const saved = localStorage.getItem('tenirife_completed_times');
+      const saved = localStorage.getItem('tenerife_completed_times');
       return saved ? JSON.parse(saved) : {};
     } catch (e) {
       return {};
@@ -86,24 +90,26 @@ export default function App() {
   // / Social Club; the prologue (tutorial:true) is excluded from any course tally.
   const [completedCourseIds, setCompletedCourseIds] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('tenirife_completed_courses');
+      const saved = localStorage.getItem('tenerife_completed_courses');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
     }
   });
 
-  const [coursePhotos, setCoursePhotos] = useState<Record<string, string>>(() => {
-    try {
-      const saved = localStorage.getItem('tenirife_course_photos');
-      return saved ? JSON.parse(saved) : {};
-    } catch (e) {
-      return {};
-    }
-  });
+  // Course photos live in IndexedDB (base64 too heavy for the localStorage
+  // quota). Hydrated asynchronously on mount via loadCoursePhotos(); this state
+  // is write-mostly (never rendered) so the async fill is invisible to the UI.
+  const [coursePhotos, setCoursePhotos] = useState<Record<string, string>>({});
 
   // El Jefe info-bulle shown when within 50 m of a course's photo point.
-  const [coursePhotoPrompt, setCoursePhotoPrompt] = useState<{ course: CourseData; line: DenzelLine } | null>(null);
+  const [coursePhotoPrompt, setCoursePhotoPrompt] = useState<CourseData | null>(null);
+
+  // Hydrate course photos from IndexedDB once on mount (also migrates any old
+  // localStorage blob into IndexedDB the first time).
+  useEffect(() => {
+    loadCoursePhotos().then(setCoursePhotos).catch(() => {});
+  }, []);
 
   // UI state
   const [showSplash, setShowSplash] = useState(true);
@@ -139,7 +145,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'map' | 'list' | 'trophies'>('map');
   const [walletAmount, setWalletAmount] = useState<number>(() => {
     try {
-      const saved = localStorage.getItem('tenirife_wallet');
+      const saved = localStorage.getItem('tenerife_wallet');
       return saved !== null ? JSON.parse(saved) : 1500;
     } catch (e) {
       return 1500;
@@ -150,7 +156,7 @@ export default function App() {
   // Persist the wallet like the rest of the game state (completions/photos/times).
   useEffect(() => {
     try {
-      localStorage.setItem('tenirife_wallet', JSON.stringify(walletAmount));
+      localStorage.setItem('tenerife_wallet', JSON.stringify(walletAmount));
     } catch (e) {
       /* persistence best-effort */
     }
@@ -203,14 +209,14 @@ export default function App() {
       const COOLDOWN_MS = 30 * 60 * 1000;
       let last = 0;
       try {
-        last = Number(localStorage.getItem('tenirife_denzel_ambient_ts')) || 0;
+        last = Number(localStorage.getItem('tenerife_denzel_ambient_ts')) || 0;
       } catch (e) {
         last = 0;
       }
       if (Date.now() - last >= COOLDOWN_MS) {
         setDenzelMessage(getDenzelAmbient());
         try {
-          localStorage.setItem('tenirife_denzel_ambient_ts', String(Date.now()));
+          localStorage.setItem('tenerife_denzel_ambient_ts', String(Date.now()));
         } catch (e) {
           /* best-effort */
         }
@@ -421,7 +427,7 @@ export default function App() {
   const handleSavePhotoSouvenir = (locId: number, base64: string) => {
     const nextPhotos = { ...capturedPhotos, [locId]: base64 };
     setCapturedPhotos(nextPhotos);
-    localStorage.setItem('tenirife_captured_photos', JSON.stringify(nextPhotos));
+    localStorage.setItem('tenerife_captured_photos', JSON.stringify(nextPhotos));
   };
 
   // A course's photo / geofence point: the arrival by default, the start when
@@ -432,14 +438,14 @@ export default function App() {
   // Capture committed from the El Jefe info-bulle: persist the photo, mark the
   // course done (dedicated state) and close the prompt with a success line.
   const handleCaptureCoursePhoto = (course: CourseData, base64: string) => {
-    const nextPhotos = { ...coursePhotos, [course.id]: base64 };
-    setCoursePhotos(nextPhotos);
-    localStorage.setItem('tenirife_course_photos', JSON.stringify(nextPhotos));
+    setCoursePhotos((prev) => ({ ...prev, [course.id]: base64 }));
+    // Heavy base64 → IndexedDB, never localStorage (quota). Fire-and-forget.
+    void putCoursePhoto(course.id, base64);
 
     if (!completedCourseIds.includes(course.id)) {
       const nextDone = [...completedCourseIds, course.id];
       setCompletedCourseIds(nextDone);
-      localStorage.setItem('tenirife_completed_courses', JSON.stringify(nextDone));
+      localStorage.setItem('tenerife_completed_courses', JSON.stringify(nextDone));
     }
 
     setCoursePhotoPrompt(null);
@@ -466,12 +472,12 @@ export default function App() {
     if (completedLocationIds.includes(location.id)) return;
     const nextCompleted = [...completedLocationIds, location.id];
     setCompletedLocationIds(nextCompleted);
-    localStorage.setItem('tenirife_completed_locations', JSON.stringify(nextCompleted));
+    localStorage.setItem('tenerife_completed_locations', JSON.stringify(nextCompleted));
 
     if (finishTime) {
       const nextTimes = { ...completedTimes, [location.id]: finishTime };
       setCompletedTimes(nextTimes);
-      localStorage.setItem('tenirife_completed_times', JSON.stringify(nextTimes));
+      localStorage.setItem('tenerife_completed_times', JSON.stringify(nextTimes));
     }
 
     // Play retro chime & trigger cinematic overlay
@@ -566,7 +572,7 @@ export default function App() {
           const alerted = coursePromptAlertedRef.current.has(course.id);
           if (d <= 0.050 && !alerted) {
             coursePromptAlertedRef.current.add(course.id);
-            setCoursePhotoPrompt({ course, line: getDenzelCoursePhotoPrompt() });
+            setCoursePhotoPrompt(course);
             playSmsChirp();
             void notifyOS(`Spot photo · ${course.title}`, course.visuel, `course_${course.id}`);
           } else if (alerted && d > 0.080) {
@@ -965,8 +971,7 @@ export default function App() {
 
       {/* El Jefe info-bulle at a course photo point (< 50 m) */}
       <CoursePhotoPrompt
-        course={coursePhotoPrompt?.course ?? null}
-        line={coursePhotoPrompt?.line ?? null}
+        course={coursePhotoPrompt}
         onCapture={handleCaptureCoursePhoto}
         onClose={() => setCoursePhotoPrompt(null)}
       />

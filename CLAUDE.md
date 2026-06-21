@@ -128,6 +128,12 @@ dans les fichiers carte (`MapContainer.tsx`, `roadsData.ts`, `index.css`).
   (couleurs de catégorie, largeurs de barres).
 - Effets Leaflet impératifs via `useRef` — penser au cleanup (remove) dans le
   retour des `useEffect`.
-- Clés `localStorage` : `tenirife_completed_locations`, `tenirife_captured_photos`,
-  `tenirife_completed_times` (préfixe « tenirife » — historique, ne pas renommer
-  sans migration).
+- Clés `localStorage` : préfixe `tenerife_` (ex. `tenerife_completed_locations`,
+  `tenerife_captured_photos`, `tenerife_completed_times`). L'ancien préfixe
+  mal orthographié `tenirife_` est renommé une fois au démarrage par
+  `migrateLegacyKeys()` (`src/utils/storage.ts`) — ne pas renommer à nouveau sans
+  migration.
+- **Photos de course** : stockées en **IndexedDB** (`src/utils/storage.ts`,
+  base `tenerife` / store `course_photos`), pas en `localStorage` — le base64 est
+  trop lourd pour le quota (~5 Mo). Hydratées au montage via `loadCoursePhotos()`,
+  écrites via `putCoursePhoto()`. Les ids de complétion restent en `localStorage`.

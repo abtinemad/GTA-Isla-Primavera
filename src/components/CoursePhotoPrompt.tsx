@@ -3,19 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Camera, X } from 'lucide-react';
 import elJefeAvatar from '../assets/eljefe-avatar.webp';
-import { DenzelLine } from '../data/denzelMessages';
+import { DenzelLine, getDenzelPhotoPrompt } from '../data/denzelMessages';
 import { PANEL_URLS } from '../data/panelImages';
 import { CourseData } from '../data/coursesData';
 
 interface CoursePhotoPromptProps {
   /** The course whose photo point the player just reached (< 50 m). Null = hidden. */
   course: CourseData | null;
-  /** El Jefe line to show ("prends ton meilleur cliché"). */
-  line: DenzelLine | null;
   /** Hands back the compressed base64 photo for the course. */
   onCapture: (course: CourseData, base64: string) => void;
   onClose: () => void;
@@ -52,9 +50,17 @@ function compress(base64: string): Promise<string> {
  * a course's photo point (the arrival by default, the start when photoAtStart).
  * It carries the custom Denzel line + the `visuel`, and triggers the capture.
  */
-export default function CoursePhotoPrompt({ course, line, onCapture, onClose }: CoursePhotoPromptProps) {
+export default function CoursePhotoPrompt({ course, onCapture, onClose }: CoursePhotoPromptProps) {
   const reduce = useReducedMotion();
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Single source of Denzel's photo voice: the shared getter from
+  // denzelMessages. Rolled once when the prompt opens (keyed on the course) so
+  // the line stays stable across re-renders instead of re-rolling each render.
+  const [line, setLine] = useState<DenzelLine | null>(null);
+  useEffect(() => {
+    if (course) setLine(getDenzelPhotoPrompt());
+  }, [course]);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
