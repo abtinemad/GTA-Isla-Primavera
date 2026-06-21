@@ -34,13 +34,13 @@ export interface FilterGroupDef {
 }
 
 export const FILTER_GROUPS: FilterGroupDef[] = [
-  { id: 'QG', label: 'QG', emoji: '🏠', color: '#EAC54F', categories: ['QG'] },
-  { id: 'Restaurants', label: 'Restaurants', emoji: '🍴', color: '#F0941E', categories: ['Restaurants'] },
-  { id: 'Beach Club', label: 'Beach Club', emoji: '🍹', color: '#FF6F61', categories: ['Beach Club'] },
-  { id: 'Bars', label: 'Bars', emoji: '🍸', color: '#00E0CB', categories: ['Bars'] },
+  { id: 'QG', label: 'QG', emoji: '🏠', color: '#EDEFF2', categories: ['QG'] },
+  { id: 'Restaurants', label: 'Restaurants', emoji: '🍴', color: '#9E7AD2', categories: ['Restaurants'] },
+  { id: 'Beach Club', label: 'Beach Club', emoji: '🍹', color: '#17B0A7', categories: ['Beach Club'] },
+  { id: 'Bars', label: 'Bars', emoji: '🍸', color: '#E0479B', categories: ['Bars'] },
   { id: 'Cannabis', label: 'Cannabis', emoji: '🌿', color: '#46AE3C', categories: ['Ravitaillement'] },
-  { id: 'Plages', label: 'Plages', emoji: '🏖️', color: '#FFD60A', categories: ['Plages'] },
-  { id: 'Photos', label: 'Photos', emoji: '📸', color: '#FF2E9A', categories: ['Escapades'] },
+  { id: 'Plages', label: 'Plages', emoji: '🏖️', color: '#3F6CC4', categories: ['Plages'] },
+  { id: 'Photos', label: 'Photos', emoji: '📸', color: '#F0941E', categories: ['Escapades'] },
   { id: 'Courses', label: 'Courses', emoji: '🏁', color: '#EA4423', categories: ['Missions'] },
 ];
 

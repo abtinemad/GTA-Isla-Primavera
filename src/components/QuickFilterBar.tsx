@@ -66,10 +66,10 @@ export default function QuickFilterBar({
               }
             `}
             style={{
-              backgroundColor: allActive ? '#38bdf8' : undefined,
+              backgroundColor: allActive ? '#EFF0F2' : undefined,
               color: allActive ? '#090d16' : undefined,
-              borderColor: allActive ? '#38bdf8' : undefined,
-              boxShadow: allActive ? '0 0 14px #38bdf8a0' : undefined,
+              borderColor: allActive ? '#EFF0F2' : undefined,
+              boxShadow: allActive ? '0 0 14px #EFF0F2a0' : undefined,
               textShadow: allActive ? 'none' : '0 1px 2.5px rgba(0,0,0,0.95)',
             }}
           >

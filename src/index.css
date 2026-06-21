@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -248,30 +248,30 @@ html, body, #root {
   padding: 0 !important;
 }
 
-/* STARK NEON CATEGORY TOOLTIPS COLOR OVERRIDES */
+/* CATEGORY TOOLTIPS — une couleur par catégorie (alignée sur la palette --cat-*) */
 .custom-map-tooltip.tooltip-qg {
-  color: #F0C243 !important; /* Safehouse Yellow */
+  color: #EDEFF2 !important; /* QG quasi-blanc */
 }
 .custom-map-tooltip.tooltip-ravitaillement {
-  color: #39FF14 !important; /* Neon Green */
+  color: #46AE3C !important; /* Ravitaillement / Cannabis */
 }
 .custom-map-tooltip.tooltip-bars {
-  color: #FF00FF !important; /* Neon Magenta */
+  color: #E0479B !important; /* Bars */
 }
 .custom-map-tooltip.tooltip-missions {
-  color: #FF1A43 !important; /* Neon Red */
+  color: #EA4423 !important; /* Missions / Courses */
 }
 .custom-map-tooltip.tooltip-escapades {
-  color: #00FFFF !important; /* Neon Cyan */
+  color: #F0941E !important; /* Escapades / Photos (orange) */
 }
 .custom-map-tooltip.tooltip-plages {
-  color: #00FFE2 !important; /* Neon Teal */
+  color: #3F6CC4 !important; /* Plages */
 }
 .custom-map-tooltip.tooltip-restaurants {
-  color: #FF8C00 !important; /* Stark Orange */
+  color: #9E7AD2 !important; /* Restaurants (violet) */
 }
 .custom-map-tooltip.tooltip-beachclub {
-  color: #FF6F61 !important; /* Corail */
+  color: #17B0A7 !important; /* Beach Club (teal) */
 }
 
 /* Hide leaflet attribution on ultra small mobile to save space */

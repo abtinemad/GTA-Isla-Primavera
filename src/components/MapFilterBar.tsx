@@ -41,10 +41,10 @@ export default function MapFilterBar({ activeGroups, onToggleGroup, onSelectAll 
           aria-pressed={allActive}
           className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full border font-display text-[11px] uppercase font-bold tracking-wide whitespace-nowrap cursor-pointer transition-all duration-200 active:scale-95"
           style={{
-            backgroundColor: allActive ? '#38bdf8' : undefined,
+            backgroundColor: allActive ? '#EFF0F2' : undefined,
             color: allActive ? '#090d16' : '#cbd5e1',
-            borderColor: allActive ? '#38bdf8' : 'rgba(148,163,184,0.35)',
-            boxShadow: allActive ? '0 0 12px #38bdf8a0' : undefined,
+            borderColor: allActive ? '#EFF0F2' : 'rgba(148,163,184,0.35)',
+            boxShadow: allActive ? '0 0 12px #EFF0F2a0' : undefined,
             opacity: allActive ? 1 : 0.85,
           }}
         >

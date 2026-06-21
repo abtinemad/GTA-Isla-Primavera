@@ -86,11 +86,11 @@ export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
   Escapades: {
     label: 'Escapades',
     emoji: '🧭', // Clean Exploration Compass
-    colorClass: 'purple',
-    bgClass: 'bg-[#9E7AD2]/15 text-[#9E7AD2] border-[#9E7AD2]/30',
-    borderClass: 'border-[#9E7AD2]',
-    textClass: 'text-[#9E7AD2]',
-    accentColor: '#9E7AD2', // Token --cat-escapades
+    colorClass: 'orange',
+    bgClass: 'bg-[#F0941E]/15 text-[#C2710E] border-[#F0941E]/30',
+    borderClass: 'border-[#F0941E]',
+    textClass: 'text-[#C2710E]',
+    accentColor: '#F0941E', // Token --cat-escapades (orange)
     iconName: 'Compass',
     desc: 'Exploration de lieux insolites, insolites ou abandonnés'
   },
@@ -108,22 +108,22 @@ export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
   Restaurants: {
     label: 'Restaurants',
     emoji: '🍽️',
-    colorClass: 'orange',
-    bgClass: 'bg-[#F0941E]/15 text-[#C2710E] border-[#F0941E]/30',
-    borderClass: 'border-[#F0941E]',
-    textClass: 'text-[#C2710E]',
-    accentColor: '#F0941E', // Token --cat-restaurants
+    colorClass: 'purple',
+    bgClass: 'bg-[#9E7AD2]/15 text-[#9E7AD2] border-[#9E7AD2]/30',
+    borderClass: 'border-[#9E7AD2]',
+    textClass: 'text-[#9E7AD2]',
+    accentColor: '#9E7AD2', // Token --cat-restaurants (violet)
     iconName: 'Utensils',
     desc: 'Arrêt au stand pour restauration ou réapprovisionnement énergétique'
   },
   'Beach Club': {
     label: 'Beach Club',
     emoji: '🍹',
-    colorClass: 'coral',
-    bgClass: 'bg-[#FF6F61]/15 text-[#D14B3C] border-[#FF6F61]/30',
-    borderClass: 'border-[#FF6F61]',
-    textClass: 'text-[#D14B3C]',
-    accentColor: '#FF6F61', // Token --cat-beachclub (corail, inédit)
+    colorClass: 'teal',
+    bgClass: 'bg-[#17B0A7]/15 text-[#0E7C76] border-[#17B0A7]/30',
+    borderClass: 'border-[#17B0A7]',
+    textClass: 'text-[#0E7C76]',
+    accentColor: '#17B0A7', // Token --cat-beachclub (teal)
     iconName: 'Umbrella',
     desc: 'Beach clubs premium : transats, DJ et cocktails face à l\'océan'
   },
@@ -211,50 +211,51 @@ interface MarkerVariantStyle {
   fill: string;       // pin body colour
   glyphColor: string; // glyph colour (chosen for contrast on `fill`)
   scale: number;      // base size multiplier (annexe pins are smaller)
+  rim?: string;       // dark contour override (e.g. QG near-white) when NOT active
   glyph: (g: string, fill: string) => string; // inner SVG of the glyph
 }
 
 const MARKER_VARIANTS: Record<MarkerVariant, MarkerVariantStyle> = {
-  // QG — doré / blanc, glyphe "H"
+  // QG — quasi-blanc #EDEFF2, glyphe + contour foncés (visible sur la carte)
   qg: {
-    fill: '#EAC54F', glyphColor: '#FFFFFF', scale: 1,
+    fill: '#EDEFF2', glyphColor: '#16161A', rim: '#16161A', scale: 1,
     glyph: (g) => `<path d="M6 4V16M14 4V16M6 10H14" fill="none" stroke="${g}" stroke-width="2.6" stroke-linecap="round"/>`,
   },
-  // Restaurant (complexe) — ambre, fourchette + couteau
+  // Restaurant — violet #9E7AD2 (blanc), fourchette + couteau
   restaurant: {
-    fill: '#F0941E', glyphColor: '#2A1400', scale: 1,
+    fill: '#9E7AD2', glyphColor: '#FFFFFF', scale: 1,
     glyph: (g) => `<path d="M6 4v4.5a1.4 1.4 0 0 0 2.8 0V4M7.4 8.5V17M14 4c-1.6 1.4-1.6 5.6 0 7v6" fill="none" stroke="${g}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
-  // Coctelería — cyan néon, verre à cocktail
+  // Bars — rose #E0479B (blanc), verre à cocktail
   cocktail: {
-    fill: '#00E0CB', glyphColor: '#053330', scale: 1,
+    fill: '#E0479B', glyphColor: '#FFFFFF', scale: 1,
     glyph: (g) => `<path d="M3.5 5h13l-6.5 7zM10 12v4M6.5 16h7" fill="none" stroke="${g}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
   // Cannabis club — vert néon, VRAIE feuille de cannabis (lucide `Cannabis`,
   // icône 24×24 stroke mappée dans la box 20×20 centrée en 10,10 ; stroke = glyphColor,
   // épaissi pour rester lisible à la taille du pin). Couleurs inchangées.
   cannabis: {
-    fill: '#2BE38A', glyphColor: '#053A22', scale: 1,
+    fill: '#46AE3C', glyphColor: '#FFFFFF', scale: 1,
     glyph: (g) => `<g transform="translate(10 10) scale(0.8) translate(-12 -12)" fill="none" stroke="${g}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-4"/><path d="M7 12c-1.5 0-4.5 1.5-5 3 3.5 1.5 6 1 6 1-1.5 1.5-2 3.5-2 5 2.5 0 4.5-1.5 6-3 1.5 1.5 3.5 3 6 3 0-1.5-.5-3.5-2-5 0 0 2.5.5 6-1-.5-1.5-3.5-3-5-3 1.5-1 4-4 4-6-2.5 0-5.5 1.5-7 3 0-2.5-.5-5-2-7-1.5 2-2 4.5-2 7-1.5-1.5-4.5-3-7-3 0 2 2.5 5 4 6"/></g>`,
   },
-  // Plage — JAUNE, parasol
+  // Plage — bleu #3F6CC4 (blanc), parasol
   plage: {
-    fill: '#FFD60A', glyphColor: '#3A2D00', scale: 1,
+    fill: '#3F6CC4', glyphColor: '#FFFFFF', scale: 1,
     glyph: (g) => `<path d="M3 10a7 7 0 0 1 14 0ZM10 4V2.5M10 10v7M10 17h2.6" fill="none" stroke="${g}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
-  // Beach club — CORAIL, cocktail tropical sous parasol
+  // Beach club — TEAL #17B0A7 (blanc), cocktail tropical sous parasol
   'beach-club': {
-    fill: '#FF6F61', glyphColor: '#3A0F08', scale: 1,
+    fill: '#17B0A7', glyphColor: '#FFFFFF', scale: 1,
     glyph: (g) => `<path d="M9.5 4Q13 0.2 16.5 4Z" fill="${g}"/><path d="M13 4 11.4 9" fill="none" stroke="${g}" stroke-width="1.6" stroke-linecap="round"/><path d="M6.5 9H13.5L12 16H8Z" fill="none" stroke="${g}" stroke-width="1.7" stroke-linejoin="round"/>`,
   },
-  // Mission photo principale — rose néon vif, appareil photo plein
+  // Mission photo principale (Escapades) — orange #F0941E, appareil photo plein
   'mission-photo-principale': {
-    fill: '#FF2E9A', glyphColor: '#FFFFFF', scale: 1,
+    fill: '#F0941E', glyphColor: '#2A1400', scale: 1,
     glyph: (g, fill) => `<path d="M3 7h2.6l1.3-1.9h6.2L14.4 7H17a1.3 1.3 0 0 1 1.3 1.3V15a1.3 1.3 0 0 1-1.3 1.3H3A1.3 1.3 0 0 1 1.7 15V8.3A1.3 1.3 0 0 1 3 7Z" fill="${g}"/><circle cx="10" cy="11.7" r="3.1" fill="${fill}"/><circle cx="10" cy="11.7" r="1.4" fill="${g}"/>`,
   },
-  // Mission photo annexe — rose atténué, appareil photo en contour, pin plus petit
+  // Mission photo annexe (Escapades) — orange #F0941E, contour, pin plus petit
   'mission-photo-annexe': {
-    fill: '#B65C8A', glyphColor: '#FFE6F2', scale: 0.82,
+    fill: '#F0941E', glyphColor: '#2A1400', scale: 0.82,
     glyph: (g) => `<path d="M3 7h2.6l1.3-1.9h6.2L14.4 7H17a1.3 1.3 0 0 1 1.3 1.3V15a1.3 1.3 0 0 1-1.3 1.3H3A1.3 1.3 0 0 1 1.7 15V8.3A1.3 1.3 0 0 1 3 7Z" fill="none" stroke="${g}" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="11.7" r="2.8" fill="none" stroke="${g}" stroke-width="1.6"/>`,
   },
   // Course — ligne de départ, ROUGE, fanion
@@ -323,7 +324,7 @@ function buildPinSvg(fill: string, rim: string, glyphInner: string): string {
  */
 export function buildMarkerHtml(variant: MarkerVariant, isActive: boolean, isCompleted?: boolean, hasPhoto?: boolean): string {
   const v = MARKER_VARIANTS[variant] ?? MARKER_VARIANTS['mission-photo-principale'];
-  const rim = isActive ? '#00F5D4' : '#FFFFFF';
+  const rim = isActive ? '#00F5D4' : (v.rim ?? '#FFFFFF');
   const scale = v.scale * (isActive ? 1.16 : 1);
   const pin = buildPinSvg(v.fill, rim, v.glyph(v.glyphColor, v.fill));
 

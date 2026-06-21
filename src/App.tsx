@@ -1024,11 +1024,11 @@ export default function App() {
         <button
           onClick={() => setActiveTab('map')}
           className={`flex-1 h-full flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
-            activeTab === 'map' ? 'text-amber-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            activeTab === 'map' ? 'text-[#FF6A4A] font-extrabold' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <div className="relative">
-            <Map size={18} className={activeTab === 'map' ? 'text-amber-400' : ''} />
+            <Map size={18} className={activeTab === 'map' ? 'text-[#FF6A4A]' : ''} />
             {selectedLocation && activeTab !== 'map' && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
             )}
@@ -1041,11 +1041,11 @@ export default function App() {
           data-tour="spots"
           onClick={() => setActiveTab('list')}
           className={`flex-1 h-full flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
-            activeTab === 'list' ? 'text-amber-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            activeTab === 'list' ? 'text-[#FF6A4A] font-extrabold' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <div className="relative flex items-center justify-center">
-            <Compass size={18} className={activeTab === 'list' ? 'text-amber-400' : ''} />
+            <Compass size={18} className={activeTab === 'list' ? 'text-[#FF6A4A]' : ''} />
             <span className="absolute -top-1 -right-3 font-mono text-[8px] bg-slate-950 text-amber-400 px-1 rounded border border-slate-800">
               {visibleLocations.length}
             </span>
@@ -1058,11 +1058,11 @@ export default function App() {
           data-tour="social-club"
           onClick={() => { setActiveTab('trophies'); ensureNotifPermission(); }}
           className={`flex-1 h-full flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
-            activeTab === 'trophies' ? 'text-amber-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+            activeTab === 'trophies' ? 'text-[#FF6A4A] font-extrabold' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <div className="relative">
-            <Trophy size={18} className={activeTab === 'trophies' ? 'text-amber-400 animate-pulse' : ''} />
+            <Trophy size={18} className={activeTab === 'trophies' ? 'text-[#FF6A4A] animate-pulse' : ''} />
           </div>
           <span className="text-[9px] tracking-wide font-display font-medium uppercase mt-0.5">Social Club</span>
         </button>

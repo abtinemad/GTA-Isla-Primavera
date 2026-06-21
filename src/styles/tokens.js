@@ -2,9 +2,9 @@ export const palette = { primary:'#EA4423', primaryBright:'#FF6A4A', cash:'#46AE
 export const categories = {
   qg:{label:'QG',color:'#EDEFF2'}, ravito:{label:'Ravitaillement',color:'#46AE3C'},
   bars:{label:'Bars',color:'#E0479B'}, missions:{label:'Missions',color:'#EA4423'},
-  escapades:{label:'Escapades',color:'#9E7AD2'}, plages:{label:'Plages',color:'#3F6CC4'},
-  restaurants:{label:'Restaurants',color:'#F0941E'},
-  beachclub:{label:'Beach Club',color:'#FF6F61'},
+  escapades:{label:'Escapades',color:'#F0941E'}, plages:{label:'Plages',color:'#3F6CC4'},
+  restaurants:{label:'Restaurants',color:'#9E7AD2'},
+  beachclub:{label:'Beach Club',color:'#17B0A7'},
 };
 export const typography = {
   fonts:{ display:"'Space Grotesk',sans-serif", body:"'Inter',sans-serif", mono:"'JetBrains Mono',monospace" },
