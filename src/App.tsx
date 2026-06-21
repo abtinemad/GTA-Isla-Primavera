@@ -681,21 +681,22 @@ export default function App() {
       }
     }
 
-    // Approach notification — ping once when entering an incomplete slot's zone
-    // (Missions 100 m, Escapades/Plages 500 m).
+    // Approach notification — ping once when entering an incomplete PHOTO slot's
+    // zone (Escapades/Plages, 500 m). On NE notifie PAS les Missions : elles sont
+    // exclues de la carte/liste (visibleLocations) → le run n'est pas lançable là où
+    // la notif apparaîtrait, donc on ne promet pas une action indisponible. Les vraies
+    // courses chrono ont leur propre prompt (courses.forEach + CoursePhotoPrompt).
     completableLocations.forEach((loc) => {
       if (completedLocationIds.includes(loc.id)) return;
+      if (!isPhotoSlot(loc.category)) return; // Missions : pas d'action dispo → pas de notif
       const d = computeDistance(userLat, userLng, loc.lat, loc.lng);
       const radius = approachRadiusKm(loc.category);
       const alerted = approachAlertedRef.current.has(loc.id);
       if (d <= radius && !alerted) {
         approachAlertedRef.current.add(loc.id);
         const label = shortLabel(loc);
-        const isPhoto = isPhotoSlot(loc.category);
-        const body = isPhoto
-          ? `Tu es sur ${label}. Ouvre la jaquette (Social Club) et prends ta photo pour valider.`
-          : `Tu approches de ${label}. Prépare ton run chrono.`;
-        setDenzelMessage({ text: body, panel: isPhoto ? 'corales' : 'car' });
+        const body = `Tu es sur ${label}. Ouvre la fiche du spot et prends ta photo pour valider.`;
+        setDenzelMessage({ text: body, panel: 'corales' });
         playSmsChirp();
         void notifyOS(`Zone atteinte · ${label}`, body, `approach_${loc.id}`);
       } else if (alerted && d > radius * 1.6) {

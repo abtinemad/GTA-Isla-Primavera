@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { LocationItem } from '../types';
 import { CourseData } from '../data/coursesData';
 import { CATEGORY_MAP, categoryIconSvg } from '../utils/helper';
+import { isPhotoSlot } from '../coverData';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Navigation, 
@@ -682,10 +683,11 @@ export default function BottomSheet({
             {/* Interactive Actions Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               
-              {/* PHOTO VALIDATION (Escapades only — secondary photo, géofence <500 m).
-                  Les Plages ne valident plus rien (système de complétion retiré) :
-                  elles passent par le bouton « 📸 Photo ici » comme les autres POI. */}
-              {location.category === 'Escapades' && !isCompleted && !isAnalyzing && (
+              {/* PHOTO VALIDATION — Escapades ET Plages (co-validation photo, géofence
+                  <500 m). Même bouton, même flux capture→enregistrement→complétion.
+                  `isPhotoSlot` (coverData) est la source unique des catégories validables
+                  par photo. */}
+              {isPhotoSlot(location.category) && !isCompleted && !isAnalyzing && (
                 <button
                   onClick={clickInput}
                   className="flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-2xl border border-dashed border-sky-300 bg-sky-50/70 hover:bg-sky-50 text-sky-900 text-sm font-extrabold transition-all duration-200 cursor-pointer active:scale-95 shadow-sm hover:border-sky-400 group col-span-1 sm:col-span-2"
@@ -748,9 +750,11 @@ export default function BottomSheet({
               )}
 
               {/* 📸 Photo ici — capture "ambiance" libre (sans géofence) sur les POI
-                  (ravito/beach club/restos/bars/plages) → collection IndexedDB. */}
+                  NON complétables (ravito/beach club/restos/bars) → collection IndexedDB.
+                  Les Plages valident désormais par photo (bouton ci-dessus), comme les
+                  Escapades → elles ne sont plus dans la capture libre. */}
               {!isAnalyzing && onCaptureSpotPhoto &&
-                ['Ravitaillement', 'Beach Club', 'Restaurants', 'Bars', 'Plages'].includes(location.category) && (
+                ['Ravitaillement', 'Beach Club', 'Restaurants', 'Bars'].includes(location.category) && (
                 <>
                   <button
                     onClick={() => ambianceInputRef.current?.click()}
