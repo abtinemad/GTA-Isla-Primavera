@@ -137,16 +137,16 @@ html, body, #root {
 }
 
 /* === Vice / Manrique map skin (Option B: tint the real tiles) === */
-/* Dark — crépuscule : assombrit + réchauffe les tuiles. */
+/* Dark — crépuscule : réchauffe sans noircir la mer (brightness remontée). */
 [data-theme="dark"] .leaflet-satellite-base {
-  filter: saturate(0.72) brightness(0.6) contrast(1.06) sepia(0.12) !important;
+  filter: saturate(0.92) brightness(0.9) contrast(0.98) sepia(0.08) !important;
 }
 [data-theme="dark"] .leaflet-satellite-roads {
-  filter: brightness(0.7) saturate(0.8) !important;
-  opacity: 0.55 !important;
+  filter: brightness(0.85) saturate(0.85) !important;
+  opacity: 0.6 !important;
 }
 [data-theme="dark"] .leaflet-plan-tiles {
-  filter: saturate(0.7) brightness(0.62) contrast(1.05) hue-rotate(-8deg) !important;
+  filter: saturate(0.82) brightness(0.86) contrast(1.0) hue-rotate(-6deg) !important;
 }
 /* Light — Vice daytime : plus doux, légèrement chaud. */
 [data-theme="light"] .leaflet-satellite-base {
@@ -165,9 +165,9 @@ html, body, #root {
   mix-blend-mode: overlay;
   background: linear-gradient(
     180deg,
-    rgba(234, 68, 35, 0.30) 0%,
-    rgba(180, 73, 154, 0.26) 45%,
-    rgba(63, 108, 196, 0.42) 100%
+    rgba(234, 68, 35, 0.22) 0%,
+    rgba(180, 73, 154, 0.18) 45%,
+    rgba(96, 156, 192, 0.26) 100%
   );
 }
 .map-tint::after {
