@@ -148,7 +148,7 @@ export default function CoverQuest({
           Affiche la version GTA si dispo (toggle vers l'original), statut + régénérer.
           L'original est TOUJOURS conservé. Tuile « + » en tête pour ajouter ses
           propres photos (supplémentaires, supprimables). */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-3 gap-2">
         {/* + Ajouter une photo perso (sélecteur OS : appareil ou pellicule) */}
         <button
           onClick={() => fileRef.current?.click()}
