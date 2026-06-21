@@ -432,7 +432,7 @@ export default function PosterComposer({
               <label className="flex-1 flex items-center gap-2">
                 <span className="font-mono text-[9px] uppercase tracking-wider text-white/50">Taille</span>
                 <input
-                  type="range" min={0.3} max={1.05} step={0.01} value={logo.w}
+                  type="range" min={0.15} max={1.05} step={0.01} value={logo.w}
                   onChange={(e) => setLogo((l) => ({ ...l, w: parseFloat(e.target.value) }))}
                   className="flex-1 accent-[#00F5D4]"
                 />

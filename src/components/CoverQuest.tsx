@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useMemo, useState, useRef, type ChangeEvent } from 'react';
-import { RefreshCw, Plus, Trash2, LayoutGrid } from 'lucide-react';
+import { useMemo, useState, useRef, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { RefreshCw, Plus, Trash2, LayoutGrid, X, Download } from 'lucide-react';
 import { CATEGORY_MAP } from '../utils/helper';
 import { courses } from '../data/coursesData';
 import { INITIAL_LOCATIONS } from '../locationsData';
@@ -87,7 +87,9 @@ export default function CoverQuest({
   // Per-tile "show the original" override (default: show GTA when available).
   const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
   const [composerOpen, setComposerOpen] = useState(false);
+  const [lightboxKey, setLightboxKey] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleAddFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -120,6 +122,58 @@ export default function CoverQuest({
     () => buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos, freePhotos),
     [coursePhotos, capturedPhotos, spotPhotos, freePhotos],
   );
+
+  // ── Lightbox (agrandir) + enregistrer ───────────────────────────────────────
+  const lightboxPhoto = lightboxKey ? photos.find((p) => p.key === lightboxKey) ?? null : null;
+  // Même sélection que la galerie : GTA si dispo (sauf bascule "Orig"), sinon original.
+  const lightboxSrc = lightboxPhoto
+    ? !gtaPhotos[lightboxPhoto.key] || showOriginal[lightboxPhoto.key]
+      ? lightboxPhoto.original
+      : gtaPhotos[lightboxPhoto.key]
+    : '';
+
+  const slugify = (s: string) =>
+    s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'photo';
+
+  // Enregistre la version AFFICHÉE (GTA si montrée — déjà un vrai raster, pas de Canvas).
+  // Web Share natif (→ « Enregistrer dans Photos ») avec fallback <a download>. Ne casse
+  // pas si l'utilisatrice annule le partage.
+  const saveDisplayed = async () => {
+    if (!lightboxPhoto || !lightboxSrc) return;
+    const name = `grand-tenerife-auto-${slugify(lightboxPhoto.label || lightboxPhoto.key)}.jpg`;
+    try {
+      const blob = await (await fetch(lightboxSrc)).blob();
+      const file = new File([blob], name, { type: 'image/jpeg' });
+      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare?.({ files: [file] })) {
+        try { await navigator.share({ files: [file] }); } catch { /* annulé → rien */ }
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // Fermeture par swipe vers le bas.
+  const onLbPointerDown = (e: ReactPointerEvent) => {
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    swipeRef.current = { x: e.clientX, y: e.clientY };
+  };
+  const onLbPointerUp = (e: ReactPointerEvent) => {
+    const s = swipeRef.current;
+    swipeRef.current = null;
+    if (s && e.clientY - s.y > 70 && Math.abs(e.clientY - s.y) > Math.abs(e.clientX - s.x)) {
+      setLightboxKey(null);
+    }
+  };
 
   return (
     <div className="relative min-h-full px-3 pt-3 pb-28">
@@ -191,7 +245,8 @@ export default function CoverQuest({
             return (
               <div
                 key={p.key}
-                className="relative aspect-[4/5] rounded-xl overflow-hidden border border-white/15"
+                onClick={() => setLightboxKey(p.key)}
+                className="relative aspect-[4/5] rounded-xl overflow-hidden border border-white/15 cursor-pointer"
               >
                 <img
                   src={showOrig ? p.original : gtaPhotos[p.key]}
@@ -207,14 +262,14 @@ export default function CoverQuest({
                 <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
                   {hasGta && (
                     <button
-                      onClick={() => setShowOriginal((s) => ({ ...s, [p.key]: !s[p.key] }))}
+                      onClick={(e) => { e.stopPropagation(); setShowOriginal((s) => ({ ...s, [p.key]: !s[p.key] })); }}
                       className="px-1.5 py-0.5 rounded-md bg-black/60 border border-white/25 text-white text-[8px] font-mono font-black uppercase tracking-wider active:scale-95 cursor-pointer"
                     >
                       {showOrig ? 'Orig' : 'GTA'}
                     </button>
                   )}
                   <button
-                    onClick={() => onRegenerate(p.key)}
+                    onClick={(e) => { e.stopPropagation(); onRegenerate(p.key); }}
                     title="Régénérer le style GTA"
                     aria-label="Régénérer"
                     className="w-5 h-5 rounded-md bg-black/60 border border-white/25 text-white flex items-center justify-center active:scale-95 cursor-pointer"
@@ -223,7 +278,7 @@ export default function CoverQuest({
                   </button>
                   {p.key.startsWith('free:') && (
                     <button
-                      onClick={() => onDeleteFreePhoto(p.key.slice('free:'.length))}
+                      onClick={(e) => { e.stopPropagation(); onDeleteFreePhoto(p.key.slice('free:'.length)); }}
                       title="Supprimer cette photo perso"
                       aria-label="Supprimer"
                       className="w-5 h-5 rounded-md bg-red-950/70 border border-red-500/50 text-red-300 flex items-center justify-center active:scale-95 cursor-pointer"
@@ -241,7 +296,7 @@ export default function CoverQuest({
                 )}
                 {status === 'error' && (
                   <button
-                    onClick={() => onRegenerate(p.key)}
+                    onClick={(e) => { e.stopPropagation(); onRegenerate(p.key); }}
                     className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-red-950/80 border border-red-500/50 text-[8px] font-mono text-red-300 uppercase tracking-wider active:scale-95 cursor-pointer"
                   >
                     ⚠ réessayer
@@ -257,6 +312,53 @@ export default function CoverQuest({
             );
           })}
       </div>
+
+      {/* ── Lightbox plein écran (agrandir) ── */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/92"
+          onClick={() => setLightboxKey(null)}
+        >
+          {/* Barre haute : Enregistrer + Fermer */}
+          <div
+            className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={saveDisplayed}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#00F5D4] text-[#062b27] text-xs font-black uppercase tracking-wide active:scale-95 cursor-pointer"
+            >
+              <Download size={14} />
+              <span>Enregistrer</span>
+            </button>
+            <button
+              onClick={() => setLightboxKey(null)}
+              aria-label="Fermer"
+              className="p-2 rounded-full border border-white/25 text-white/80 hover:text-white active:scale-95 cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Photo agrandie (contain). Tap = ne ferme pas ; swipe bas = ferme. */}
+          <img
+            src={lightboxSrc}
+            alt={lightboxPhoto.label}
+            draggable={false}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={onLbPointerDown}
+            onPointerUp={onLbPointerUp}
+            className="max-w-[94vw] max-h-[82vh] object-contain rounded-lg shadow-2xl select-none"
+            style={{ touchAction: 'none' }}
+          />
+
+          <div className="absolute bottom-0 left-0 right-0 p-4 text-center pointer-events-none">
+            <span className="font-display font-black text-white text-sm uppercase tracking-wide drop-shadow">
+              {lightboxPhoto.label}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

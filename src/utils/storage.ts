@@ -363,7 +363,7 @@ export type PosterSlot = { photoId: string | null; transform: SlotTransform };
 export type PosterComposition = { slots: PosterSlot[]; logo: PosterLogo };
 
 // Défauts : logo centré ~60% de large ; cadrage = cover centré.
-export const DEFAULT_POSTER_LOGO: PosterLogo = { x: 0.5, y: 0.16, w: 0.6 };
+export const DEFAULT_POSTER_LOGO: PosterLogo = { x: 0.5, y: 0.16, w: 0.42 };
 export const DEFAULT_SLOT_TRANSFORM: SlotTransform = { scale: 1, offsetX: 0, offsetY: 0 };
 
 export const emptyPosterSlots = (): PosterSlot[] =>
