@@ -98,8 +98,8 @@ export default function App() {
   });
 
   // Course photos live in IndexedDB (base64 too heavy for the localStorage
-  // quota). Hydrated asynchronously on mount via loadCoursePhotos(); this state
-  // is write-mostly (never rendered) so the async fill is invisible to the UI.
+  // quota). Hydrated asynchronously on mount via loadCoursePhotos(), then shown
+  // in the Social Club "Courses" gallery (CoverQuest).
   const [coursePhotos, setCoursePhotos] = useState<Record<string, string>>({});
 
   // El Jefe info-bulle shown when within 50 m of a course's photo point.
@@ -750,6 +750,8 @@ export default function App() {
             capturedPhotos={capturedPhotos}
             completedTimes={completedTimes}
             userCoords={userCoords}
+            completedCourseIds={completedCourseIds}
+            coursePhotos={coursePhotos}
             onOpenCamera={(slot) => {
               // Photo-mission reaches its "take the photo" step.
               setDenzelMessage(getDenzelPhotoPrompt());

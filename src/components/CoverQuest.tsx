@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useMemo } from 'react';
-import { Lock, Camera, MapPin } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Lock, Camera, MapPin, ChevronDown } from 'lucide-react';
 import { CATEGORY_MAP, haversineKm } from '../utils/helper';
+import { courses } from '../data/coursesData';
 import {
   COVER_LOCATIONS,
   shortLabel,
@@ -21,10 +22,18 @@ interface CoverQuestProps {
   completedTimes: Record<number, string>;
   userCoords: { lat: number; lng: number } | null;
   onOpenCamera: (slot: CoverSlot) => void;
+  /** Course completion (string ids) — same state that marks the ✓ on pins. */
+  completedCourseIds: string[];
+  /** Course photos from IndexedDB ({ [courseId]: base64 }). Separate from the
+   *  cover/jaquette photos (capturedPhotos). */
+  coursePhotos: Record<string, string>;
 }
 
 // Irregular tile heights → GTA-cover collage feel (masonry columns, no gaps).
 const ASPECTS = ['aspect-[3/4]', 'aspect-[4/5]', 'aspect-square', 'aspect-[2/3]', 'aspect-[5/6]'];
+
+// Course brand red (route line / El Jefe / Social Club progress).
+const COURSE_ACCENT = '#EA4423';
 
 export default function CoverQuest({
   completedLocationIds,
@@ -32,7 +41,29 @@ export default function CoverQuest({
   completedTimes,
   userCoords,
   onOpenCamera,
+  completedCourseIds,
+  coursePhotos,
 }: CoverQuestProps) {
+  const [coursesOpen, setCoursesOpen] = useState(false);
+
+  // Counter scope = non-tutorial courses only (RUN 0 prologue excluded), so the
+  // count is consistent with the 100% logic. Y derived from data, never hardcoded.
+  const nonTutorialCourses = useMemo(() => courses.filter((c) => !c.tutorial), []);
+  const courseTotal = nonTutorialCourses.length;
+  const courseDoneCount = nonTutorialCourses.filter((c) =>
+    completedCourseIds.includes(c.id),
+  ).length;
+
+  // Gallery = non-tutorial courses that already have a captured photo. The GTA
+  // grade is baked into the photo at capture, like the jaquette tiles — no extra
+  // CSS filter, so the look matches the rest of the Social Club gallery.
+  const courseTiles = useMemo(
+    () =>
+      nonTutorialCourses
+        .filter((c) => coursePhotos[c.id])
+        .map((c) => ({ id: c.id, title: c.title, trophy: c.trophy, photo: coursePhotos[c.id] })),
+    [nonTutorialCourses, coursePhotos],
+  );
   const slots: CoverSlot[] = useMemo(() => {
     return COVER_LOCATIONS.map((loc, i) => {
       const filled = completedLocationIds.includes(loc.id);
@@ -77,6 +108,81 @@ export default function CoverQuest({
     <div className="relative min-h-full pb-28">
       {/* Backdrop = the section's .app-bg (Manrique fresco) — it breathes between
           and through the theme-aware glass trophy tiles. No opaque layer here. */}
+
+      {/* COURSES — compteur + galerie dépliable. Vit UNIQUEMENT ici (cohérent
+          avec la barre de complétion). Photos séparées de la jaquette. */}
+      <div className="relative z-[2] px-3 pt-3">
+        <div
+          className="rounded-xl border border-[color:var(--hairline)] overflow-hidden"
+          style={{
+            background: 'var(--glass-bg)',
+            backdropFilter: 'blur(var(--blur-glass))',
+            WebkitBackdropFilter: 'blur(var(--blur-glass))',
+          }}
+        >
+          {/* En-tête / compteur — toggle plier/déplier */}
+          <button
+            onClick={() => setCoursesOpen((o) => !o)}
+            aria-expanded={coursesOpen}
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer"
+          >
+            <span className="flex items-baseline gap-2">
+              <span className="font-display font-black uppercase tracking-wide text-[color:var(--text)] text-sm">
+                Courses
+              </span>
+              <span className="font-mono text-xs font-black" style={{ color: COURSE_ACCENT }}>
+                {courseDoneCount}/{courseTotal}
+              </span>
+            </span>
+            <ChevronDown
+              size={18}
+              className={`text-[color:var(--text-muted)] transition-transform duration-300 ${
+                coursesOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {/* Corps déplié : galerie des photos de course */}
+          {coursesOpen && (
+            <div className="px-3 pb-3">
+              {courseTiles.length === 0 ? (
+                <p className="text-[color:var(--text-muted)] text-xs leading-relaxed py-2 text-center">
+                  Aucune course terminée. Décroche ton premier cliché sur la route.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {courseTiles.map((c) => (
+                    <div
+                      key={c.id}
+                      className="relative aspect-[4/5] rounded-xl overflow-hidden border border-white/15"
+                    >
+                      <img
+                        src={c.photo}
+                        alt={c.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background: `linear-gradient(to top, #0a0a0b 6%, ${COURSE_ACCENT}55 42%, transparent 80%)`,
+                        }}
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 p-2.5 flex flex-col gap-0.5">
+                        <span className="font-display font-black text-white text-[12px] uppercase tracking-wide leading-tight drop-shadow">
+                          {c.title}
+                        </span>
+                        <span className="font-mono text-[9px] font-bold" style={{ color: '#FF7A4E' }}>
+                          🏆 {c.trophy}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Montage of unequal panels (above the app-bg) */}
       <div className="relative z-[1] px-3 pt-3 [column-count:2] sm:[column-count:3] lg:[column-count:4] gap-2.5">
