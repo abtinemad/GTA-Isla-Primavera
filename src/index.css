@@ -142,6 +142,19 @@ html, body, #root {
   }
 }
 
+/* État « FAIT / VISITÉ » — pin désaturé + assombri, mais TOUJOURS visible et
+   cliquable (succès de la joueuse, pas un bouton désactivé). « Fait » (validé :
+   photo/chrono, le ✓ est dans le SVG) est plus marqué que « visité » (lien ouvert,
+   signal plus faible). */
+.custom-div-icon.pin-done {
+  filter: grayscale(0.9) brightness(0.66);
+  opacity: 0.9;
+}
+.custom-div-icon.pin-visited {
+  filter: grayscale(0.55) brightness(0.82);
+  opacity: 0.95;
+}
+
 .custom-marker-pin {
   display: flex !important;
   align-items: center !important;

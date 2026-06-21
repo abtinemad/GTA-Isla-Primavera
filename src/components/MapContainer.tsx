@@ -37,6 +37,8 @@ interface MapContainerProps {
   /** Pin labels (tooltips) show only when exactly one filter group is active. */
   singleGroupActive?: boolean;
   completedLocations?: number[];
+  /** Spots « visités » (lien ouvert) — grisage léger, sans ✓. */
+  visitedLocations?: number[];
   /** Races — sole source of courses (src/data/coursesData.ts). */
   courses?: CourseData[];
   /** Whether the Courses filter is on (show course pins at all). */
@@ -62,6 +64,7 @@ export default function MapContainer({
   onWalletClick,
   singleGroupActive = false,
   completedLocations = [],
+  visitedLocations = [],
   courses = [],
   coursesActive = false,
   coursesFocused = false,
@@ -243,10 +246,11 @@ export default function MapContainer({
     });
   }, [locations, selectedLocation, onSelectLocation, completedLocations, singleGroupActive]);
 
-  // 3b. Pulse de proximité — bascule la classe sur l'ÉLÉMENT du marker (pas de
-  // recréation d'icône). Dépend aussi de `locations` pour ré-appliquer l'état après
-  // la recréation des marqueurs (changement de filtre/proximité). Robuste : ne touche
-  // qu'aux markers existants et vérifie l'existence de l'élément avant manip.
+  // 3b. État visuel des markers — pulse de proximité + grisage « fait/visité »,
+  // basculé par TOGGLE de classe sur l'ÉLÉMENT (pas de recréation d'icône). Dépend
+  // aussi de `locations` pour ré-appliquer après la recréation des marqueurs
+  // (changement de filtre/proximité). Robuste : ne touche qu'aux markers existants et
+  // vérifie l'existence de l'élément avant manip.
   useEffect(() => {
     for (const idStr of Object.keys(markersRef.current)) {
       const id = Number(idStr);
@@ -256,8 +260,13 @@ export default function MapContainer({
       const level = pulseLevels[id];
       el.classList.toggle('pin-pulse', level === 'soft');
       el.classList.toggle('pin-pulse-strong', level === 'strong');
+      // « Fait » (validé : photo/chrono — ✓ déjà dans le SVG) vs « visité » (lien
+      // ouvert, signal plus léger). Validé prime sur visité.
+      const done = completedLocations.includes(id);
+      el.classList.toggle('pin-done', done);
+      el.classList.toggle('pin-visited', !done && visitedLocations.includes(id));
     }
-  }, [pulseLevels, locations]);
+  }, [pulseLevels, completedLocations, visitedLocations, locations]);
 
   // 4. Handle smooth focusing when selectedLocation changes (e.g., from lists or indicators)
   useEffect(() => {

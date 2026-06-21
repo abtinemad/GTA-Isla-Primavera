@@ -91,6 +91,27 @@ export default function App() {
     }
   });
 
+  // Spots « visités » = spots à lien (Bars / Restaurants / Beach Club / QG…) dont
+  // un lien (site / insta / tiktok) a été ouvert ≥ 1 fois. Signal PLUS LÉGER que la
+  // vraie validation (completedLocationIds). Persisté en localStorage.
+  const [visitedSpotIds, setVisitedSpotIds] = useState<number[]>(() => {
+    try {
+      const saved = safeLocalStorage.getItem('tenerife_visited_spots');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const handleVisitSpot = useCallback((locId: number) => {
+    setVisitedSpotIds((prev) => {
+      if (prev.includes(locId)) return prev;
+      const next = [...prev, locId];
+      safeLocalStorage.setItem('tenerife_visited_spots', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   // Course (race) completion — dedicated state keyed by the course's string id,
   // separate from the spot completion above. Courses do NOT feed the spot 100%
   // / Social Club; the prologue (tutorial:true) is excluded from any course tally.
@@ -435,11 +456,12 @@ export default function App() {
     for (const loc of allLocations) {
       if (loc.category.startsWith('🏆')) continue;
       if (completedLocationIds.includes(loc.id)) continue;
+      if (visitedSpotIds.includes(loc.id)) continue; // visité = fait (léger) → ne pulse plus
       const d = haversineKm(userCoords.lat, userCoords.lng, loc.lat, loc.lng);
       if (d <= approachRadiusKm(loc.category)) out[loc.id] = d <= GEOFENCE_KM ? 'strong' : 'soft';
     }
     return out;
-  }, [userCoords, allLocations, completedLocationIds]);
+  }, [userCoords, allLocations, completedLocationIds, visitedSpotIds]);
 
   // PROXIMITÉ > FILTRE : un spot en approche s'affiche TOUJOURS, même si sa
   // catégorie est masquée par le filtre (qui ne sert qu'à parcourir).
@@ -946,6 +968,7 @@ export default function App() {
           <MapContainer
             locations={mapLocations}
             pulseLevels={pulseLevels}
+            visitedLocations={visitedSpotIds}
             selectedLocation={selectedLocation}
             onSelectLocation={handleSelectLocation}
             userCoords={userCoords}
@@ -1042,6 +1065,7 @@ export default function App() {
         onStartCourseRun={handleStartCourseRun}
         completedCourseIds={completedCourseIds}
         onCaptureSpotPhoto={handleCaptureSpotPhoto}
+        onVisitSpot={handleVisitSpot}
       />
 
       {/* ACTIVE STOPWATCH RUN DYNAMIC MULTI-VIEW GLOBAL HUD OVERLAY */}

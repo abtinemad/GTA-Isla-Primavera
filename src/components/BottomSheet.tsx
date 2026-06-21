@@ -70,6 +70,8 @@ interface BottomSheetProps {
   completedCourseIds?: string[];
   /** Free "ambiance" photo on a POI spot (no geofence) → IndexedDB collection. */
   onCaptureSpotPhoto?: (locId: number, base64: string) => void;
+  /** Marque le spot « visité » (lien site/insta/tiktok ouvert ≥ 1 fois). */
+  onVisitSpot?: (locId: number) => void;
 }
 
 export default function BottomSheet({
@@ -90,6 +92,7 @@ export default function BottomSheet({
   onStartCourseRun,
   completedCourseIds = [],
   onCaptureSpotPhoto,
+  onVisitSpot,
 }: BottomSheetProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisLogs, setAnalysisLogs] = useState<string[]>([]);
@@ -856,6 +859,7 @@ export default function BottomSheet({
                       href={location.website}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => onVisitSpot?.(location.id)}
                       aria-label="Site web"
                       title="Site web"
                       className={socialBtnClass}
@@ -869,6 +873,7 @@ export default function BottomSheet({
                       href={location.instagram}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => onVisitSpot?.(location.id)}
                       aria-label="Instagram"
                       title="Instagram"
                       className={socialBtnClass}
@@ -882,6 +887,7 @@ export default function BottomSheet({
                       href={location.tiktok}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => onVisitSpot?.(location.id)}
                       aria-label="TikTok"
                       title="TikTok"
                       className={socialBtnClass}
