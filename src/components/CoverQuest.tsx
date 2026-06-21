@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { CATEGORY_MAP } from '../utils/helper';
 import { courses } from '../data/coursesData';
 import { INITIAL_LOCATIONS } from '../locationsData';
@@ -21,6 +22,10 @@ interface CoverQuestProps {
   /** GTA-styled versions, keyed by composite key (course:<id> / loc:<id>).
    *  The display prefers the GTA version when present, else the original. */
   gtaPhotos: Record<string, string>;
+  /** Styling status per key: 'pending' (en cours) | 'error'. */
+  gtaStatus: Record<string, 'pending' | 'error'>;
+  /** Re-run the proxy for one photo (keeps the original). */
+  onRegenerate: (key: string) => void;
 }
 
 // Course brand red (route line / El Jefe).
@@ -65,7 +70,11 @@ export default function CoverQuest({
   capturedPhotos,
   spotPhotos,
   gtaPhotos,
+  gtaStatus,
+  onRegenerate,
 }: CoverQuestProps) {
+  // Per-tile "show the original" override (default: show GTA when available).
+  const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
   // Counters (informative X/Y, no global completion). Totals derived from data.
   const nonTutorialCourses = useMemo(() => courses.filter((c) => !c.tutorial), []);
   const courseTotal = nonTutorialCourses.length; // 7
@@ -112,8 +121,9 @@ export default function CoverQuest({
         </div>
       </div>
 
-      {/* Galerie de TOUTES les photos capturées (originaux non gradés ; la
-          stylisation GTA viendra de l'API image en version séparée) */}
+      {/* Galerie de TOUTES les photos. Affiche la version GTA si dispo (toggle
+          possible vers l'original), statut de stylisation + bouton régénérer.
+          L'original est TOUJOURS conservé intact. */}
       {photos.length === 0 ? (
         <div className="rounded-xl border border-[color:var(--hairline)] px-4 py-10 text-center" style={GLASS}>
           <p className="text-[color:var(--text-muted)] text-xs leading-relaxed">
@@ -123,27 +133,68 @@ export default function CoverQuest({
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          {photos.map((p) => (
-            <div
-              key={p.key}
-              className="relative aspect-[4/5] rounded-xl overflow-hidden border border-white/15"
-            >
-              <img
-                src={gtaPhotos[p.key] ?? p.original}
-                alt={p.label}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+          {photos.map((p) => {
+            const hasGta = !!gtaPhotos[p.key];
+            const showOrig = !hasGta || !!showOriginal[p.key];
+            const status = gtaStatus[p.key];
+            return (
               <div
-                className="absolute inset-0"
-                style={{ background: `linear-gradient(to top, #0a0a0b 6%, ${p.accent}55 42%, transparent 80%)` }}
-              />
-              <div className="absolute bottom-0 left-0 right-0 p-2.5">
-                <span className="font-display font-black text-white text-[11px] uppercase tracking-wide leading-tight drop-shadow truncate block">
-                  {p.label}
-                </span>
+                key={p.key}
+                className="relative aspect-[4/5] rounded-xl overflow-hidden border border-white/15"
+              >
+                <img
+                  src={showOrig ? p.original : gtaPhotos[p.key]}
+                  alt={p.label}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{ background: `linear-gradient(to top, #0a0a0b 6%, ${p.accent}55 42%, transparent 80%)` }}
+                />
+
+                {/* Contrôles : toggle GTA/Original + régénérer */}
+                <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+                  {hasGta && (
+                    <button
+                      onClick={() => setShowOriginal((s) => ({ ...s, [p.key]: !s[p.key] }))}
+                      className="px-1.5 py-0.5 rounded-md bg-black/60 border border-white/25 text-white text-[8px] font-mono font-black uppercase tracking-wider active:scale-95 cursor-pointer"
+                    >
+                      {showOrig ? 'Orig' : 'GTA'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onRegenerate(p.key)}
+                    title="Régénérer le style GTA"
+                    aria-label="Régénérer"
+                    className="w-5 h-5 rounded-md bg-black/60 border border-white/25 text-white flex items-center justify-center active:scale-95 cursor-pointer"
+                  >
+                    <RefreshCw size={10} className={status === 'pending' ? 'animate-spin' : ''} />
+                  </button>
+                </div>
+
+                {/* Statut de stylisation */}
+                {status === 'pending' && (
+                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 border border-white/20 text-[8px] font-mono text-amber-300 uppercase tracking-wider animate-pulse">
+                    ✨ GTA…
+                  </div>
+                )}
+                {status === 'error' && (
+                  <button
+                    onClick={() => onRegenerate(p.key)}
+                    className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-red-950/80 border border-red-500/50 text-[8px] font-mono text-red-300 uppercase tracking-wider active:scale-95 cursor-pointer"
+                  >
+                    ⚠ réessayer
+                  </button>
+                )}
+
+                <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                  <span className="font-display font-black text-white text-[11px] uppercase tracking-wide leading-tight drop-shadow truncate block">
+                    {p.label}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

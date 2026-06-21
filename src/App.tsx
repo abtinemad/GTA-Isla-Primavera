@@ -920,6 +920,8 @@ export default function App() {
             capturedPhotos={capturedPhotos}
             spotPhotos={spotPhotos}
             gtaPhotos={gtaPhotos}
+            gtaStatus={gtaStatus}
+            onRegenerate={regenerateGta}
           />
         </section>
 
