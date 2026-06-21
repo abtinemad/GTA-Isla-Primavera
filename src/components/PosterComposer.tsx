@@ -15,6 +15,7 @@ import {
   type PosterLogo,
   type PosterSlot,
 } from '../utils/storage';
+import { CELL_RECTS, CASE_ASPECT, placePhoto, clamp } from '../utils/posterGeometry';
 
 interface PosterComposerProps {
   onClose: () => void;
@@ -27,60 +28,6 @@ interface PosterComposerProps {
 
 const SELECT_RING = '#00F5D4';
 const POSTER_BG = '#0A0A0D'; // fond + filets noirs
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-
-// ── Mosaïque irrégulière (pavage exact, fractions du poster) ──────────────────
-const CELLS: [number, number, number, number][] = [
-  [0.0, 0.0, 0.6667, 0.2],     // 1 horizon haut
-  [0.6667, 0.0, 1.0, 0.3333],  // 2 portrait
-  [0.0, 0.2, 0.25, 0.4667],    // 3 portrait étroit
-  [0.25, 0.2, 0.6667, 0.6],    // 4 grand portrait centre
-  [0.6667, 0.3333, 1.0, 0.8],  // 5 portrait
-  [0.25, 0.6, 0.6667, 0.8],    // 6 paysage
-  [0.0, 0.4667, 0.25, 0.8],    // 7 portrait étroit
-  [0.0, 0.8, 0.3333, 1.0],     // 8 paysage
-  [0.3333, 0.8, 1.0, 1.0],     // 9 horizon bas-droit
-];
-
-const ASPECT = 4 / 5;          // posterW / posterH
-const FILET_X = 0.015;         // filet ~1.5% de la largeur
-const FILET_Y = FILET_X * ASPECT; // même épaisseur en px (fraction de la hauteur)
-const EPS = 0.001;
-
-type Rect = { left: number; top: number; width: number; height: number }; // fractions 0..1
-
-// Insère le filet noir : demi-filet sur les bords intérieurs, filet plein au pourtour.
-function insetRect([x0, y0, x1, y1]: [number, number, number, number]): Rect {
-  const il = x0 <= EPS ? FILET_X : FILET_X / 2;
-  const ir = x1 >= 1 - EPS ? FILET_X : FILET_X / 2;
-  const it = y0 <= EPS ? FILET_Y : FILET_Y / 2;
-  const ib = y1 >= 1 - EPS ? FILET_Y : FILET_Y / 2;
-  return { left: x0 + il, top: y0 + it, width: x1 - x0 - il - ir, height: y1 - y0 - it - ib };
-}
-
-const CELL_RECTS: Rect[] = CELLS.map(insetRect);
-// Ratio largeur/hauteur (px) de chaque case (indépendant de la résolution).
-const CASE_ASPECT: number[] = CELL_RECTS.map((r) => (r.width / r.height) * ASPECT);
-
-// Géométrie de placement d'une photo dans une case (cover + zoom + pan), en %
-// de la case. `ratio` = hauteurNaturelle / largeurNaturelle de l'image.
-function placePhoto(caseAspect: number, ratio: number, scale: number, offX: number, offY: number) {
-  const imageAspect = 1 / ratio; // largeur/hauteur
-  let drawWpct: number;
-  let drawHpct: number;
-  if (imageAspect >= caseAspect) {
-    drawHpct = 100 * scale;
-    drawWpct = (imageAspect / caseAspect) * 100 * scale;
-  } else {
-    drawWpct = 100 * scale;
-    drawHpct = (caseAspect / imageAspect) * 100 * scale;
-  }
-  const overW = drawWpct - 100;
-  const overH = drawHpct - 100;
-  const leftPct = (overW / 2) * (offX - 1);
-  const topPct = (overH / 2) * (offY - 1);
-  return { drawWpct, drawHpct, leftPct, topPct, overW, overH };
-}
 
 const loadImage = (src: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {

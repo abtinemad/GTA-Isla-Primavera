@@ -386,28 +386,35 @@ function normalizeSlot(raw: unknown): PosterSlot {
   };
 }
 
+/**
+ * Normalise une composition depuis n'importe quelle forme stockée (PURE, testable) :
+ * - tableau d'ids (string|null) [ancien Phase 5] → cases cover, logo défaut ;
+ * - { slots: ids|objets, logo? } → cases normalisées, logo défaut si absent ;
+ * - format courant { slots: PosterSlot[], logo } → identité.
+ */
+export function parsePosterComposition(parsed: unknown): PosterComposition {
+  const rawSlots = Array.isArray(parsed)
+    ? (parsed as unknown[])
+    : ((parsed as { slots?: unknown[] })?.slots ?? []);
+  const logo = Array.isArray(parsed)
+    ? DEFAULT_POSTER_LOGO
+    : { ...DEFAULT_POSTER_LOGO, ...((parsed as { logo?: PosterLogo })?.logo ?? {}) };
+  return {
+    slots: Array.from({ length: 9 }, (_, i) => normalizeSlot(rawSlots[i] ?? null)),
+    logo,
+  };
+}
+
 /** Persiste TOUTE la composition : cases {photoId,transform} + logo {x,y,w}. */
 export async function savePosterComposition(comp: PosterComposition): Promise<void> {
   await putInStore(POSTER_STORE, POSTER_KEY, JSON.stringify(comp));
 }
 
-/** Charge la composition. Rétro-compatible (tableau d'ids OU {slots:ids|objets,logo}). */
+/** Charge la composition (rétro-compatible via parsePosterComposition). */
 export async function loadPosterComposition(): Promise<PosterComposition> {
   try {
     for (const [k, v] of await getAllFromStore(POSTER_STORE)) {
-      if (String(k) === POSTER_KEY) {
-        const parsed = JSON.parse(v) as unknown;
-        const rawSlots = Array.isArray(parsed)
-          ? (parsed as unknown[])
-          : ((parsed as { slots?: unknown[] })?.slots ?? []);
-        const logo = Array.isArray(parsed)
-          ? DEFAULT_POSTER_LOGO
-          : { ...DEFAULT_POSTER_LOGO, ...((parsed as { logo?: PosterLogo })?.logo ?? {}) };
-        return {
-          slots: Array.from({ length: 9 }, (_, i) => normalizeSlot(rawSlots[i] ?? null)),
-          logo,
-        };
-      }
+      if (String(k) === POSTER_KEY) return parsePosterComposition(JSON.parse(v));
     }
   } catch {
     /* ignore */
