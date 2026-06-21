@@ -287,26 +287,15 @@ export default function App() {
     }
   }, [activeGroups, selectedLocation]);
 
-  // Only Missions / Escapades / Plages have an in-app completion flow (chrono
-  // geofence or photo). Other categories and the trophy markers (id 101-105)
-  // are never completable, so they must not inflate the completion denominator.
+  // Spots that surface a geofenced "you're approaching" toast (Escapades photo
+  // ritual + the legacy Missions/Plages proximity). No global completion score
+  // is derived from this any more — the Social Club tracks per-type counters.
   const completableLocations = useMemo(
     () => allLocations.filter(
       (l) => l.category === 'Missions' || l.category === 'Escapades' || l.category === 'Plages'
     ),
     [allLocations]
   );
-
-  const completedCount = useMemo(
-    () => completedLocationIds.filter(id => completableLocations.some(l => l.id === id)).length,
-    [completedLocationIds, completableLocations]
-  );
-
-  // Proportional completion over the completable dataset.
-  const completionPct = useMemo(() => {
-    const total = completableLocations.length;
-    return total > 0 ? (completedCount / total) * 100 : 0;
-  }, [completedCount, completableLocations]);
 
   // Single shared AudioContext, lazily created on first sound. Browsers cap the
   // number of live contexts (~6), so creating one per chime eventually goes silent.

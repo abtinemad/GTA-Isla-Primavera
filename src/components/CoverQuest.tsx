@@ -91,11 +91,6 @@ export default function CoverQuest({
     });
   }, [completedLocationIds, capturedPhotos, userCoords]);
 
-  // progress = filled / total, derived from the shared completion state.
-  const filledCount = slots.filter((s) => s.status === 'filled').length;
-  const total = slots.length;
-  const progress = total > 0 ? filledCount / total : 0;
-
   const distanceHint = (slot: CoverSlot): string => {
     if (!userCoords) return 'Active le GPS';
     const km = haversineKm(userCoords.lat, userCoords.lng, slot.location.lat, slot.location.lng);
@@ -301,24 +296,6 @@ export default function CoverQuest({
           <span></span>
         </div>
         <div className="csub">ISLA PRIMAVERA</div>
-      </div>
-
-      {/* Footer: progress (pinned above the mobile nav) */}
-      <div className="fixed bottom-14 md:bottom-0 left-0 right-0 z-[6] px-4 pt-5 pb-4 bg-gradient-to-t from-[#0a0a0b] via-[#0a0a0b]/85 to-transparent">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="font-mono text-[10px] uppercase tracking-[2px] text-white/80 font-black">
-            Social Club · Ta jaquette
-          </span>
-          <span className="font-mono text-xs font-black text-white">
-            {filledCount}/{total}
-          </span>
-        </div>
-        <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden border border-white/10">
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{ width: `${progress * 100}%`, background: 'linear-gradient(90deg,#EA4423,#FF7A4E)' }}
-          />
-        </div>
       </div>
 
       <style>{`
