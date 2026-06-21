@@ -19,12 +19,15 @@
 // Modèle principal puis fallback si 404.
 const MODELS = ['gemini-3.1-flash-image', 'gemini-3.1-flash-image-preview'];
 
-// Prompt par défaut (à surcharger via GTA_PROMPT en env serveur).
-const DEFAULT_PROMPT =
-  "Restyle this exact photo as official Grand Theft Auto loading-screen cover art: " +
-  "bold hand-painted cel-shading, thick clean black outlines, punchy saturated colors, " +
-  "high contrast sunny lighting, subtle halftone grain. Keep the original composition, " +
-  "subjects and framing identical — only restyle. No text, no logos, no watermark.";
+// Prompt « gtaifier » (server-side uniquement, jamais dans le client). Surchargeable
+// via l'env GTA_PROMPT sans redéploiement.
+const DEFAULT_PROMPT = `An artistic digital illustration in the style of a GTA-style loading-screen poster, based directly on the composition of the provided image. Hand-drawn comic-book aesthetic: clean bold black outlines, dynamic cell-shading, vivid saturated colors, painterly textures, high-contrast dramatic lighting, premium Rockstar loading-screen finish.
+
+Restyle the scene exactly as it appears: keep the original composition and layout, only transform it into this art style. Do not add or remove major elements.
+
+Color palette & atmosphere — sun-soaked Miami / neon-coast vibe, applied PURELY through color, light and mood (do NOT add new objects such as palm trees, neon signs or skylines): a warm "golden-hour-into-neon-night" grade; signature accents of hot neon pink / magenta and electric cyan-teal; warm coral-and-orange highlights with deep teal-to-purple shadows; where sky or background is visible, push it toward a magenta–orange–violet sunset gradient with soft neon glow and tropical haze; pastel art-deco warmth, high saturation, cinematic contrast.
+
+No real trademarks (no "Grand Theft Auto", no "Vice City", no VCPD, no Rockstar/R* star, no real brand logos).`;
 
 // Vercel : laisse le temps à la génération d'image.
 export const config = { maxDuration: 60 };
