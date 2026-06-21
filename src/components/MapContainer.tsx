@@ -9,7 +9,19 @@ import 'leaflet/dist/leaflet.css';
 import { LocationItem } from '../types';
 import { buildMarkerHtml, locationVariant } from '../utils/helper';
 import { CourseData } from '../data/coursesData';
+import { ISLA_PHRASES } from '../data/islaPhrases';
 import { Plus, Minus, Layers } from 'lucide-react';
+
+// Contrôles flottants — palette HUD partagée (tokens de tokens.css), comme le
+// bandeau de filtres : fond glass sombre + filet --hairline. Plus de gris zinc/Leaflet.
+const CTRL_CLASS =
+  'rounded-2xl border shadow-xl active:scale-95 transition-all cursor-pointer flex items-center justify-center hover:brightness-125';
+const CTRL_STYLE = {
+  background: 'color-mix(in srgb, var(--surface) 82%, transparent)',
+  borderColor: 'var(--hairline)',
+  backdropFilter: 'blur(10px)',
+  WebkitBackdropFilter: 'blur(10px)',
+};
 
 interface MapContainerProps {
   locations: LocationItem[];
@@ -63,6 +75,14 @@ export default function MapContainer({
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [mapStyle, setMapStyle] = useState<'satellite' | 'plan'>('satellite');
   const tileLayersRef = useRef<L.TileLayer[]>([]);
+
+  // Aphorismes Isla Primavera (bas de carte) — rotation simple ~7 s (séquentielle,
+  // donc sans répétition consécutive). Source unique : src/data/islaPhrases.ts.
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setPhraseIdx((i) => (i + 1) % ISLA_PHRASES.length), 7000);
+    return () => window.clearInterval(id);
+  }, []);
   // Course tracks (route line + finish pin) — only mounted when revealed.
   const courseLayersRef = useRef<L.LayerGroup | null>(null);
 
@@ -397,7 +417,8 @@ export default function MapContainer({
         {/* Zoom in */}
         <button
           onClick={() => mapRef.current?.zoomIn()}
-          className="bg-zinc-950 hover:bg-zinc-900 active:scale-95 p-3 rounded-2xl border border-zinc-800 shadow-xl transition-all cursor-pointer flex items-center justify-center"
+          className={`${CTRL_CLASS} p-3`}
+          style={CTRL_STYLE}
           aria-label="Zoom avant"
           title="Zoom avant"
         >
@@ -407,39 +428,33 @@ export default function MapContainer({
         {/* Zoom out */}
         <button
           onClick={() => mapRef.current?.zoomOut()}
-          className="bg-zinc-950 hover:bg-zinc-900 active:scale-95 p-3 rounded-2xl border border-zinc-800 shadow-xl transition-all cursor-pointer flex items-center justify-center"
+          className={`${CTRL_CLASS} p-3`}
+          style={CTRL_STYLE}
           aria-label="Zoom arrière"
           title="Zoom arrière"
         >
           <Minus size={18} className="text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]" />
         </button>
 
-        {/* Map Style Toggle Button */}
+        {/* Map Style Toggle — même palette HUD ; état « plan » = accent cyan rempli. */}
         <button
-          onClick={() => {
-            setMapStyle(prev => prev === 'satellite' ? 'plan' : 'satellite');
-          }}
-          className={`
-            p-3 rounded-2xl border shadow-xl transition-all cursor-pointer flex items-center justify-center active:scale-95
-            ${mapStyle === 'plan'
-              ? 'bg-emerald-950/90 border-emerald-800 text-emerald-400 shadow-emerald-500/20'
-              : 'bg-zinc-950 border-zinc-800 text-cyan-400 hover:text-white hover:bg-zinc-900 shadow-cyan-500/20'
-            }
-          `}
-          title={
-            mapStyle === 'satellite' ? "Vue Plan" : "Vue Satellite"
+          onClick={() => setMapStyle(prev => (prev === 'satellite' ? 'plan' : 'satellite'))}
+          className={`${CTRL_CLASS} p-3`}
+          style={
+            mapStyle === 'plan'
+              ? { ...CTRL_STYLE, background: 'rgba(34,211,238,0.16)', borderColor: 'rgba(34,211,238,0.55)' }
+              : CTRL_STYLE
           }
+          title={mapStyle === 'satellite' ? 'Vue Plan' : 'Vue Satellite'}
         >
-          <Layers size={18} className={
-            mapStyle === 'plan' ? "text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.5)]" :
-            "text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]"
-          } />
+          <Layers size={18} className="text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]" />
         </button>
 
         {/* El Jefe (dog) — replay the guided messages/onboarding */}
         <button
           onClick={onOpenDenzel}
-          className="bg-zinc-950 hover:bg-zinc-900 active:scale-95 p-1 rounded-2xl border border-zinc-800 shadow-xl transition-all cursor-pointer flex items-center justify-center overflow-hidden"
+          className={`${CTRL_CLASS} p-1 overflow-hidden`}
+          style={CTRL_STYLE}
           aria-label="Messages d'El Jefe"
           title="Messages d'El Jefe"
         >
@@ -450,21 +465,33 @@ export default function MapContainer({
           />
         </button>
 
-        {/* WALLET (sous l'avatar) — solde négatif en rouge, tap → message d'El Jefe. */}
+        {/* WALLET — texte flottant sous le chien (sans conteneur ni badge),
+            solde négatif en rouge style GTA, tap → message d'El Jefe. */}
         <button
           onClick={onWalletClick}
-          className="bg-slate-950/90 border-2 border-red-500/50 text-red-400 font-mono text-xs font-black px-3 h-8 rounded-2xl shadow-xl active:scale-95 cursor-pointer flex items-center justify-center select-none"
-          style={{
-            textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 4px rgba(248,113,113,0.5)',
-            boxShadow: '0 0 12px rgba(248,113,113,0.25)',
-            fontStyle: 'italic',
-          }}
+          className="mt-0.5 mr-1 font-mono text-sm font-black italic text-red-400 leading-none active:scale-95 cursor-pointer select-none bg-transparent border-0 p-0"
+          style={{ textShadow: '0 2px 5px rgba(0,0,0,0.95), 0 0 7px rgba(248,113,113,0.6)' }}
           aria-label="Portefeuille"
           title="Portefeuille"
         >
-          <span>-87 €</span>
+          -87 €
         </button>
 
+      </div>
+
+      {/* Aphorisme Isla Primavera — ligne discrète en bas de carte (rotation).
+          pointer-events-none + z sous les contrôles : ne masque ni pins ni HUD. */}
+      <div
+        className="pointer-events-none absolute left-0 right-0 z-[400] flex justify-center px-6"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom) + 4rem)' }}
+      >
+        <span
+          key={phraseIdx}
+          className="isla-phrase max-w-[88%] text-center font-display italic text-[11px] sm:text-xs leading-snug tracking-wide"
+          style={{ color: 'rgba(239,240,242,0.82)', textShadow: '0 1px 6px rgba(0,0,0,0.95)' }}
+        >
+          {ISLA_PHRASES[phraseIdx]}
+        </span>
       </div>
     </div>
   );
