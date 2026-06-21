@@ -560,7 +560,7 @@ export default function App() {
         <div className="w-full px-4 flex items-center justify-between gap-4 h-full">
           
           {/* Left / Center: Global Completion Progress Bar */}
-          <div className="flex items-center gap-2.5 flex-1 max-w-sm sm:max-w-md">
+          <div data-tour="progress" className="flex items-center gap-2.5 flex-1 max-w-sm sm:max-w-md">
             <span 
               className="text-[#4ade80] text-[10px] sm:text-xs font-mono font-black tracking-wider whitespace-nowrap"
               style={{ textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 0 5px rgba(74,222,128,0.4)' }}
@@ -646,7 +646,7 @@ export default function App() {
         </section>
 
         {/* MAP STAGE FRAME (re-centers automatically) */}
-        <section className={`flex-1 h-full relative ${activeTab === 'map' ? 'block' : 'hidden md:block'} ${activeTab === 'trophies' ? 'hidden md:hidden' : ''}`}>
+        <section data-tour="map" className={`flex-1 h-full relative ${activeTab === 'map' ? 'block' : 'hidden md:block'} ${activeTab === 'trophies' ? 'hidden md:hidden' : ''}`}>
           
           <MapContainer
             locations={filteredListLocations}
@@ -800,6 +800,7 @@ export default function App() {
 
         {/* 3. Social Club standalone trigger */}
         <button
+          data-tour="social-club"
           onClick={() => { setActiveTab('trophies'); ensureNotifPermission(); }}
           className={`flex-1 h-full flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
             activeTab === 'trophies' ? 'text-amber-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'
