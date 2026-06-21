@@ -1,8 +1,8 @@
-// Courses d'Isla Primavera — coordonnées vérifiées sur OpenStreetMap (arrivées = vrais miradores).
-// Tracés routiers réels (BRouter), simplifiés. distanceKm = longueur réelle du tracé.
-// chronoIndicatifSec = temps calculé à la vitesse MAX AUTORISÉE le long du parcours
-//   (limites OSM réelles là où renseignées, sinon limite légale de la classe de route).
+// Courses d'Isla Primavera — coordonnées vérifiées OSM (arrivées = vrais miradores).
+// Tracés routiers réels (BRouter), simplifiés. distanceKm = longueur réelle.
+// chronoIndicatifSec = temps à la vitesse MAX AUTORISÉE le long du parcours.
 // RUN 0 (tutorial: true) = prologue, hors du 100%.
+// photoAtStart?: true => le spot photo / visuel est au DÉPART (cas RUN 2 : San Andrés / Las Teresitas).
 
 export interface CourseRoutePoint { lat: number; lng: number; }
 
@@ -14,7 +14,8 @@ export interface CourseData {
   tutorial: boolean;
   axe: string;
   note: string;
-  visuelArrivee: string;
+  visuel: string;
+  photoAtStart?: boolean;
   start: CourseRoutePoint;
   end: CourseRoutePoint;
   distanceKm: number;
@@ -31,7 +32,7 @@ export const courses: CourseData[] = [
     tutorial: true,
     axe: "TF-1 (Ouest / Adeje)",
     note: "Prise en main linéaire à 120 km/h constants pour calibrer la télémétrie et valider le premier contact avec l'île.",
-    visuelArrivee: "La zone balnéaire épurée de La Caleta, et l'île de La Gomera qui se détache à l'horizon marin.",
+    visuel: "La zone balnéaire épurée de La Caleta, et l'île de La Gomera qui se détache à l'horizon marin.",
     start: { lat: 28.0494, lng: -16.5725 },
     end: { lat: 28.1026, lng: -16.7483 },
     distanceKm: 23.5,
@@ -46,7 +47,7 @@ export const courses: CourseData[] = [
     tutorial: false,
     axe: "TF-1 Nord puis TF-28",
     note: "Portion rapide et plane. Pour faire monter les fluides et la mécanique à température avant les massifs.",
-    visuelArrivee: "Vue plongeante sur la vallée de Güímar et le Malpaís : une mer de lave noire fossile parsemée de cactus, jusqu'à l'Atlantique.",
+    visuel: "Vue plongeante sur la vallée de Güímar et le Malpaís : une mer de lave noire fossile parsemée de cactus, jusqu'à l'Atlantique.",
     start: { lat: 28.0751, lng: -16.5508 },
     end: { lat: 28.29453, lng: -16.40314 },
     distanceKm: 42.2,
@@ -60,13 +61,14 @@ export const courses: CourseData[] = [
     trophy: "Maître du Flow",
     tutorial: false,
     axe: "Crête TF-12",
-    note: "La Spéciale de Rallye. Bitume sombre sous la laurisilva, souvent piégeux et humide. Test du grip latéral et de la transmission intégrale.",
-    visuelArrivee: "Le parking plonge dans le vide : toits cubiques ocre et blanc de San Andrés, plage dorée de Las Teresitas bordée de palmiers, encadrées par l'océan.",
-    start: { lat: 28.5512, lng: -16.1884 },
-    end: { lat: 28.51223, lng: -16.17899 },
+    note: "La Spéciale de Rallye, faite en montée (sens pratique du tour). Bitume sombre sous la laurisilva, souvent piégeux et humide. Test du grip et de la transmission intégrale.",
+    visuel: "Au départ, le belvédère plonge dans le vide : toits cubiques ocre et blanc de San Andrés, plage dorée de Las Teresitas bordée de palmiers, encadrées par l'océan.",
+    photoAtStart: true,
+    start: { lat: 28.51223, lng: -16.17899 },
+    end: { lat: 28.5512, lng: -16.1884 },
     distanceKm: 8.0,
     chronoIndicatifSec: 540,
-    route: [{ lat: 28.552022, lng: -16.189128 }, { lat: 28.551937, lng: -16.189256 }, { lat: 28.551987, lng: -16.189522 }, { lat: 28.552301, lng: -16.190083 }, { lat: 28.552337, lng: -16.190345 }, { lat: 28.552037, lng: -16.191334 }, { lat: 28.551991, lng: -16.191839 }, { lat: 28.551937, lng: -16.190597 }, { lat: 28.551619, lng: -16.189826 }, { lat: 28.551416, lng: -16.189714 }, { lat: 28.550871, lng: -16.189907 }, { lat: 28.550664, lng: -16.189817 }, { lat: 28.549938, lng: -16.188371 }, { lat: 28.549218, lng: -16.187512 }, { lat: 28.54886, lng: -16.186559 }, { lat: 28.548261, lng: -16.186381 }, { lat: 28.548219, lng: -16.186954 }, { lat: 28.548313, lng: -16.187383 }, { lat: 28.548582, lng: -16.187876 }, { lat: 28.548516, lng: -16.187882 }, { lat: 28.548525, lng: -16.188091 }, { lat: 28.548247, lng: -16.188348 }, { lat: 28.547927, lng: -16.188874 }, { lat: 28.54728, lng: -16.188904 }, { lat: 28.547035, lng: -16.188604 }, { lat: 28.546141, lng: -16.188332 }, { lat: 28.545354, lng: -16.188236 }, { lat: 28.54475, lng: -16.188386 }, { lat: 28.544697, lng: -16.188559 }, { lat: 28.544274, lng: -16.188981 }, { lat: 28.543812, lng: -16.18929 }, { lat: 28.542847, lng: -16.190875 }, { lat: 28.542728, lng: -16.191136 }, { lat: 28.542832, lng: -16.191254 }, { lat: 28.542069, lng: -16.191586 }, { lat: 28.5418, lng: -16.191867 }, { lat: 28.541532, lng: -16.191991 }, { lat: 28.540966, lng: -16.191876 }, { lat: 28.540683, lng: -16.19193 }, { lat: 28.540683, lng: -16.192037 }, { lat: 28.54042, lng: -16.191943 }, { lat: 28.539779, lng: -16.192117 }, { lat: 28.539497, lng: -16.191928 }, { lat: 28.539211, lng: -16.191905 }, { lat: 28.539034, lng: -16.192058 }, { lat: 28.538382, lng: -16.191828 }, { lat: 28.537833, lng: -16.191891 }, { lat: 28.53762, lng: -16.192196 }, { lat: 28.537365, lng: -16.192209 }, { lat: 28.536664, lng: -16.192671 }, { lat: 28.536538, lng: -16.192939 }, { lat: 28.535768, lng: -16.193007 }, { lat: 28.535219, lng: -16.193231 }, { lat: 28.534076, lng: -16.193217 }, { lat: 28.533605, lng: -16.192983 }, { lat: 28.533294, lng: -16.192994 }, { lat: 28.533289, lng: -16.192597 }, { lat: 28.532512, lng: -16.192189 }, { lat: 28.532455, lng: -16.192028 }, { lat: 28.532296, lng: -16.19224 }, { lat: 28.531468, lng: -16.192142 }, { lat: 28.530918, lng: -16.191994 }, { lat: 28.530828, lng: -16.191776 }, { lat: 28.530335, lng: -16.191977 }, { lat: 28.530005, lng: -16.191838 }, { lat: 28.529768, lng: -16.19193 }, { lat: 28.528486, lng: -16.191951 }, { lat: 28.527497, lng: -16.192423 }, { lat: 28.527139, lng: -16.19249 }, { lat: 28.527129, lng: -16.192713 }, { lat: 28.526607, lng: -16.192771 }, { lat: 28.526118, lng: -16.192335 }, { lat: 28.525893, lng: -16.191986 }, { lat: 28.525272, lng: -16.191686 }, { lat: 28.523635, lng: -16.191772 }, { lat: 28.523205, lng: -16.191902 }, { lat: 28.521782, lng: -16.191417 }, { lat: 28.521402, lng: -16.190997 }, { lat: 28.52092, lng: -16.191457 }, { lat: 28.520429, lng: -16.191204 }, { lat: 28.5202, lng: -16.191464 }, { lat: 28.519858, lng: -16.191556 }, { lat: 28.518273, lng: -16.190984 }, { lat: 28.517684, lng: -16.190904 }, { lat: 28.517363, lng: -16.191051 }, { lat: 28.517431, lng: -16.191374 }, { lat: 28.517122, lng: -16.19122 }, { lat: 28.516284, lng: -16.191444 }, { lat: 28.515749, lng: -16.192817 }, { lat: 28.514478, lng: -16.192831 }, { lat: 28.514303, lng: -16.192717 }, { lat: 28.514291, lng: -16.191485 }, { lat: 28.514158, lng: -16.191065 }, { lat: 28.513697, lng: -16.190663 }, { lat: 28.512621, lng: -16.190621 }, { lat: 28.51253, lng: -16.19059 }, { lat: 28.512495, lng: -16.19026 }, { lat: 28.512395, lng: -16.190475 }, { lat: 28.511705, lng: -16.190173 }, { lat: 28.511731, lng: -16.190033 }, { lat: 28.511481, lng: -16.189974 }, { lat: 28.51123, lng: -16.189465 }, { lat: 28.511033, lng: -16.189382 }, { lat: 28.511084, lng: -16.189176 }, { lat: 28.510108, lng: -16.188194 }, { lat: 28.510162, lng: -16.187925 }, { lat: 28.510536, lng: -16.187575 }, { lat: 28.510897, lng: -16.186654 }, { lat: 28.511748, lng: -16.185263 }, { lat: 28.511927, lng: -16.184324 }, { lat: 28.511862, lng: -16.183958 }, { lat: 28.512017, lng: -16.183539 }, { lat: 28.512578, lng: -16.183118 }, { lat: 28.512829, lng: -16.182467 }, { lat: 28.513186, lng: -16.182271 }, { lat: 28.51339, lng: -16.181805 }, { lat: 28.514237, lng: -16.181357 }, { lat: 28.514333, lng: -16.181132 }, { lat: 28.514299, lng: -16.180695 }, { lat: 28.51476, lng: -16.180082 }, { lat: 28.514702, lng: -16.179926 }, { lat: 28.514416, lng: -16.179781 }, { lat: 28.514032, lng: -16.179852 }, { lat: 28.513539, lng: -16.180111 }, { lat: 28.512641, lng: -16.179987 }, { lat: 28.51218, lng: -16.17926 }, { lat: 28.512197, lng: -16.178969 }],
+    route: [{ lat: 28.512197, lng: -16.178969 }, { lat: 28.51218, lng: -16.17926 }, { lat: 28.512641, lng: -16.179987 }, { lat: 28.513539, lng: -16.180111 }, { lat: 28.514032, lng: -16.179852 }, { lat: 28.514416, lng: -16.179781 }, { lat: 28.514702, lng: -16.179926 }, { lat: 28.51476, lng: -16.180082 }, { lat: 28.514299, lng: -16.180695 }, { lat: 28.514333, lng: -16.181132 }, { lat: 28.514237, lng: -16.181357 }, { lat: 28.51339, lng: -16.181805 }, { lat: 28.513186, lng: -16.182271 }, { lat: 28.512829, lng: -16.182467 }, { lat: 28.512578, lng: -16.183118 }, { lat: 28.512017, lng: -16.183539 }, { lat: 28.511862, lng: -16.183958 }, { lat: 28.511927, lng: -16.184324 }, { lat: 28.511748, lng: -16.185263 }, { lat: 28.510897, lng: -16.186654 }, { lat: 28.510536, lng: -16.187575 }, { lat: 28.510162, lng: -16.187925 }, { lat: 28.510108, lng: -16.188194 }, { lat: 28.511084, lng: -16.189176 }, { lat: 28.511033, lng: -16.189382 }, { lat: 28.51123, lng: -16.189465 }, { lat: 28.511481, lng: -16.189974 }, { lat: 28.511731, lng: -16.190033 }, { lat: 28.511705, lng: -16.190173 }, { lat: 28.512395, lng: -16.190475 }, { lat: 28.512495, lng: -16.19026 }, { lat: 28.51253, lng: -16.19059 }, { lat: 28.512621, lng: -16.190621 }, { lat: 28.513697, lng: -16.190663 }, { lat: 28.514158, lng: -16.191065 }, { lat: 28.514291, lng: -16.191485 }, { lat: 28.514303, lng: -16.192717 }, { lat: 28.514478, lng: -16.192831 }, { lat: 28.515749, lng: -16.192817 }, { lat: 28.516284, lng: -16.191444 }, { lat: 28.517122, lng: -16.19122 }, { lat: 28.517431, lng: -16.191374 }, { lat: 28.517363, lng: -16.191051 }, { lat: 28.517684, lng: -16.190904 }, { lat: 28.518273, lng: -16.190984 }, { lat: 28.519858, lng: -16.191556 }, { lat: 28.5202, lng: -16.191464 }, { lat: 28.520429, lng: -16.191204 }, { lat: 28.52092, lng: -16.191457 }, { lat: 28.521402, lng: -16.190997 }, { lat: 28.521782, lng: -16.191417 }, { lat: 28.523205, lng: -16.191902 }, { lat: 28.523635, lng: -16.191772 }, { lat: 28.525272, lng: -16.191686 }, { lat: 28.525893, lng: -16.191986 }, { lat: 28.526118, lng: -16.192335 }, { lat: 28.526607, lng: -16.192771 }, { lat: 28.527129, lng: -16.192713 }, { lat: 28.527139, lng: -16.19249 }, { lat: 28.527497, lng: -16.192423 }, { lat: 28.528486, lng: -16.191951 }, { lat: 28.529768, lng: -16.19193 }, { lat: 28.530005, lng: -16.191838 }, { lat: 28.530335, lng: -16.191977 }, { lat: 28.530828, lng: -16.191776 }, { lat: 28.530918, lng: -16.191994 }, { lat: 28.531468, lng: -16.192142 }, { lat: 28.532296, lng: -16.19224 }, { lat: 28.532455, lng: -16.192028 }, { lat: 28.532512, lng: -16.192189 }, { lat: 28.533289, lng: -16.192597 }, { lat: 28.533294, lng: -16.192994 }, { lat: 28.533605, lng: -16.192983 }, { lat: 28.534076, lng: -16.193217 }, { lat: 28.535219, lng: -16.193231 }, { lat: 28.535768, lng: -16.193007 }, { lat: 28.536538, lng: -16.192939 }, { lat: 28.536664, lng: -16.192671 }, { lat: 28.537365, lng: -16.192209 }, { lat: 28.53762, lng: -16.192196 }, { lat: 28.537833, lng: -16.191891 }, { lat: 28.538382, lng: -16.191828 }, { lat: 28.539034, lng: -16.192058 }, { lat: 28.539211, lng: -16.191905 }, { lat: 28.539497, lng: -16.191928 }, { lat: 28.539779, lng: -16.192117 }, { lat: 28.54042, lng: -16.191943 }, { lat: 28.540683, lng: -16.192037 }, { lat: 28.540683, lng: -16.19193 }, { lat: 28.540966, lng: -16.191876 }, { lat: 28.541532, lng: -16.191991 }, { lat: 28.5418, lng: -16.191867 }, { lat: 28.542069, lng: -16.191586 }, { lat: 28.542832, lng: -16.191254 }, { lat: 28.542728, lng: -16.191136 }, { lat: 28.542847, lng: -16.190875 }, { lat: 28.543812, lng: -16.18929 }, { lat: 28.544274, lng: -16.188981 }, { lat: 28.544697, lng: -16.188559 }, { lat: 28.54475, lng: -16.188386 }, { lat: 28.545354, lng: -16.188236 }, { lat: 28.546141, lng: -16.188332 }, { lat: 28.547035, lng: -16.188604 }, { lat: 28.54728, lng: -16.188904 }, { lat: 28.547927, lng: -16.188874 }, { lat: 28.548247, lng: -16.188348 }, { lat: 28.548525, lng: -16.188091 }, { lat: 28.548516, lng: -16.187882 }, { lat: 28.548582, lng: -16.187876 }, { lat: 28.548313, lng: -16.187383 }, { lat: 28.548219, lng: -16.186954 }, { lat: 28.548261, lng: -16.186381 }, { lat: 28.54886, lng: -16.186559 }, { lat: 28.549218, lng: -16.187512 }, { lat: 28.549938, lng: -16.188371 }, { lat: 28.550664, lng: -16.189817 }, { lat: 28.550871, lng: -16.189907 }, { lat: 28.551416, lng: -16.189714 }, { lat: 28.551619, lng: -16.189826 }, { lat: 28.551937, lng: -16.190597 }, { lat: 28.551991, lng: -16.191839 }, { lat: 28.552037, lng: -16.191334 }, { lat: 28.552337, lng: -16.190345 }, { lat: 28.552301, lng: -16.190083 }, { lat: 28.551987, lng: -16.189522 }, { lat: 28.551937, lng: -16.189256 }, { lat: 28.552022, lng: -16.189128 }],
   },
   {
     id: "run-3-cotier-nord",
@@ -76,7 +78,7 @@ export const courses: CourseData[] = [
     tutorial: false,
     axe: "TF-5",
     note: "Au top mondial pour l'esthétique. Tunnels dans la roche brute et viaducs suspendus au-dessus de l'Atlantique.",
-    visuelArrivee: "L'ancien port de Garachico et ses piscines naturelles de basalte noir, terrasses et bananiers vers la mer, le Teide en surplomb à gauche.",
+    visuel: "L'ancien port de Garachico et ses piscines naturelles de basalte noir, terrasses et bananiers vers la mer, le Teide en surplomb à gauche.",
     start: { lat: 28.3912, lng: -16.6021 },
     end: { lat: 28.36121, lng: -16.76453 },
     distanceKm: 21.0,
@@ -91,7 +93,7 @@ export const courses: CourseData[] = [
     tutorial: false,
     axe: "Masca TF-436",
     note: "Le Stelvio des Canaries. Pentes >15%, virages en aveugle et épingles ultra-serrées. Le juge de paix de l'île.",
-    visuelArrivee: "Panorama à 360° depuis la crête : le gouffre du ravin de Masca à gauche, l'océan avec La Gomera et La Palma à droite. Un visuel de fin de niveau.",
+    visuel: "Panorama à 360° depuis la crête : le gouffre du ravin de Masca à gauche, l'océan avec La Gomera et La Palma à droite. Un visuel de fin de niveau.",
     start: { lat: 28.3618, lng: -16.7715 },
     end: { lat: 28.29964, lng: -16.82402 },
     distanceKm: 11.3,
@@ -106,7 +108,7 @@ export const courses: CourseData[] = [
     tutorial: false,
     axe: "TF-21 montante",
     note: "Le Nürburgring des cimes. Lacets de la forêt de pins puis goudron large et abrasif de la Caldera.",
-    visuelArrivee: "Décor extraterrestre à 2 100 m : les Roques de García (monolithes ocre et cuivre) devant le capot, le cône du Teide strié de soufre écrase l'horizon.",
+    visuel: "Décor extraterrestre à 2 100 m : les Roques de García (monolithes ocre et cuivre) devant le capot, le cône du Teide strié de soufre écrase l'horizon.",
     start: { lat: 28.1596, lng: -16.6358 },
     end: { lat: 28.23111, lng: -16.63747 },
     distanceKm: 12.6,
@@ -121,7 +123,7 @@ export const courses: CourseData[] = [
     tutorial: false,
     axe: "TF-24",
     note: "La plus belle route d'approche. Grandes courbes fluides, traversée de la mer de nuages avec vue sur les deux versants.",
-    visuelArrivee: "La voiture semble flotter au-dessus de la mer de nuages ; seul le pic du Teide émerge du tapis cotonneux, encadré par les pins canariens.",
+    visuel: "La voiture semble flotter au-dessus de la mer de nuages ; seul le pic du Teide émerge du tapis cotonneux, encadré par les pins canariens.",
     start: { lat: 28.3042, lng: -16.5648 },
     end: { lat: 28.37397, lng: -16.46392 },
     distanceKm: 16.6,
@@ -136,7 +138,7 @@ export const courses: CourseData[] = [
     tutorial: false,
     axe: "TF-38",
     note: "Attaque pure en descente. Asphalte parfait, traversée des champs de lave noire de 1909, retour direct au QG.",
-    visuelArrivee: "Cerné par un chaos de scories volcaniques noir d'encre (éruption du Chinyero), la route neuve plonge en ligne droite vers le bleu de l'océan.",
+    visuel: "Cerné par un chaos de scories volcaniques noir d'encre (éruption du Chinyero), la route neuve plonge en ligne droite vers le bleu de l'océan.",
     start: { lat: 28.2105, lng: -16.6852 },
     end: { lat: 28.26662, lng: -16.72602 },
     distanceKm: 8.7,

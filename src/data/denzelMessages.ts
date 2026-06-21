@@ -99,6 +99,16 @@ export const denzelChronoPrompts: string[] = [
   "Top chrono dès que t'es chaude.",
 ];
 
+/** Arrivée (ou départ) sur le spot photo d'une course : son meilleur cliché. */
+export const denzelCoursePhotoPrompts: string[] = [
+  "T'y es. Coupe le moteur et sors-moi ton meilleur cliché.",
+  "Le décor est planté. À toi de le capturer — ne me déçois pas.",
+  "Voilà ta récompense. Prends la photo, la vraie, celle qu'on encadre.",
+  "Stop. Regarde autour de toi. Maintenant immortalise-moi ça proprement.",
+  "C'est ici que ça se joue. Ton plus beau cliché, tout de suite.",
+  "Tu l'as méritée, cette vue. Shoote-la comme il faut, pour la jaquette.",
+];
+
 /* ------------------------------------------------------------------ *
  *  2. AMBIANCE — voix « loi de l'île »                               *
  * ------------------------------------------------------------------ */
@@ -280,6 +290,7 @@ function createRotator<T>(pool: T[], recentMemory = 3): () => T {
 const nextReopen = createRotator(denzelReopenPrompts);
 const nextPhoto = createRotator(denzelPhotoPrompts);
 const nextChrono = createRotator(denzelChronoPrompts);
+const nextCoursePhoto = createRotator(denzelCoursePhotoPrompts);
 const nextNudge = createRotator(denzelNudges);
 
 // Flavor : un rotateur sur les panels (groupes), + un rotateur de phrases par panel.
@@ -312,6 +323,11 @@ export function getDenzelPhotoPrompt(): DenzelLine {
 /** Mission chrono : lance le chrono. */
 export function getDenzelChronoPrompt(): DenzelLine {
   return { text: nextChrono(), panel: SPEAKER_PANEL };
+}
+
+/** Course : à <50 m du spot photo, prends ton meilleur cliché. */
+export function getDenzelCoursePhotoPrompt(): DenzelLine {
+  return { text: nextCoursePhoto(), panel: SPEAKER_PANEL };
 }
 
 /**

@@ -17,6 +17,7 @@ import LocationsList from './components/LocationsList';
 import BottomSheet from './components/BottomSheet';
 import CoverQuest from './components/CoverQuest';
 import CoverCamera from './components/CoverCamera';
+import CoursePhotoPrompt from './components/CoursePhotoPrompt';
 import SplashScreen from './components/SplashScreen';
 import DenzelMessage from './components/DenzelMessage';
 import TutorialOverlay from './components/TutorialOverlay';
@@ -26,6 +27,7 @@ import {
   getDenzelReopenPrompt,
   getDenzelPhotoPrompt,
   getDenzelChronoPrompt,
+  getDenzelCoursePhotoPrompt,
   denzelTutorial,
   DenzelLine,
   PanelKey,
@@ -81,6 +83,30 @@ export default function App() {
       return {};
     }
   });
+
+  // Course (race) completion — dedicated state keyed by the course's string id,
+  // separate from the spot completion above. Courses do NOT feed the spot 100%
+  // / Social Club; the prologue (tutorial:true) is excluded from any course tally.
+  const [completedCourseIds, setCompletedCourseIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('tenirife_completed_courses');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [coursePhotos, setCoursePhotos] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('tenirife_course_photos');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+
+  // El Jefe info-bulle shown when within 50 m of a course's photo point.
+  const [coursePhotoPrompt, setCoursePhotoPrompt] = useState<{ course: CourseData; line: DenzelLine } | null>(null);
 
   // UI state
   const [showSplash, setShowSplash] = useState(true);
@@ -165,6 +191,8 @@ export default function App() {
   const [coverCameraSlot, setCoverCameraSlot] = useState<CoverSlot | null>(null);
   // Slots we've already pinged for proximity (fire-once until the player leaves).
   const approachAlertedRef = useRef<Set<number>>(new Set());
+  // Courses whose 50 m photo prompt has already fired (re-armed on leaving).
+  const coursePromptAlertedRef = useRef<Set<string>>(new Set());
 
   // On app open (once the splash is gone), if no mission is running, greet the
   // player with an ambient Denzel line — but at most once every 30 min (persisted).
@@ -417,6 +445,28 @@ export default function App() {
     localStorage.setItem('tenirife_captured_photos', JSON.stringify(nextPhotos));
   };
 
+  // A course's photo / geofence point: the arrival by default, the start when
+  // photoAtStart (RUN 2 — San Andrés / Las Teresitas).
+  const coursePhotoPoint = (course: CourseData) =>
+    course.photoAtStart ? course.start : course.end;
+
+  // Capture committed from the El Jefe info-bulle: persist the photo, mark the
+  // course done (dedicated state) and close the prompt with a success line.
+  const handleCaptureCoursePhoto = (course: CourseData, base64: string) => {
+    const nextPhotos = { ...coursePhotos, [course.id]: base64 };
+    setCoursePhotos(nextPhotos);
+    localStorage.setItem('tenirife_course_photos', JSON.stringify(nextPhotos));
+
+    if (!completedCourseIds.includes(course.id)) {
+      const nextDone = [...completedCourseIds, course.id];
+      setCompletedCourseIds(nextDone);
+      localStorage.setItem('tenirife_completed_courses', JSON.stringify(nextDone));
+    }
+
+    setCoursePhotoPrompt(null);
+    setDenzelMessage({ text: `Beau cliché. « ${course.trophy} » est dans la poche.`, panel: 'happy' });
+  };
+
   // Cover Quest snap = front-end of the existing validation. The camera only
   // opens for a slot within the 50 m geofence (enforced in CoverQuest), so this
   // routes straight through the shared souvenir + completion handlers — no
@@ -526,6 +576,24 @@ export default function App() {
             approachAlertedRef.current.delete(loc.id); // left the zone → re-armable
           }
         });
+
+        // Course photo point — within 50 m of a course's photo point (the
+        // arrival by default, the start when photoAtStart), El Jefe pops the
+        // info-bulle to take the best shot. Fire-once until the player leaves.
+        courses.forEach((course) => {
+          if (completedCourseIds.includes(course.id)) return;
+          const pt = course.photoAtStart ? course.start : course.end;
+          const d = computeDistance(userLat, userLng, pt.lat, pt.lng);
+          const alerted = coursePromptAlertedRef.current.has(course.id);
+          if (d <= 0.050 && !alerted) {
+            coursePromptAlertedRef.current.add(course.id);
+            setCoursePhotoPrompt({ course, line: getDenzelCoursePhotoPrompt() });
+            playSmsChirp();
+            void notifyOS(`Spot photo · ${course.title}`, course.visuel, `course_${course.id}`);
+          } else if (alerted && d > 0.080) {
+            coursePromptAlertedRef.current.delete(course.id); // left → re-armable
+          }
+        });
       },
       (err) => {
         console.warn("Geofence watchPosition telemetry error:", err);
@@ -538,7 +606,7 @@ export default function App() {
     };
     // elapsedTime intentionally excluded — read via elapsedTimeRef so the watch
     // is not torn down and re-registered on every stopwatch tick (~30x/s).
-  }, [completedLocationIds, allLocations, activeRunLocationId]);
+  }, [completedLocationIds, completedCourseIds, allLocations, activeRunLocationId]);
 
   // When a spot is targeted (closes any open race sheet — one sheet at a time).
   const handleSelectLocation = (location: LocationItem) => {
@@ -679,6 +747,7 @@ export default function App() {
             courses={courses}
             coursesActive={coursesActive}
             coursesFocused={coursesFocused}
+            completedCourseIds={completedCourseIds}
             selectedCourseId={selectedCourse?.id ?? null}
             onSelectCourse={handleSelectCourse}
           />
@@ -950,6 +1019,14 @@ export default function App() {
 
       {/* DENZEL SAG — narrator handler messages */}
       <DenzelMessage message={denzelMessage} onDismiss={() => setDenzelMessage(null)} />
+
+      {/* El Jefe info-bulle at a course photo point (< 50 m) */}
+      <CoursePhotoPrompt
+        course={coursePhotoPrompt?.course ?? null}
+        line={coursePhotoPrompt?.line ?? null}
+        onCapture={handleCaptureCoursePhoto}
+        onClose={() => setCoursePhotoPrompt(null)}
+      />
 
     </div>
   );

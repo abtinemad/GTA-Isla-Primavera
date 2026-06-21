@@ -196,14 +196,14 @@ export default function BottomSheet({
                 </p>
               </div>
 
-              {/* Visuel à l'arrivée */}
+              {/* Visuel — at the photo point: start if photoAtStart, else arrival */}
               <div className="mb-6">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5 flex items-center gap-1.5">
                   <Camera size={13} className="text-zinc-500" />
-                  À l'arrivée
+                  {course.photoAtStart ? 'Au départ (photo)' : "À l'arrivée (photo)"}
                 </h4>
                 <p className="text-sm text-zinc-700 leading-relaxed bg-amber-50/60 p-4 border border-amber-200/70 rounded-2xl font-sans italic">
-                  {course.visuelArrivee}
+                  {course.visuel}
                 </p>
               </div>
 
