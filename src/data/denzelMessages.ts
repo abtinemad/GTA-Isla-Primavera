@@ -4,27 +4,66 @@
  * DEUX REGISTRES :
  *
  *  1. MOMENTS D'ACTION (reopen / photo / chrono) — SIMPLE et DIRECT.
- *     Sag parle à Noémie pour lui dire de faire le truc, point. Court, clair,
- *     une pointe de caractère, aucune poésie.
+ *     Sag parle à Noémie pour lui dire de faire le truc, point.
  *
- *  2. AMBIANCE (nudges / flavor) — voix « loi de l'île ».
- *     Deux temps, chute deadpan, même carnet que les phrases de chargement.
- *     Univers Isla Primavera (El Teide, dauphins, flicaille, Corales, coucher
- *     de soleil, ronds-points).
+ *  2. AMBIANCE (nudges / flavor) — voix « loi de l'île », deadpan.
  *
- * Plus : DIDACTICIEL (denzelTutorial) — onboarding séquentiel raconté par Sag,
- * montré une seule fois à la première ouverture.
+ * Plus : DIDACTICIEL (denzelTutorial) — onboarding guidé, une seule fois.
+ *
+ * PANELS :
+ *  Chaque message renvoyé est un DenzelLine { text, panel }. `panel` est une
+ *  PanelKey qui désigne l'illustration à afficher EN FOND de la fenêtre de
+ *  message. Les phrases « flavor » sont groupées par panel (plusieurs phrases
+ *  par illustration) ; les messages d'action et les nudges prennent par défaut
+ *  le panel "eljefe".
  *
  * RÈGLES COMMUNES :
- *  - El Jefe = Denzel = un seul personnage. C'est un chien, joué droit (pas de « ouaf »).
+ *  - El Jefe = Denzel = un seul personnage. C'est un chien, joué droit.
  *  - Denzel TUTOIE Noémie. (Le vouvoiement est réservé aux menus / à l'UI.)
  *
  * Usage :
- *   import {
- *     getDenzelReopenPrompt, getDenzelPhotoPrompt,
- *     getDenzelChronoPrompt, getDenzelAmbient,
- *   } from "./denzelMessages";
+ *   import { getDenzelAmbient, PANEL_FILES } from "./denzelMessages";
+ *   const line = getDenzelAmbient();   // { text, panel }
+ *   // -> afficher PANEL_FILES[line.panel] en fond, line.text par-dessus.
  */
+
+/* ------------------------------------------------------------------ *
+ *  PANELS                                                             *
+ * ------------------------------------------------------------------ */
+
+export type PanelKey =
+  | "boat"
+  | "happy"
+  | "teide"
+  | "car"
+  | "corales"
+  | "arsenal"
+  | "eljefe"
+  | "couple";
+
+/**
+ * Nom de fichier de chaque panel. Côté composant, mappe ces clés vers tes
+ * imports d'assets (ex. import boat from "../assets/panels/panel-boat.webp").
+ */
+export const PANEL_FILES: Record<PanelKey, string> = {
+  boat: "panel-boat.webp",
+  happy: "panel-happy.webp",
+  teide: "panel-teide.webp",
+  car: "panel-car.webp",
+  corales: "panel-corales.webp",
+  arsenal: "panel-arsenal.webp",
+  eljefe: "panel-eljefe.webp",
+  couple: "panel-couple.webp",
+};
+
+/** Un message de Sag + le panel à afficher en fond. */
+export interface DenzelLine {
+  text: string;
+  panel: PanelKey;
+}
+
+/** Panel par défaut quand Sag s'adresse direct à Noémie (le narrateur). */
+const SPEAKER_PANEL: PanelKey = "eljefe";
 
 /* ------------------------------------------------------------------ *
  *  1. MOMENTS D'ACTION — simple et direct                            *
@@ -64,7 +103,7 @@ export const denzelChronoPrompts: string[] = [
  *  2. AMBIANCE — voix « loi de l'île »                               *
  * ------------------------------------------------------------------ */
 
-/** À l'ouverture sans rien en cours : inciter à aller découvrir, sans être lourd. */
+/** À l'ouverture sans rien en cours : inciter à découvrir, sans être lourd. */
 export const denzelNudges: string[] = [
   "Isla Primavera ne se découvre pas depuis le canapé. Ta caisse t'attend.",
   "Y a des coins de l'île que t'as pas encore salués. Ils commencent à se vexer.",
@@ -72,22 +111,80 @@ export const denzelNudges: string[] = [
   "La carte est pleine de pins qui dorment. Va en réveiller un.",
   "T'as des spots à découvrir et un soleil qui descend. Fais le calcul, et démarre.",
   "Le Corales ne viendra pas à toi. C'est toi qui descends jusqu'au Corales.",
-  "Une mission de finie, c'est un souvenir de plus pour la jaquette. On y va ?",
+  "Une mission de finie, c'est un souvenir de plus. On y va ?",
   "El Teide t'a à l'œil depuis ce matin. Donne-lui quelque chose à regarder : roule.",
 ];
 
-/** Du « n'importe quoi » d'ambiance. Pas de call to action, juste le décor. */
-export const denzelFlavor: string[] = [
-  "À Isla Primavera, le café se boit serré et les ronds-points se prennent large.",
-  "On raconte qu'El Jefe a déjà mordu un radar. Le radar n'a pas porté plainte.",
-  "Les dauphins ont encore pris leur part ce matin. La mer est en règle.",
-  "Le vent d'est sent l'essence et le laurier. C'est l'odeur de l'île qui se réveille.",
-  "El Jefe ne dort jamais vraiment. Un œil sur la banquette, l'autre sur le large.",
-  "Ici, personne ne demande l'heure. Le soleil s'en occupe, et il ne se trompe pas.",
-  "Un bon séjour, c'est dix ongles propres et zéro regret. On en est loin, c'est parfait.",
-  "El Teide a vu passer des empires. Toi, tu lui passes devant en troisième. Respect.",
-  "La flicaille d'Isla Primavera roule en diesel. El Jefe, lui, roule à l'instinct.",
-  "Quelque part sur l'île, un espresso martini porte ton nom. Il est patient.",
+/**
+ * Du « n'importe quoi » d'ambiance, groupé PAR panel : chaque panel a plusieurs
+ * phrases qui collent à son illustration. Le tirage choisit un panel (anti-
+ * répétition), puis une phrase dans ce panel (anti-répétition aussi).
+ */
+export const flavorByPanel: { panel: PanelKey; lines: string[] }[] = [
+  {
+    panel: "couple",
+    lines: [
+      "Tirer la langue à Isla Primavera n'est pas un délit. Klaxonner dans un rond-point, si.",
+      "Sur Ocean Drive, les néons ne s'éteignent jamais. Les amoureux non plus.",
+      "Le meilleur cliché du séjour, c'est celui qu'on prend à deux, au hasard, sans réfléchir.",
+    ],
+  },
+  {
+    panel: "corales",
+    lines: [
+      "Au Corales, l'addition se règle en liquide. Garde un œil sur la flicaille.",
+      "La piscine du Corales ne ferme jamais pour les gens bien. Et tu es des gens bien.",
+      "Un transat, un cocktail, zéro urgence. Au Corales, c'est ça, le luxe.",
+    ],
+  },
+  {
+    panel: "eljefe",
+    lines: [
+      "El Jefe ne court pas après les voitures. Les voitures s'arrêtent pour El Jefe.",
+      "On raconte qu'El Jefe a déjà mordu un radar. Le radar n'a pas porté plainte.",
+      "El Jefe ne dort jamais vraiment. Un œil sur la banquette, l'autre sur le large.",
+    ],
+  },
+  {
+    panel: "car",
+    lines: [
+      "Une œuvre d'art roule à 240. La police d'Isla Primavera n'ose pas la rayer.",
+      "Sur le sable d'Isla Primavera, même les belles caisses se garent comme des tableaux.",
+      "La belle bagnole ne se conduit pas. Elle se mérite, virage après virage.",
+    ],
+  },
+  {
+    panel: "happy",
+    lines: [
+      "Un espresso martini te tient éveillée. Le reste de la table s'en charge dans l'autre sens.",
+      "Le café se boit serré, la nuit se prend large. À Isla Primavera, on sait faire les deux.",
+      "Un dernier verre, ça n'existe pas. C'est juste l'avant-dernier qui se vante.",
+    ],
+  },
+  {
+    panel: "arsenal",
+    lines: [
+      "Deux béquilles et dix ongles. À Isla Primavera, on ne sort jamais désarmée.",
+      "Ici, l'élégance, c'est dix ongles affûtés et un sourire en coin.",
+      "On reconnaît une reine d'Isla Primavera à ses ongles. Et à son culot.",
+    ],
+  },
+  {
+    panel: "teide",
+    lines: [
+      "Le plus haut sommet d'Espagne veille sur l'île. Personne ne dépasse El Teide.",
+      "El Teide a vu passer des empires. Toi, tu lui passes devant en troisième. Respect.",
+      "Quand le ciel s'embrase derrière El Teide, même les durs s'arrêtent pour regarder.",
+    ],
+  },
+  {
+    panel: "boat",
+    lines: [
+      "Les dauphins escortent les bateaux jusqu'au port. Ils prennent leur part en poisson.",
+      "La mer d'Isla Primavera est en règle. Les dauphins veillent au grain.",
+      "Sous la coque, les dauphins t'ouvrent la route. Au-dessus, le soleil fait le reste.",
+    ],
+  },
 ];
 
 /* ------------------------------------------------------------------ *
@@ -101,24 +198,16 @@ export interface DenzelTutorialStep {
   message: string;
   /**
    * Élément de l'UI à mettre en lumière (spotlight), désigné par la valeur de
-   * son attribut `data-tour`. `null` = étape plein écran, centrée, sans spotlight
-   * (intro / clôture / concepts).
+   * son attribut `data-tour`. `null` = étape plein écran, centrée, sans spotlight.
    */
   target: string | null;
-  /**
-   * Placement indicatif de la carte de dialogue par rapport à la cible.
-   * Le composant peut recalculer en auto si ça déborde. Ignoré si target = null
-   * (l'étape est alors centrée).
-   */
+  /** Placement indicatif de la carte par rapport à la cible (auto si déborde). */
   placement?: "top" | "bottom" | "left" | "right" | "center";
 }
 
 /**
- * Onboarding GUIDÉ raconté par Sag, à dérouler DANS L'ORDRE, UNE SEULE FOIS,
- * à la toute première ouverture. (Séquentiel : pas de tirage aléatoire.)
- *
- * Ancres `data-tour` attendues dans l'UI : "map", "social-club", "progress".
- * Les étapes sans target sont des panneaux plein écran centrés.
+ * Onboarding GUIDÉ raconté par Sag, à dérouler DANS L'ORDRE, UNE SEULE FOIS.
+ * Ancres `data-tour` attendues dans l'UI : "map", "social-club", "spots".
  */
 export const denzelTutorial: DenzelTutorialStep[] = [
   {
@@ -150,18 +239,11 @@ export const denzelTutorial: DenzelTutorialStep[] = [
     placement: "top",
   },
   {
-    title: "Ta progression",
+    title: "Les spots",
     message:
-      "Et ça, c'est ta jauge. Plus tu boucles de missions, plus elle grimpe — et tu débloques mes adresses au passage. Garde un œil sur le compteur de spots.",
-    target: "progress",
+      "Et ici, mes adresses : les bons restos, les bons bars. Chaque mission accomplie t'en débloque dans le coin. Garde un œil sur le compteur de spots.",
+    target: "spots",
     placement: "bottom",
-  },
-  {
-    title: "Ta jaquette",
-    message:
-      "Quand le séjour touche à sa fin, tu composes ta jaquette avec tout ce que t'as ramené. C'est ton souvenir : à garder, ou à partager.",
-    target: null,
-    placement: "center",
   },
   {
     title: "À toi de jouer",
@@ -177,20 +259,17 @@ export const denzelTutorial: DenzelTutorialStep[] = [
  * ------------------------------------------------------------------ */
 
 /**
- * Fabrique un tireur qui évite les `recentMemory` derniers messages d'un pool.
+ * Fabrique un tireur générique qui évite les `recentMemory` derniers éléments.
  * Mémoire conservée pendant la session (réinitialisée au rechargement complet).
  */
-function createRotator(pool: string[], recentMemory = 3): () => string {
+function createRotator<T>(pool: T[], recentMemory = 3): () => T {
   let recent: number[] = [];
   return () => {
-    if (pool.length === 0) return "";
-
     let candidates = pool.map((_, i) => i).filter((i) => !recent.includes(i));
     if (candidates.length === 0) {
       const last = recent[recent.length - 1];
       candidates = pool.map((_, i) => i).filter((i) => i !== last);
     }
-
     const pick = candidates[Math.floor(Math.random() * candidates.length)];
     recent.push(pick);
     if (recent.length > recentMemory) recent.shift();
@@ -202,31 +281,46 @@ const nextReopen = createRotator(denzelReopenPrompts);
 const nextPhoto = createRotator(denzelPhotoPrompts);
 const nextChrono = createRotator(denzelChronoPrompts);
 const nextNudge = createRotator(denzelNudges);
-const nextFlavor = createRotator(denzelFlavor);
+
+// Flavor : un rotateur sur les panels (groupes), + un rotateur de phrases par panel.
+const nextFlavorGroup = createRotator(flavorByPanel);
+const flavorLineRotators = new Map<PanelKey, () => string>(
+  flavorByPanel.map((g) => [g.panel, createRotator(g.lines)] as const),
+);
+
+/** Choisit un panel (anti-répétition), puis une phrase de ce panel. */
+function nextFlavor(): DenzelLine {
+  const group = nextFlavorGroup();
+  const text = flavorLineRotators.get(group.panel)!();
+  return { text, panel: group.panel };
+}
 
 /* ------------------------------------------------------------------ *
- *  API PUBLIQUE                                                       *
+ *  API PUBLIQUE  — renvoie toujours un DenzelLine { text, panel }     *
  * ------------------------------------------------------------------ */
 
 /** « Y aller » : rouvre-moi une fois sur place. */
-export function getDenzelReopenPrompt(): string {
-  return nextReopen();
+export function getDenzelReopenPrompt(): DenzelLine {
+  return { text: nextReopen(), panel: SPEAKER_PANEL };
 }
 
 /** Mission photo : prends la photo. */
-export function getDenzelPhotoPrompt(): string {
-  return nextPhoto();
+export function getDenzelPhotoPrompt(): DenzelLine {
+  return { text: nextPhoto(), panel: SPEAKER_PANEL };
 }
 
 /** Mission chrono : lance le chrono. */
-export function getDenzelChronoPrompt(): string {
-  return nextChrono();
+export function getDenzelChronoPrompt(): DenzelLine {
+  return { text: nextChrono(), panel: SPEAKER_PANEL };
 }
 
 /**
  * Ouverture sans mission active. `nudgeChance` règle la part de nudges
- * (incitation) vs flavor (décor). Par défaut 0.35 : surtout du décor.
+ * (incitation, panel "eljefe") vs flavor (décor, panel accordé). Défaut 0.35.
  */
-export function getDenzelAmbient(nudgeChance = 0.35): string {
-  return Math.random() < nudgeChance ? nextNudge() : nextFlavor();
+export function getDenzelAmbient(nudgeChance = 0.35): DenzelLine {
+  if (Math.random() < nudgeChance) {
+    return { text: nextNudge(), panel: SPEAKER_PANEL };
+  }
+  return nextFlavor();
 }
