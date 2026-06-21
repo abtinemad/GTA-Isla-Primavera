@@ -23,11 +23,11 @@ import { CATEGORY_MAP, categoryIconSvg } from './utils/helper';
 // Catégories filtrables, dans l'ordre d'affichage du bandeau (hors trophées).
 const FILTER_CATEGORIES = [
   'QG',
+  'Plages',
   'Restaurants',
   'Beach Club',
   'Bars',
   'Ravitaillement',
-  'Plages',
   'Escapades',
   'Missions',
 ] as const satisfies readonly Category[];

@@ -225,17 +225,6 @@ export default function CoverQuest({
           L'original est TOUJOURS conservé. Tuile « + » en tête pour ajouter ses
           propres photos (supplémentaires, supprimables). */}
       <div className="grid grid-cols-3 gap-2">
-        {/* + Ajouter une photo perso (sélecteur OS : appareil ou pellicule) */}
-        <button
-          onClick={() => fileRef.current?.click()}
-          className="relative aspect-[4/5] rounded-xl border-2 border-dashed border-[color:var(--hairline)] flex flex-col items-center justify-center gap-1.5 text-[color:var(--text-muted)] hover:text-[color:var(--text)] hover:border-white/40 transition-colors cursor-pointer"
-          style={GLASS}
-        >
-          <Plus size={22} />
-          <span className="font-mono text-[9px] uppercase tracking-wider text-center px-2 leading-tight">
-            Ajouter une photo
-          </span>
-        </button>
         <input ref={fileRef} type="file" accept="image/*" onChange={handleAddFile} className="hidden" />
 
         {photos.map((p) => {
@@ -311,6 +300,18 @@ export default function CoverQuest({
               </div>
             );
           })}
+
+        {/* + Ajouter une photo perso — DERNIÈRE case (après les photos existantes). */}
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="relative aspect-[4/5] rounded-xl border-2 border-dashed border-[color:var(--hairline)] flex flex-col items-center justify-center gap-1.5 text-[color:var(--text-muted)] hover:text-[color:var(--text)] hover:border-white/40 transition-colors cursor-pointer"
+          style={GLASS}
+        >
+          <Plus size={22} />
+          <span className="font-mono text-[9px] uppercase tracking-wider text-center px-2 leading-tight">
+            Ajouter une photo
+          </span>
+        </button>
       </div>
 
       {/* ── Lightbox plein écran (agrandir) ── */}
