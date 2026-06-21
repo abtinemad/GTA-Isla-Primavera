@@ -10,7 +10,7 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "id": 1,
     "name": "Royal Hideaway Corales Villas",
     "category": "QG",
-    "lat": 28.1026, "lng": -16.7483,
+    "lat": 28.113718, "lng": -16.747526,
     "info": "Safehouse Principal (La Caleta). Point de spawn, sauvegarde et planification."
   },
   {
@@ -24,7 +24,7 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "id": 3,
     "name": "Bloom Bar & Brunch",
     "category": "Bars",
-    "lat": 28.1005, "lng": -16.7511,
+    "lat": 28.100274, "lng": -16.755073,
     "info": "Spot cocktails premium en terrasse (La Caleta)."
   },
   {
@@ -36,16 +36,16 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
   },
   {
     "id": 5,
-    "name": "secrets tasca la caleta",
-    "category": "Bars",
-    "lat": 28.1011, "lng": -16.7503,
+    "name": "Secrets Tasca la Caleta",
+    "category": "Restaurants",
+    "lat": 28.097344, "lng": -16.748212,
     "info": "Sélection de crus et recharges de tapas."
   },
   {
     "id": 6,
     "name": "Tapitas la Caleta",
-    "category": "Bars",
-    "lat": 28.1019, "lng": -16.7495,
+    "category": "Restaurants",
+    "lat": 28.102166, "lng": -16.757161,
     "info": "Comptoir local pour un verre informel."
   },
   {
@@ -110,14 +110,14 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "id": 15,
     "name": "Restaurante Salitre",
     "category": "Restaurants",
-    "lat": 28.1014, "lng": -16.7508,
+    "lat": 28.100353, "lng": -16.755306,
     "info": "Arrêt au stand (La Caleta). Restitution d'énergie en bord de mer proche du QG."
   },
   {
     "id": 16,
-    "name": "ROSSO SUL MARE",
+    "name": "Rosso Sul Mare",
     "category": "Restaurants",
-    "lat": 28.1017, "lng": -16.7514,
+    "lat": 28.101023, "lng": -16.755084,
     "info": "Arrêt au stand (La Caleta). Bar à vin / Resto face au coucher de soleil."
   },
   {
@@ -145,7 +145,7 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "id": 20,
     "name": "Playa de la Enramada",
     "category": "Plages",
-    "lat": 28.1009, "lng": -16.7498,
+    "lat": 28.098213, "lng": -16.752021,
     "info": "Plage rattachée au QG de La Caleta. Galets, sable volcanique et ambiance décontractée au coucher de soleil."
   },
   {
