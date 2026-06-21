@@ -769,6 +769,7 @@ export default function App() {
 
         {/* 2. Spots list trigger */}
         <button
+          data-tour="spots"
           onClick={() => setActiveTab('list')}
           className={`flex-1 h-full flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
             activeTab === 'list' ? 'text-amber-400 font-extrabold' : 'text-slate-400 hover:text-slate-200'

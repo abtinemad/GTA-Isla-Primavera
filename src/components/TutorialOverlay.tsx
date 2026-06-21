@@ -6,8 +6,17 @@
 import { useState, useLayoutEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Radio, ChevronRight, Check } from 'lucide-react';
-import { DenzelTutorialStep } from '../data/denzelMessages';
+import { DenzelTutorialStep, PanelKey } from '../data/denzelMessages';
+import { PANEL_URLS } from '../data/panelImages';
 import elJefeAvatar from '../assets/eljefe-avatar.webp';
+
+// Panel illustration behind the CENTERED tutorial steps (target=null). Spotlight
+// steps stay dark so the highlighted UI element reads clearly.
+const TUTORIAL_PANELS: Record<string, PanelKey> = {
+  'Bienvenue à Isla Primavera': 'eljefe',
+  'Le deal': 'couple',
+  'À toi de jouer': 'car',
+};
 
 interface TutorialOverlayProps {
   steps: DenzelTutorialStep[];
@@ -142,19 +151,20 @@ export default function TutorialOverlay({ steps, onComplete }: TutorialOverlayPr
           transition={reduce ? { duration: 0 } : { type: 'spring', damping: 26, stiffness: 240 }}
         />
       ) : (
-        // Centered panel — full dark + canarian sunset (splash spirit).
-        <div aria-hidden className="fixed inset-0 bg-[#0B0C10]">
+        // Centered step — El Jefe panel illustration full-frame behind the card,
+        // veiled for legibility (same spirit as the message bubble).
+        <div aria-hidden className="fixed inset-0 bg-[#0B0C10] overflow-hidden">
+          <img
+            src={PANEL_URLS[TUTORIAL_PANELS[step.title] || 'eljefe']}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
           <div
             className="absolute inset-0"
             style={{
               background:
-                'radial-gradient(135% 80% at 50% 0%, #ff9d5c 0%, #fb6f6a 14%, #e8527f 28%, #b6499a 44%, #7d4aa6 62%, #5a52a4 80%, #0B0C10 100%)',
-              opacity: 0.5,
+                'linear-gradient(180deg, rgba(11,12,16,0.55) 0%, rgba(11,12,16,0.72) 55%, #0B0C10 100%)',
             }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{ background: 'linear-gradient(180deg, transparent 40%, #0B0C10 100%)' }}
           />
         </div>
       )}
