@@ -16,12 +16,14 @@ import CoverQuest from './components/CoverQuest';
 import CoverCamera from './components/CoverCamera';
 import SplashScreen from './components/SplashScreen';
 import DenzelMessage from './components/DenzelMessage';
+import TutorialOverlay from './components/TutorialOverlay';
 import { CoverSlot, approachRadiusKm, isPhotoSlot, shortLabel } from './coverData';
 import {
   getDenzelAmbient,
   getDenzelReopenPrompt,
   getDenzelPhotoPrompt,
   getDenzelChronoPrompt,
+  denzelTutorial,
 } from './data/denzelMessages';
 import {
   Compass,
@@ -32,7 +34,8 @@ import {
   X,
   MessageSquare,
   Sun,
-  Moon
+  Moon,
+  HelpCircle
 } from 'lucide-react';
 
 export default function App() {
@@ -71,6 +74,22 @@ export default function App() {
 
   // UI state
   const [showSplash, setShowSplash] = useState(true);
+  // First-run Denzel tutorial — shown once (persisted via "tutorialSeen").
+  const [showTutorial, setShowTutorial] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('tutorialSeen') !== 'true';
+    } catch (e) {
+      return true;
+    }
+  });
+  const finishTutorial = useCallback(() => {
+    setShowTutorial(false);
+    try {
+      localStorage.setItem('tutorialSeen', 'true');
+    } catch (e) {
+      /* best-effort */
+    }
+  }, []);
   // Stable ref so re-renders during the splash (e.g. GPS updates) don't restart
   // the splash timer — otherwise the splash could extend or stick indefinitely.
   const handleSplashComplete = useCallback(() => setShowSplash(false), []);
@@ -154,7 +173,8 @@ export default function App() {
   // player with an ambient Denzel line — but at most once every 30 min (persisted).
   // The cooldown only gates the AMBIENT line; action messages always fire.
   useEffect(() => {
-    if (!showSplash && !ambientFiredRef.current) {
+    // Wait until both the splash and the first-run tutorial are dismissed.
+    if (!showSplash && !showTutorial && !ambientFiredRef.current) {
       ambientFiredRef.current = true;
       if (activeRunLocationId !== null) return;
 
@@ -174,7 +194,7 @@ export default function App() {
         }
       }
     }
-  }, [showSplash]);
+  }, [showSplash, showTutorial]);
 
   // When the player returns to the app AFTER launching navigation, Denzel greets
   // them back ("you're on site"). Gated by pendingReopenRef so a plain tab switch
@@ -530,6 +550,11 @@ export default function App() {
         {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       </AnimatePresence>
 
+      {/* FIRST-RUN TUTORIAL — Denzel onboarding, shown once (after the splash) */}
+      {!showSplash && showTutorial && (
+        <TutorialOverlay steps={denzelTutorial} onComplete={finishTutorial} />
+      )}
+
       {/* FLOATING GLASSMORPHIC HUD HEADER */}
       <div className="absolute top-0 left-0 right-0 z-[600] h-12 flex items-center bg-slate-900/60 backdrop-blur-md border-b border-slate-700/30 shadow-xl pointer-events-auto">
         <div className="w-full px-4 flex items-center justify-between gap-4 h-full">
@@ -550,8 +575,16 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Displays: theme toggle + emerald green wealth wallet indicator */}
+          {/* Right Displays: replay tutorial + theme toggle + emerald green wealth wallet indicator */}
           <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTutorial(true)}
+            className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950/90 border-2 border-slate-700/50 text-cyan-300 transition-all shadow-lg active:scale-95 cursor-pointer hover:border-cyan-400/50"
+            aria-label="Revoir le didacticiel"
+            title="Revoir le didacticiel"
+          >
+            <HelpCircle size={14} />
+          </button>
           <button
             onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
             className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950/90 border-2 border-slate-700/50 text-amber-300 transition-all shadow-lg active:scale-95 cursor-pointer hover:border-amber-400/50"
