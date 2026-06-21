@@ -120,41 +120,28 @@ html, body, #root {
   z-index: 1000 !important;
 }
 
-/* === Satellite (daytime) & Plan layers === */
-
+/* === Satellite (daytime) & Plan layers — transitions/opacité seulement === */
+/* Les FILTRES de couleur vivent dans .map-tint-* ci-dessous (appliqués au seul
+   className de la tile-layer → uniquement les <img> de tuiles, jamais le reste). */
 .leaflet-satellite-base {
-  /* Brighter daytime imagery so the sea reads light, not dark */
-  filter: brightness(1.22) contrast(0.98) saturate(1.12) !important;
   transition: opacity 0.4s ease;
 }
 .leaflet-satellite-roads {
-  filter: contrast(1.05) saturate(1.05) !important;
-  opacity: 0.8 !important;
+  opacity: 0.85 !important; /* labels routes lisibles, non teintés (pas de map-tint) */
   transition: opacity 0.4s ease;
 }
 .leaflet-plan-tiles {
   transition: opacity 0.4s ease;
 }
 
-/* === Vice / Manrique map skin (Option B: tint the real tiles) === */
-/* Dark — crépuscule : réchauffe sans noircir la mer (brightness remontée). */
-[data-theme="dark"] .leaflet-satellite-base {
-  filter: saturate(0.92) brightness(0.9) contrast(0.98) sepia(0.08) !important;
-}
-[data-theme="dark"] .leaflet-satellite-roads {
-  filter: brightness(0.85) saturate(0.85) !important;
-  opacity: 0.6 !important;
-}
-[data-theme="dark"] .leaflet-plan-tiles {
-  filter: saturate(0.82) brightness(0.86) contrast(1.0) hue-rotate(-6deg) !important;
-}
-/* Light — Vice daytime : plus doux, légèrement chaud. */
-[data-theme="light"] .leaflet-satellite-base {
-  filter: saturate(1.12) brightness(1.08) contrast(0.98) sepia(0.06) !important;
-}
-[data-theme="light"] .leaflet-plan-tiles {
-  filter: saturate(1.05) brightness(1.02) hue-rotate(-4deg) !important;
-}
+/* === Teinte GTA des tuiles — UNE règle par couche, isolée et ajustable ===
+   Appliqué via le className Leaflet posé sur les <img> de tuiles : seul le FOND
+   est teinté ; markers / pins / polylignes (routes) / HUD / contrôles / labels
+   sont dans d'autres panes → JAMAIS filtrés. Ne jamais filtrer .leaflet-container.
+   Réglages : eau plus turquoise → hue-rotate plus négatif ; satellite trop/pas
+   assez fort → saturate / brightness. */
+.map-tint-plan { filter: saturate(1.55) hue-rotate(-25deg) brightness(1.05) contrast(1.02); }
+.map-tint-sat  { filter: saturate(2.0)  hue-rotate(-22deg) brightness(1.40); }
 
 /* Sunset wash overlay above the tiles, below the HUD controls. */
 .map-tint {

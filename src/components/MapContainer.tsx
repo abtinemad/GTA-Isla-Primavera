@@ -108,7 +108,7 @@ export default function MapContainer({
     if (mapStyle === 'satellite') {
       // Bright daytime satellite imagery (lightened in CSS so the sea isn't dark).
       const baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19, attribution: 'Imagery &copy; Esri', className: 'leaflet-satellite-base'
+        maxZoom: 19, attribution: 'Imagery &copy; Esri', className: 'leaflet-satellite-base map-tint-sat'
       }).addTo(mapInstance);
       const labelsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19, attribution: '', className: 'leaflet-satellite-roads'
@@ -120,7 +120,7 @@ export default function MapContainer({
       const plan = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         maxZoom: 20, subdomains: 'abcd',
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        className: 'leaflet-plan-tiles'
+        className: 'leaflet-plan-tiles map-tint-plan'
       }).addTo(mapInstance);
       tileLayersRef.current = [plan];
     }
