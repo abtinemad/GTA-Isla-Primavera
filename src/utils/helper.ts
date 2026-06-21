@@ -27,159 +27,131 @@ export const GEOFENCE_KM = 0.05;
 
 export interface CategoryInfo {
   label: string;
-  emoji: string;
   colorClass: string;   // Tailwind color representation for badges
   bgClass: string;      // Background Tailwind class
   borderClass: string;  // Border Tailwind class
   textClass: string;    // Text Tailwind class
   accentColor: string;  // HEX representation for styling raw things like map interactions
-  iconName: string;
   desc: string;
 }
 
 export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
   QG: {
     label: 'QG',
-    emoji: '🏢',
     colorClass: 'neutral',
     // QG token (--cat-qg #EDEFF2) is near-white — readable neutral chip on light surfaces.
     bgClass: 'bg-[#EDEFF2] text-[#5B5D66] border-zinc-300',
     borderClass: 'border-[#EDEFF2]',
     textClass: 'text-[#5B5D66]',
     accentColor: '#EDEFF2', // Token --cat-qg (neutral, for dark surfaces)
-    iconName: 'Home',
     desc: 'Safehouse Principal, point de spawn, sauvegarde et planification'
   },
   Ravitaillement: {
     label: 'Ravitaillement',
-    emoji: '🌿',
     colorClass: 'green',
     bgClass: 'bg-[#46AE3C]/15 text-[#46AE3C] border-[#46AE3C]/30',
     borderClass: 'border-[#46AE3C]',
     textClass: 'text-[#46AE3C]',
     accentColor: '#46AE3C', // Token --cat-ravito
-    iconName: 'Leaf',
     desc: 'Dispensaire, recharge de matériel et drop-off'
   },
   Bars: {
     label: 'Bars',
-    emoji: '🍸',
     colorClass: 'pink',
     bgClass: 'bg-[#E0479B]/15 text-[#E0479B] border-[#E0479B]/30',
     borderClass: 'border-[#E0479B]',
     textClass: 'text-[#E0479B]',
     accentColor: '#E0479B', // Token --cat-bars
-    iconName: 'GlassWater',
     desc: 'Cocktails premium, terrasse et mixologie avancée'
   },
   Missions: {
     label: 'Missions',
-    emoji: '🌋',
     colorClass: 'red',
     bgClass: 'bg-[#EA4423]/15 text-[#EA4423] border-[#EA4423]/30',
     borderClass: 'border-[#EA4423]',
     textClass: 'text-[#EA4423]',
     accentColor: '#EA4423', // Token --cat-missions / --isla-primary
-    iconName: 'Flag',
     desc: 'Épreuves tactiques, tracés chronométrés et défis de conduite'
   },
   Escapades: {
     label: 'Escapades',
-    emoji: '🧭', // Clean Exploration Compass
     colorClass: 'orange',
     bgClass: 'bg-[#F0941E]/15 text-[#C2710E] border-[#F0941E]/30',
     borderClass: 'border-[#F0941E]',
     textClass: 'text-[#C2710E]',
     accentColor: '#F0941E', // Token --cat-escapades (orange)
-    iconName: 'Compass',
     desc: 'Exploration de lieux insolites, insolites ou abandonnés'
   },
   Plages: {
     label: 'Plages',
-    emoji: '🏖️',
     colorClass: 'blue',
     bgClass: 'bg-[#3F6CC4]/15 text-[#3F6CC4] border-[#3F6CC4]/30',
     borderClass: 'border-[#3F6CC4]',
     textClass: 'text-[#3F6CC4]',
     accentColor: '#3F6CC4', // Token --cat-plages
-    iconName: 'Trees',
     desc: 'Détente côtière, criques sauvages et plages du Sahara'
   },
   Restaurants: {
     label: 'Restaurants',
-    emoji: '🍽️',
     colorClass: 'purple',
     bgClass: 'bg-[#9E7AD2]/15 text-[#9E7AD2] border-[#9E7AD2]/30',
     borderClass: 'border-[#9E7AD2]',
     textClass: 'text-[#9E7AD2]',
     accentColor: '#9E7AD2', // Token --cat-restaurants (violet)
-    iconName: 'Utensils',
     desc: 'Arrêt au stand pour restauration ou réapprovisionnement énergétique'
   },
   'Beach Club': {
     label: 'Beach Club',
-    emoji: '🍹',
     colorClass: 'teal',
     bgClass: 'bg-[#17B0A7]/15 text-[#0E7C76] border-[#17B0A7]/30',
     borderClass: 'border-[#17B0A7]',
     textClass: 'text-[#0E7C76]',
     accentColor: '#17B0A7', // Token --cat-beachclub (teal)
-    iconName: 'Umbrella',
     desc: 'Beach clubs premium : transats, DJ et cocktails face à l\'océan'
   },
   '🏆 Trophées - Time Attack': {
     label: 'Trophées - Time Attack',
-    emoji: '🏆',
     colorClass: 'yellow',
     bgClass: 'bg-[#E1C233]/10 text-[#E1C233] border-[#E1C233]/20',
     borderClass: 'border-[#E1C233]',
     textClass: 'text-[#E1C233]',
     accentColor: '#E1C233',
-    iconName: 'Trophy',
     desc: 'Défis et chronos de conduite sur parcours dynamique'
   },
   '🏆 Trophées - Maître des Éléments': {
     label: 'Trophées - Maître des Éléments',
-    emoji: '🏆',
     colorClass: 'yellow',
     bgClass: 'bg-[#E1C233]/10 text-[#E1C233] border-[#E1C233]/20',
     borderClass: 'border-[#E1C233]',
     textClass: 'text-[#E1C233]',
     accentColor: '#E1C233',
-    iconName: 'Trophy',
     desc: 'Maîtrise des conditions de route et climatiques aux sommets'
   },
   '🏆 Trophées - Explorateur de l\'Insolite': {
     label: 'Trophées - Explorateur de l\'Insolite',
-    emoji: '🏆',
     colorClass: 'yellow',
     bgClass: 'bg-[#E1C233]/10 text-[#E1C233] border-[#E1C233]/20',
     borderClass: 'border-[#E1C233]',
     textClass: 'text-[#E1C233]',
     accentColor: '#E1C233',
-    iconName: 'Trophy',
     desc: 'Localisation de secrets cachés et lieux abandonnés'
   },
   '🏆 Trophées - Grand Tourer': {
     label: 'Trophées - Grand Tourer',
-    emoji: '🏆',
     colorClass: 'yellow',
     bgClass: 'bg-[#E1C233]/10 text-[#E1C233] border-[#E1C233]/20',
     borderClass: 'border-[#E1C233]',
     textClass: 'text-[#E1C233]',
     accentColor: '#E1C233',
-    iconName: 'Trophy',
     desc: 'Runs d\'endurance et liaisons côtières'
   },
   '🏆 Trophées - Life-Style': {
     label: 'Trophées - Life-Style',
-    emoji: '🏆',
     colorClass: 'yellow',
     bgClass: 'bg-[#E1C233]/10 text-[#E1C233] border-[#E1C233]/20',
     borderClass: 'border-[#E1C233]',
     textClass: 'text-[#E1C233]',
     accentColor: '#E1C233',
-    iconName: 'Trophy',
     desc: 'Activités annexes et combos de spots'
   }
 };
@@ -297,6 +269,17 @@ export function categoryToVariant(category: Category): MarkerVariant {
   if (category.includes('Escapades')) return 'mission-photo-principale';
   if (category.includes('Missions')) return 'course-depart';
   return 'mission-photo-principale';
+}
+
+/**
+ * SOURCE UNIQUE « catégorie → icône » de toute l'app : exactement le glyphe du
+ * pin de la catégorie (markerGlyphSvg ∘ categoryToVariant). Le SVG hérite de la
+ * couleur (`currentColor`) → on le rend via dangerouslySetInnerHTML dans un span
+ * dimensionné. Bandeau de filtres, vue spot, liste, mini-stats… tout lit ceci :
+ * plus aucune liste d'emojis/icônes parallèle, donc plus aucune divergence.
+ */
+export function categoryIconSvg(category: Category): string {
+  return markerGlyphSvg(categoryToVariant(category));
 }
 
 /**

@@ -4,8 +4,8 @@
  */
 
 import { useState, useMemo } from 'react';
-import { LocationItem } from '../types';
-import { CATEGORY_MAP } from '../utils/helper';
+import { LocationItem, Category } from '../types';
+import { CATEGORY_MAP, categoryIconSvg } from '../utils/helper';
 import { FilterGroup, isCategoryVisible } from '../filterGroups';
 import { Compass, Info, Trophy, MapPin } from 'lucide-react';
 
@@ -263,8 +263,12 @@ export default function LocationsList({
             const count = categoryStats[key] || 0;
             if (count === 0) return null;
             return (
-              <span key={key} className="shrink-0 flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-zinc-200 shadow-xs">
-                <span>{value.emoji}</span>
+              <span key={key} className="shrink-0 flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-zinc-200 shadow-xs" style={{ color: value.accentColor }}>
+                <span
+                  className="inline-block w-3 h-3 shrink-0"
+                  aria-hidden
+                  dangerouslySetInnerHTML={{ __html: categoryIconSvg(key as Category) }}
+                />
                 <span className="text-zinc-700 font-bold">{count}</span>
               </span>
             );
@@ -326,7 +330,11 @@ export default function LocationsList({
               >
                 <div className="flex gap-2 items-start justify-between">
                   <span className={`text-[10px] px-2 py-0.5 rounded-md border flex items-center gap-1 font-bold uppercase tracking-wider shadow-xs ${cat.bgClass}`}>
-                    <span>{cat.emoji}</span>
+                    <span
+                      className="inline-block w-3 h-3 shrink-0"
+                      aria-hidden
+                      dangerouslySetInnerHTML={{ __html: categoryIconSvg(loc.category) }}
+                    />
                     <span className="font-display">{cat.label}</span>
                   </span>
 

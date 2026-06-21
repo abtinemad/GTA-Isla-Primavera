@@ -4,7 +4,7 @@
  */
 
 import { Category } from './types';
-import { CATEGORY_MAP, categoryToVariant, markerGlyphSvg } from './utils/helper';
+import { CATEGORY_MAP, categoryIconSvg } from './utils/helper';
 
 /**
  * SOURCE DE VÉRITÉ UNIQUE des filtres carte/liste — DÉRIVÉE de `CATEGORY_MAP`
@@ -46,7 +46,7 @@ export const FILTER_GROUPS: FilterGroupDef[] = FILTER_CATEGORIES.map((cat) => ({
   id: cat,
   label: CATEGORY_MAP[cat].label,
   color: CATEGORY_MAP[cat].accentColor,
-  iconSvg: markerGlyphSvg(categoryToVariant(cat)),
+  iconSvg: categoryIconSvg(cat),
   categories: [cat],
 }));
 

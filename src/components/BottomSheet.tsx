@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LocationItem } from '../types';
 import { CourseData } from '../data/coursesData';
-import { CATEGORY_MAP } from '../utils/helper';
+import { CATEGORY_MAP, categoryIconSvg } from '../utils/helper';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Navigation, 
@@ -528,7 +528,11 @@ export default function BottomSheet({
             {/* Category badge */}
             <div className="flex items-center gap-2 mb-3">
               <span className={`px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-lg border flex items-center gap-1.5 ${catInfo.bgClass}`}>
-                <span>{catInfo.emoji}</span>
+                <span
+                  className="inline-block w-3.5 h-3.5 shrink-0"
+                  aria-hidden
+                  dangerouslySetInnerHTML={{ __html: categoryIconSvg(location.category) }}
+                />
                 <span>{catInfo.label}</span>
               </span>
               {location.custom && (
