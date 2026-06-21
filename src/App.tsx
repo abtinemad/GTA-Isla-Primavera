@@ -15,7 +15,9 @@ import BottomSheet from './components/BottomSheet';
 import CoverQuest from './components/CoverQuest';
 import CoverCamera from './components/CoverCamera';
 import SplashScreen from './components/SplashScreen';
+import DenzelMessage from './components/DenzelMessage';
 import { CoverSlot, approachRadiusKm, isPhotoSlot, shortLabel } from './coverData';
+import { getDenzelAmbient } from './data/denzelMessages';
 import {
   Compass,
   Map,
@@ -67,6 +69,11 @@ export default function App() {
   // Stable ref so re-renders during the splash (e.g. GPS updates) don't restart
   // the splash timer — otherwise the splash could extend or stick indefinitely.
   const handleSplashComplete = useCallback(() => setShowSplash(false), []);
+
+  // Denzel Sag — narrator handler messages (src/data/denzelMessages).
+  const [denzelMessage, setDenzelMessage] = useState<string | null>(null);
+  const ambientFiredRef = useRef(false);
+
   const [showGtaOverlay, setShowGtaOverlay] = useState(false);
   const [completedMissionName, setCompletedMissionName] = useState('');
   const [activeTab, setActiveTab] = useState<'map' | 'list' | 'trophies'>('map');
@@ -134,6 +141,17 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [incomingSms]);
+
+  // On app open (once the splash is gone), if no mission is running, greet the
+  // player with an ambient Denzel line. Other triggers are not wired yet.
+  useEffect(() => {
+    if (!showSplash && !ambientFiredRef.current) {
+      ambientFiredRef.current = true;
+      if (activeRunLocationId === null) {
+        setDenzelMessage(getDenzelAmbient());
+      }
+    }
+  }, [showSplash]);
 
   const allLocations = useMemo(() => {
     return INITIAL_LOCATIONS;
@@ -865,6 +883,9 @@ export default function App() {
         onClose={() => setCoverCameraSlot(null)}
         onCommit={handleCoverCommit}
       />
+
+      {/* DENZEL SAG — narrator handler messages */}
+      <DenzelMessage message={denzelMessage} onDismiss={() => setDenzelMessage(null)} />
 
     </div>
   );
