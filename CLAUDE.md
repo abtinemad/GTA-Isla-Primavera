@@ -60,7 +60,7 @@ Tout l'état vit dans `src/App.tsx` (composant racine, pas de lib d'état).
 
 ## Modèle de données — important
 
-`INITIAL_LOCATIONS` contient **28 entrées** = **23 spots physiques** (id 1-23)
+`INITIAL_LOCATIONS` contient **29 entrées** = **24 spots physiques** (id 1-24)
 + **5 entrées trophées** (id 101-105, catégorie commençant par `🏆`).
 
 - Les entrées trophées **dupliquent les coordonnées** d'un spot physique et ne
@@ -69,8 +69,8 @@ Tout l'état vit dans `src/App.tsx` (composant racine, pas de lib d'état).
   `!category.startsWith('🏆')`). Ne pas les réintroduire comme spots affichés.
 - Seules les catégories **Missions / Escapades / Plages** sont **complétables**
   (chrono géofencé pour Missions ; co-validation photo pour Escapades/Plages) →
-  **11 spots complétables**. Le `% complétion` se calcule sur ce sous-ensemble,
-  pas sur les 28 entrées. (Beach Club, comme QG/Bars/Restaurants/Ravitaillement,
+  **12 spots complétables**. Le `% complétion` se calcule sur ce sous-ensemble,
+  pas sur les 29 entrées. (Beach Club, comme QG/Bars/Restaurants/Ravitaillement,
   n'est **pas** complétable.)
 
 ## Co-validation photo + GPS
@@ -91,10 +91,10 @@ Vision / confidence ». Aucune clé API n'est requise.
 
 L'onglet « Social Club » rend `src/components/CoverQuest.tsx` : une **jaquette
 façon GTA V** (montage inégal de panneaux + logo central fixe « GRAND TENERIFE
-AUTO · IP » + barre de progression). Une case = un des **11 spots complétables**,
+AUTO · IP » + barre de progression). Une case = un des **12 spots complétables**,
 dérivés au runtime (`src/coverData.ts`, `COVER_LOCATIONS`). Labels courts éditoriaux
 dans `COVER_LABELS`. **Pas de seconde source de vérité** : une case est `filled`
-quand `completedLocationIds` contient son id ; `progress = filled / 11`.
+quand `completedLocationIds` contient son id ; `progress = filled / 12`.
 
 États d'une case et **rayons de déverrouillage** (alignés sur le modèle ci-dessus) :
 - **Escapades/Plages** → `unlockable` à **< 500 m** (`PHOTO_UNLOCK_KM`). La caméra

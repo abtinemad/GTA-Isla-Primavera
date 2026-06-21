@@ -124,7 +124,7 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "id": 17,
     "name": "Playa de Diego Hernández",
     "category": "Plages",
-    "lat": 28.1121, "lng": -16.7554,
+    "lat": 28.108536, "lng": -16.761011,
     "info": "Plage sauvage isolée au nord de La Caleta. Sable blanc et nature préservée. Trophée: 'Chasseur de Criques'."
   },
   {
@@ -168,6 +168,13 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "category": "Beach Club",
     "lat": 28.069213, "lng": -16.732520,
     "info": "Beach club festif (Las Américas). Piscine, musique et cocktails au bord de l'eau."
+  },
+  {
+    "id": 24,
+    "name": "Playa de Benijo",
+    "category": "Plages",
+    "lat": 28.572108, "lng": -16.192521,
+    "info": "Plage sauvage du Nord-Est (Anaga / Taganana). Sable noir volcanique et roques battus par l'Atlantique."
   },
   {
     "id": 101,

@@ -49,6 +49,7 @@ export const COVER_LABELS: Record<number, string> = {
   18: 'TERESITAS',  // Playa de Las Teresitas (Plage)
   19: 'DUQUE',      // Playa del Duque (Plage)
   20: 'ENRAMADA',   // Playa de la Enramada (Plage)
+  24: 'BENIJO',     // Playa de Benijo (Plage NE Anaga / Taganana)
 };
 
 export type CoverSlotStatus = 'locked' | 'unlockable' | 'filled';
@@ -63,7 +64,7 @@ export type CoverSlot = {
   location: LocationItem;
 };
 
-// The 11 completable locations, in data order, as the immutable slot backbone.
+// The completable locations, in data order, as the immutable slot backbone.
 export const COVER_LOCATIONS: LocationItem[] = INITIAL_LOCATIONS.filter((l) =>
   COMPLETABLE_CATEGORIES.includes(l.category),
 );
