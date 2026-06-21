@@ -24,7 +24,7 @@ export default function MapFilterBar({ activeGroups, onToggleGroup, onSelectAll 
   return (
     <div
       className="absolute left-0 right-0 z-[500] flex justify-center px-3 pointer-events-none"
-      style={{ top: 'calc(env(safe-area-inset-top) + 3.5rem)' }}
+      style={{ top: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
     >
       <div
         className="map-filter-scroll pointer-events-auto flex items-center gap-2 overflow-x-auto rounded-2xl border px-2 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.5)] max-w-full"

@@ -18,6 +18,8 @@ interface MapContainerProps {
   userCoords: { lat: number; lng: number } | null;
   /** Opens El Jefe's messages (the dog) — replay of the guided onboarding. */
   onOpenDenzel: () => void;
+  /** Tap on the wallet (sous l'avatar) → message d'El Jefe. */
+  onWalletClick: () => void;
   /** Pin labels (tooltips) show only when exactly one filter group is active. */
   singleGroupActive?: boolean;
   completedLocations?: number[];
@@ -42,6 +44,7 @@ export default function MapContainer({
   onSelectLocation,
   userCoords,
   onOpenDenzel,
+  onWalletClick,
   singleGroupActive = false,
   completedLocations = [],
   courses = [],
@@ -387,7 +390,7 @@ export default function MapContainer({
           zoom +, zoom −, satellite/plan toggle, El Jefe (dog) messages.
           Offset below the on-map filter bar so they never overlap. */}
       <div
-        className="absolute right-3 z-[500] flex flex-col gap-2"
+        className="absolute right-3 z-[500] flex flex-col items-end gap-2"
         style={{ top: 'calc(env(safe-area-inset-top) + 6.5rem)' }}
       >
 
@@ -445,6 +448,21 @@ export default function MapContainer({
             alt="El Jefe"
             className="w-9 h-9 rounded-full object-cover"
           />
+        </button>
+
+        {/* WALLET (sous l'avatar) — solde négatif en rouge, tap → message d'El Jefe. */}
+        <button
+          onClick={onWalletClick}
+          className="bg-slate-950/90 border-2 border-red-500/50 text-red-400 font-mono text-xs font-black px-3 h-8 rounded-2xl shadow-xl active:scale-95 cursor-pointer flex items-center justify-center select-none"
+          style={{
+            textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 4px rgba(248,113,113,0.5)',
+            boxShadow: '0 0 12px rgba(248,113,113,0.25)',
+            fontStyle: 'italic',
+          }}
+          aria-label="Portefeuille"
+          title="Portefeuille"
+        >
+          <span>-87 €</span>
         </button>
 
       </div>

@@ -339,3 +339,14 @@ export function getDenzelSpotPhotoLine(spotId: number): DenzelLine {
   const text = denzelSpotPhotoLines[spotId] ?? "Belle prise. Direction la collection.";
   return { text, panel: SPEAKER_PANEL };
 }
+
+/* ------------------------------------------------------------------ *
+ *  Wallet — tap sur le solde (HUD carte)                             *
+ * ------------------------------------------------------------------ */
+
+/** Réplique fixe d'El Jefe au tap sur le portefeuille (solde négatif). */
+export const denzelWalletMessage: DenzelLine = {
+  text:
+    "Ton solde est négatif ? Parfait. L'argent attire les ennuis. S'il te manque quoi que ce soit, demande à ton mari.",
+  panel: SPEAKER_PANEL,
+};

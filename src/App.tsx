@@ -27,6 +27,7 @@ import {
   getDenzelChronoPrompt,
   getDenzelSpotPhotoLine,
   denzelTutorial,
+  denzelWalletMessage,
   DenzelLine,
   PanelKey,
 } from './data/denzelMessages';
@@ -34,7 +35,6 @@ import {
   Compass,
   Map,
   Trophy,
-  Wallet,
   CheckCircle2,
   X,
   MessageSquare
@@ -57,7 +57,9 @@ export default function App() {
   // --- CORE GAMEPLAY STATE ---
   // Shared filter state: which groups are currently visible (multi-select).
   // Single source of truth for the map overlay, the spot bar and the spot list.
-  const [activeGroups, setActiveGroups] = useState<FilterGroup[]>(ALL_GROUP_IDS);
+  // Défaut : AUCUN filtre actif (carte vierge à l'ouverture). Le choix reste en
+  // mémoire pendant la session ; on active manuellement.
+  const [activeGroups, setActiveGroups] = useState<FilterGroup[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<LocationItem | null>(null);
   // Selected race (course). Mutually exclusive with selectedLocation — opening
   // one closes the other so a single bottom sheet is shown at a time.
@@ -277,24 +279,6 @@ export default function App() {
   const [showGtaOverlay, setShowGtaOverlay] = useState(false);
   const [completedMissionName, setCompletedMissionName] = useState('');
   const [activeTab, setActiveTab] = useState<'map' | 'list' | 'trophies'>('map');
-  const [walletAmount, setWalletAmount] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('tenerife_wallet');
-      return saved !== null ? JSON.parse(saved) : 1500;
-    } catch (e) {
-      return 1500;
-    }
-  });
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-
-  // Persist the wallet like the rest of the game state (completions/photos/times).
-  useEffect(() => {
-    try {
-      localStorage.setItem('tenerife_wallet', JSON.stringify(walletAmount));
-    } catch (e) {
-      /* persistence best-effort */
-    }
-  }, [walletAmount]);
 
   // Theme (Manrique/Vice design tokens — see src/styles/tokens.css)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -394,7 +378,11 @@ export default function App() {
     );
   }, []);
 
-  const selectAllGroups = useCallback(() => setActiveGroups(ALL_GROUP_IDS), []);
+  // « Tous » bascule : si tout est déjà actif → tout désactiver, sinon tout activer.
+  const selectAllGroups = useCallback(
+    () => setActiveGroups((prev) => (prev.length === ALL_GROUP_IDS.length ? [] : ALL_GROUP_IDS)),
+    [],
+  );
 
   // The Missions chip drives the course layer: pins show when it is active;
   // routes are revealed only when it is isolated (focused) or a course is tapped.
@@ -823,22 +811,8 @@ export default function App() {
         <TutorialOverlay steps={denzelTutorial} onComplete={finishTutorial} />
       )}
 
-      {/* FLOATING WALLET INDICATOR — header supprimé : le wallet flotte seul en
-          haut à gauche, accessible depuis tous les onglets. */}
-      <button
-        onClick={() => setIsWalletModalOpen(true)}
-        className="absolute z-[600] flex items-center gap-2 bg-slate-950/90 border-2 border-emerald-500/40 text-[#4ade80] font-mono text-xs sm:text-sm font-black px-3 py-1 rounded-lg transition-all shadow-2xl active:scale-95 cursor-pointer select-none shadow-[0_0_12px_rgba(74,222,128,0.25)] hover:border-emerald-500/60 h-7"
-        style={{
-          top: 'calc(env(safe-area-inset-top) + 0.75rem)',
-          left: '0.75rem',
-          textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 4px rgba(74,222,128,0.5)',
-          fontStyle: 'italic'
-        }}
-        aria-label="Portefeuille"
-        title="Portefeuille"
-      >
-        <span>{walletAmount} €</span>
-      </button>
+      {/* Le portefeuille vit désormais dans le HUD carte, sous l'avatar d'El Jefe
+          (voir MapContainer) ; tap → message d'El Jefe. */}
 
       {/* 3. Primary Viewboard container (Occupies full viewport so map tiles flow under header) */}
       <main className="absolute inset-0 w-full h-full flex overflow-hidden z-0 bg-slate-950">
@@ -882,6 +856,7 @@ export default function App() {
             onSelectLocation={handleSelectLocation}
             userCoords={userCoords}
             onOpenDenzel={() => setShowTutorial(true)}
+            onWalletClick={() => setDenzelMessage(denzelWalletMessage)}
             completedLocations={completedLocationIds}
             singleGroupActive={singleGroupActive}
             courses={courses}
@@ -1094,48 +1069,6 @@ export default function App() {
         </button>
 
       </footer>
-
-      {/* Wallet Recharge Confirmation Modal */}
-      {isWalletModalOpen && (
-        <div id="wallet-modal" className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs">
-          <div className="bg-white border border-zinc-250 rounded-3xl max-w-sm w-full p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4">
-            <span className="absolute top-0 left-0 right-0 h-[3.5px] bg-[#47a064]" />
-            
-            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-              <Wallet size={24} className="animate-pulse" />
-            </div>
-
-            <div className="text-center">
-              <h3 className="font-display font-black text-sm text-zinc-950 tracking-wide uppercase">Recharge de Solde</h3>
-              <p className="text-xs text-zinc-600 font-sans mt-2 leading-relaxed">
-                Ajouter 50 € de crédits de jeu (fictifs) à ton solde ? Aucun paiement réel n'est effectué.
-              </p>
-              <div className="bg-zinc-50 rounded-xl p-2.5 border border-zinc-150 mt-3 font-mono text-[11px] text-zinc-650">
-                Solde actuel : <span className="text-[#47a064] font-black">{walletAmount} €</span>
-              </div>
-            </div>
-
-            <div className="flex gap-2.5 mt-2">
-              <button
-                onClick={() => setIsWalletModalOpen(false)}
-                className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-950 font-medium py-2 rounded-xl text-xs transition-colors border border-zinc-200 cursor-pointer"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={() => {
-                  // In-game fictional credit only — no real payment is triggered.
-                  setWalletAmount(prev => prev + 50);
-                  setIsWalletModalOpen(false);
-                }}
-                className="flex-1 bg-[#47a064] hover:bg-[#3f8e58] text-white font-bold py-2 rounded-xl text-xs transition-all cursor-pointer shadow-lg active:scale-95"
-              >
-                Confirmer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* GTA-Style Animated Fullscreen Banner Overlay */}
       <AnimatePresence>
