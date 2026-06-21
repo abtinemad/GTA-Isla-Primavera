@@ -4,12 +4,13 @@
  */
 
 import { useMemo, useState, useRef, type ChangeEvent } from 'react';
-import { RefreshCw, Plus, Trash2 } from 'lucide-react';
+import { RefreshCw, Plus, Trash2, LayoutGrid } from 'lucide-react';
 import { CATEGORY_MAP } from '../utils/helper';
 import { courses } from '../data/coursesData';
 import { INITIAL_LOCATIONS } from '../locationsData';
 import { buildPhotoCollection } from '../utils/photoCollection';
 import { compressImage } from '../utils/imageCompress';
+import PosterComposer from './PosterComposer';
 
 interface CoverQuestProps {
   /** Course completion (run done) — feeds the 🏁 counter. */
@@ -85,6 +86,7 @@ export default function CoverQuest({
 }: CoverQuestProps) {
   // Per-tile "show the original" override (default: show GTA when available).
   const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
+  const [composerOpen, setComposerOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleAddFile = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -143,6 +145,26 @@ export default function CoverQuest({
           />
         </div>
       </div>
+
+      {/* Accès au compositeur de jaquette (poster 9 cases) */}
+      <button
+        onClick={() => setComposerOpen(true)}
+        className="w-full mb-3 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#EA4423] hover:bg-[#d63d1f] text-white text-sm font-black uppercase tracking-wide transition-all shadow-lg active:scale-95 cursor-pointer"
+      >
+        <LayoutGrid size={16} />
+        <span>Composer ma jaquette</span>
+      </button>
+
+      {composerOpen && (
+        <PosterComposer
+          onClose={() => setComposerOpen(false)}
+          coursePhotos={coursePhotos}
+          capturedPhotos={capturedPhotos}
+          spotPhotos={spotPhotos}
+          freePhotos={freePhotos}
+          gtaPhotos={gtaPhotos}
+        />
+      )}
 
       {/* Galerie de TOUTES les photos (course + secondaires + ambiance + perso).
           Affiche la version GTA si dispo (toggle vers l'original), statut + régénérer.

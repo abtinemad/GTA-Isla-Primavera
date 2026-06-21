@@ -51,7 +51,7 @@ export function migrateLegacyKeys(): void {
 // --- 2. Photos de course en IndexedDB --------------------------------------
 
 const DB_NAME = 'tenerife';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const PHOTO_STORE = 'course_photos';
 // Photos "ambiance" libres sur les spots (beach clubs/restos/ravito/bars/plages),
 // indexées par l'id numérique du spot.
@@ -65,6 +65,8 @@ const FREE_STORE = 'free_photos';
 // Versions stylisées GTA (proxy API), clé composite "course:<id>" / "loc:<id>" /
 // "free:<id>". L'original n'est JAMAIS écrasé — il vit dans son store dédié à côté.
 const GTA_STORE = 'gta_photos';
+// Composition du poster jaquette : 9 cases → clé photo (ou null), sous une clé fixe.
+const POSTER_STORE = 'poster';
 // Anciens emplacements localStorage du blob photos (les deux orthographes).
 const LEGACY_PHOTO_KEYS = ['tenerife_course_photos', 'tenirife_course_photos'];
 const LEGACY_CAPTURED_KEY = 'tenerife_captured_photos';
@@ -76,7 +78,7 @@ function openDB(): Promise<IDBDatabase> {
     // de delete/clear. Chaque version ne fait qu'AJOUTER des stores.
     req.onupgradeneeded = () => {
       const db = req.result;
-      for (const store of [PHOTO_STORE, SPOT_STORE, CAPTURED_STORE, FREE_STORE, GTA_STORE]) {
+      for (const store of [PHOTO_STORE, SPOT_STORE, CAPTURED_STORE, FREE_STORE, GTA_STORE, POSTER_STORE]) {
         if (!db.objectStoreNames.contains(store)) {
           db.createObjectStore(store);
         }
@@ -347,4 +349,28 @@ export async function loadFreePhotos(): Promise<Record<string, string>> {
 export async function deleteFreePhoto(id: string): Promise<void> {
   await deleteFromStore(FREE_STORE, id);
   await deleteFromStore(GTA_STORE, `free:${id}`);
+}
+
+// --- 7. Composition du poster jaquette (9 cases → clé photo ou null) ----------
+
+const POSTER_KEY = 'composition';
+
+/** Persiste la composition du poster (tableau de 9 clés photo ou null). */
+export async function savePosterComposition(slots: (string | null)[]): Promise<void> {
+  await putInStore(POSTER_STORE, POSTER_KEY, JSON.stringify(slots));
+}
+
+/** Charge la composition du poster (9 cases ; tout null par défaut). */
+export async function loadPosterComposition(): Promise<(string | null)[]> {
+  try {
+    for (const [k, v] of await getAllFromStore(POSTER_STORE)) {
+      if (String(k) === POSTER_KEY) {
+        const arr = JSON.parse(v) as (string | null)[];
+        return Array.from({ length: 9 }, (_, i) => arr[i] ?? null);
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return Array(9).fill(null);
 }
