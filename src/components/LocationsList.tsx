@@ -275,7 +275,14 @@ export default function LocationsList({
 
       {/* Stats explanation text if looking at user's location */}
       {userCoords && (
-        <div className="bg-[var(--glass-bg)] backdrop-blur-md border-b border-[color:var(--hairline)] px-4 py-2 flex items-center gap-2 text-[11px] font-semibold text-[color:var(--text-muted)] shadow-sm">
+        <div
+          className="border-b border-[color:var(--hairline)] px-4 py-2 flex items-center gap-2 text-[11px] font-semibold text-[color:var(--text-muted)] shadow-sm"
+          style={{
+            background: 'color-mix(in srgb, var(--surface) 55%, transparent)',
+            backdropFilter: 'blur(var(--blur-glass))',
+            WebkitBackdropFilter: 'blur(var(--blur-glass))',
+          }}
+        >
           <Info size={12} className="shrink-0 opacity-70" />
           <span>Spots triés du plus proche au plus éloigné</span>
         </div>
