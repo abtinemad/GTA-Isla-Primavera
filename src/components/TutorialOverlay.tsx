@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Radio, ChevronRight, Check } from 'lucide-react';
 import { DenzelTutorialStep, PanelKey } from '../data/denzelMessages';
 import { PANEL_URLS } from '../data/panelImages';
 import elJefeAvatar from '../assets/eljefe-avatar.webp';
+import SplashSpinner from './SplashSpinner';
 
 // Panel illustration behind the CENTERED tutorial steps (target=null). Spotlight
 // steps stay dark so the highlighted UI element reads clearly.
@@ -42,6 +43,11 @@ export default function TutorialOverlay({ steps, onComplete }: TutorialOverlayPr
   const [rect, setRect] = useState<Rect | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  // Splash-style loader over the centered-step panel until its image is ready.
+  const [panelLoaded, setPanelLoaded] = useState(false);
+  useEffect(() => {
+    setPanelLoaded(false);
+  }, [index]);
 
   const step = steps && steps[index];
   const isLast = index === (steps?.length ?? 0) - 1;
@@ -153,19 +159,30 @@ export default function TutorialOverlay({ steps, onComplete }: TutorialOverlayPr
       ) : (
         // Centered step — El Jefe panel illustration full-frame behind the card,
         // veiled for legibility (same spirit as the message bubble).
-        <div aria-hidden className="fixed inset-0 bg-[#0B0C10] overflow-hidden">
+        <div className="fixed inset-0 bg-[#0B0C10] overflow-hidden">
           <img
+            key={index}
             src={PANEL_URLS[TUTORIAL_PANELS[step.title] || 'eljefe']}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover"
+            aria-hidden
+            onLoad={() => setPanelLoaded(true)}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+            style={{ opacity: panelLoaded ? 1 : 0 }}
           />
           <div
+            aria-hidden
             className="absolute inset-0"
             style={{
               background:
                 'linear-gradient(180deg, rgba(11,12,16,0.55) 0%, rgba(11,12,16,0.72) 55%, #0B0C10 100%)',
             }}
           />
+          {/* Splash loader (above the veil, in the visible panel area over the card) */}
+          {!panelLoaded && (
+            <div className="absolute left-0 right-0 flex justify-center" style={{ top: '22vh' }}>
+              <SplashSpinner size={48} label="Chargement" />
+            </div>
+          )}
         </div>
       )}
 

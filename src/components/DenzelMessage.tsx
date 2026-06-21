@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Radio, X } from 'lucide-react';
 import elJefeAvatar from '../assets/eljefe-avatar.webp';
 import { DenzelLine } from '../data/denzelMessages';
 import { PANEL_URLS } from '../data/panelImages';
+import SplashSpinner from './SplashSpinner';
 
 interface DenzelMessageProps {
   /** The line to show ({ text, panel }) from src/data/denzelMessages. Null = hidden. */
@@ -27,6 +28,11 @@ interface DenzelMessageProps {
  */
 export default function DenzelMessage({ message, onDismiss, autoHideMs = 6000 }: DenzelMessageProps) {
   const reduce = useReducedMotion();
+  // Splash-style loader shown over the panel until its illustration is ready.
+  const [panelLoaded, setPanelLoaded] = useState(false);
+  useEffect(() => {
+    setPanelLoaded(false);
+  }, [message?.panel]);
 
   // Auto-hide while a message is shown.
   useEffect(() => {
@@ -55,13 +61,23 @@ export default function DenzelMessage({ message, onDismiss, autoHideMs = 6000 }:
             className="cursor-pointer pointer-events-auto select-none"
           >
             <div className="relative flex gap-3 items-start overflow-hidden rounded-2xl border border-[color:var(--hairline)] p-3 pr-9 shadow-[0_16px_34px_rgba(0,0,0,0.55)] bg-[#0a0810]">
-              {/* Panel illustration — full-frame background */}
+              {/* Panel illustration — full-frame background, fades in once loaded */}
               <img
+                key={message.panel}
                 src={PANEL_URLS[message.panel]}
                 alt=""
                 aria-hidden
-                className="absolute inset-0 w-full h-full object-cover"
+                onLoad={() => setPanelLoaded(true)}
+                className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+                style={{ opacity: panelLoaded ? 1 : 0 }}
               />
+              {/* Dark fill + splash loader (bottom-right) while the panel loads */}
+              {!panelLoaded && <div className="absolute inset-0 z-[1] bg-[#0a0810]" />}
+              {!panelLoaded && (
+                <div className="absolute bottom-2 right-2 z-[3]">
+                  <SplashSpinner size={20} />
+                </div>
+              )}
               {/* Strong dark veil — keeps the text readable over bright/busy panels */}
               <div
                 className="absolute inset-0"
