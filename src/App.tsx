@@ -25,6 +25,7 @@ import {
   getDenzelChronoPrompt,
   denzelTutorial,
   DenzelLine,
+  PanelKey,
 } from './data/denzelMessages';
 import {
   Compass,
@@ -152,23 +153,10 @@ export default function App() {
   // need elapsedTime in its deps (which would re-subscribe watchPosition ~30x/s).
   const elapsedTimeRef = useRef<number>(0);
 
-  // Character Narrative SMS State
-  const [incomingSms, setIncomingSms] = useState<{ title: string; text: string; id: string } | null>(null);
-
   // Cover Quest — camera overlay for the currently-targeted cover slot
   const [coverCameraSlot, setCoverCameraSlot] = useState<CoverSlot | null>(null);
   // Slots we've already pinged for proximity (fire-once until the player leaves).
   const approachAlertedRef = useRef<Set<number>>(new Set());
-
-  // Automatically dismiss SMS after 6 seconds of visibility
-  useEffect(() => {
-    if (incomingSms) {
-      const timer = setTimeout(() => {
-        setIncomingSms(null);
-      }, 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [incomingSms]);
 
   // On app open (once the splash is gone), if no mission is running, greet the
   // player with an ambient Denzel line — but at most once every 30 min (persisted).
@@ -423,26 +411,21 @@ export default function App() {
     setCompletedMissionName(location.name);
     setShowGtaOverlay(true);
 
-    // Event-driven SMS triggers from Denzel Sag
+    // Event-driven narration from El Jefe (shown in the panel bubble).
     let smsText = "Objectif validé. Le QG valide le transfert des fonds. Continue comme ça.";
-    let regionId = "default";
+    let panel: PanelKey = 'happy';
     if (location.id === 8) {
       smsText = "Propre. La spéciale de Teno est pliée et le Stelvio n'a pas une égratignure. On passe à la suite.";
-      regionId = "teno_complete";
+      panel = 'car';
     } else if (location.id === 7) {
       smsText = "Tu as dompté le volcan. Le grip noir n'a plus de secret pour toi. Joli run.";
-      regionId = "teide_complete";
+      panel = 'teide';
     } else if (location.id === 9) {
       smsText = "Maître du Flow débloqué. Même sous la canopée glissante, la trajectoire était parfaite.";
-      regionId = "anaga_complete";
+      panel = 'car';
     }
 
-    // Instantly display the temporary push-notification banner
-    setIncomingSms({
-      title: "Denzel Sag",
-      text: smsText,
-      id: regionId
-    });
+    setDenzelMessage({ text: smsText, panel });
     playSmsChirp();
   };
 
@@ -493,10 +476,11 @@ export default function App() {
           if (d <= radius && !alerted) {
             approachAlertedRef.current.add(loc.id);
             const label = shortLabel(loc);
-            const body = isPhotoSlot(loc.category)
+            const isPhoto = isPhotoSlot(loc.category);
+            const body = isPhoto
               ? `Tu es sur ${label}. Ouvre la jaquette (Social Club) et prends ta photo pour valider.`
               : `Tu approches de ${label}. Prépare ton run chrono.`;
-            setIncomingSms({ title: 'Zone atteinte', text: body, id: `approach_${loc.id}` });
+            setDenzelMessage({ text: body, panel: isPhoto ? 'corales' : 'car' });
             playSmsChirp();
             void notifyOS(`Zone atteinte · ${label}`, body, `approach_${loc.id}`);
           } else if (alerted && d > radius * 1.6) {
@@ -814,54 +798,6 @@ export default function App() {
         </button>
 
       </footer>
-
-      {/* CHARACTER NARRATIVE OVERLAY CELLULAR PHONE SMS SLIDEOUT (Sleek Real-Time Push Notification Toast Banner) */}
-      <AnimatePresence>
-        {incomingSms && (
-          <motion.div
-            initial={{ y: -80, x: '-50%', opacity: 0 }}
-            animate={{ y: 0, x: '-50%', opacity: 1 }}
-            exit={{ y: -80, x: '-50%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 180 }}
-            className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] w-[92%] max-w-sm sm:max-w-md bg-zinc-950/95 backdrop-blur-lg border border-cyan-500/30 rounded-2xl p-3 px-4 shadow-[0_15px_30px_rgba(0,0,0,0.6),0_0_15px_rgba(6,182,212,0.15)] pointer-events-auto flex flex-col gap-2"
-          >
-            {/* Notification Header / App Branding */}
-            <div className="flex items-center justify-between text-[8px] font-mono font-black text-cyan-400 tracking-widest select-none">
-              <div className="flex items-center gap-1.5">
-                <MessageSquare size={10} className="text-cyan-400 drop-shadow-[0_0_2px_rgba(34,211,238,0.5)]" />
-                <span>DRIVE MSG • ALERT</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-zinc-500 font-extrabold">MAINTENANT</span>
-                <button
-                  onClick={() => setIncomingSms(null)}
-                  className="text-zinc-400 hover:text-white transition-colors cursor-pointer p-0.5 rounded-md hover:bg-zinc-800"
-                  aria-label="Dismiss Notification"
-                >
-                  <X size={10} />
-                </button>
-              </div>
-            </div>
-
-            {/* Notification Body */}
-            <div className="flex items-start gap-3">
-              {/* Character Avatar */}
-              <div className="w-8 h-8 rounded-full border border-emerald-500 bg-neutral-950 flex items-center justify-center font-bold text-emerald-400 text-xs shadow-[0_0_8px_rgba(16,185,129,0.3)] shrink-0 select-none">
-                DS
-              </div>
-              
-              <div className="flex-1 text-left min-w-0">
-                <span className="block text-[10px] font-mono font-black text-emerald-400 uppercase tracking-wide leading-none mb-1">
-                  {incomingSms.title}
-                </span>
-                <p className="text-[10px] text-zinc-200 leading-normal font-sans italic pr-2">
-                  "{incomingSms.text}"
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Wallet Recharge Confirmation Modal */}
       {isWalletModalOpen && (

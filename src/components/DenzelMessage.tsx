@@ -67,7 +67,7 @@ export default function DenzelMessage({ message, onDismiss, autoHideMs = 6000 }:
                 className="absolute inset-0"
                 style={{
                   background:
-                    'linear-gradient(105deg, rgba(8,6,16,0.93) 0%, rgba(8,6,16,0.82) 46%, rgba(8,6,16,0.62) 100%)',
+                    'linear-gradient(105deg, rgba(8,6,16,0.86) 0%, rgba(8,6,16,0.58) 52%, rgba(8,6,16,0.40) 100%)',
                 }}
               />
 
@@ -102,7 +102,7 @@ export default function DenzelMessage({ message, onDismiss, autoHideMs = 6000 }:
                 </div>
                 <p
                   className="font-display text-[12.5px] leading-snug text-white"
-                  style={{ textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}
+                  style={{ textShadow: '0 1px 5px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.85)' }}
                 >
                   {message.text}
                 </p>
