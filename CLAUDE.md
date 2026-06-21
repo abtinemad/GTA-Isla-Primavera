@@ -60,8 +60,8 @@ Tout l'état vit dans `src/App.tsx` (composant racine, pas de lib d'état).
 
 ## Modèle de données — important
 
-`INITIAL_LOCATIONS` contient **31 entrées** = **26 spots physiques** (id 1-26)
-+ **5 entrées trophées** (id 101-105, catégorie commençant par `🏆`).
+`INITIAL_LOCATIONS` contient **30 entrées** = **25 spots physiques** (ids 1-27,
+10 et 11 retirés) + **5 entrées trophées** (id 101-105, catégorie commençant par `🏆`).
 
 - Les entrées trophées **dupliquent les coordonnées** d'un spot physique et ne
   servent **que de cibles « fly-to »** pour le panneau « Trophées Disponibles ».
@@ -69,8 +69,8 @@ Tout l'état vit dans `src/App.tsx` (composant racine, pas de lib d'état).
   `!category.startsWith('🏆')`). Ne pas les réintroduire comme spots affichés.
 - Seules les catégories **Missions / Escapades / Plages** sont **complétables**
   (chrono géofencé pour Missions ; co-validation photo pour Escapades/Plages) →
-  **14 spots complétables**. Le `% complétion` se calcule sur ce sous-ensemble,
-  pas sur les 31 entrées. (Beach Club, comme QG/Bars/Restaurants/Ravitaillement,
+  **13 spots complétables**. Le `% complétion` se calcule sur ce sous-ensemble,
+  pas sur les 30 entrées. (Beach Club, comme QG/Bars/Restaurants/Ravitaillement,
   n'est **pas** complétable.)
 
 ## Co-validation photo + GPS
@@ -91,10 +91,10 @@ Vision / confidence ». Aucune clé API n'est requise.
 
 L'onglet « Social Club » rend `src/components/CoverQuest.tsx` : une **jaquette
 façon GTA V** (montage inégal de panneaux + logo central fixe « GRAND TENERIFE
-AUTO · IP » + barre de progression). Une case = un des **14 spots complétables**,
+AUTO · IP » + barre de progression). Une case = un des **13 spots complétables**,
 dérivés au runtime (`src/coverData.ts`, `COVER_LOCATIONS`). Labels courts éditoriaux
 dans `COVER_LABELS`. **Pas de seconde source de vérité** : une case est `filled`
-quand `completedLocationIds` contient son id ; `progress = filled / 14`.
+quand `completedLocationIds` contient son id ; `progress = filled / 13`.
 
 États d'une case et **rayons de déverrouillage** (alignés sur le modèle ci-dessus) :
 - **Escapades/Plages** → `unlockable` à **< 500 m** (`PHOTO_UNLOCK_KM`). La caméra

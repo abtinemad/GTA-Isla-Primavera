@@ -43,8 +43,6 @@ export const COVER_LABELS: Record<number, string> = {
   9: 'ANAGA',       // Plaza del Cristo / La Laguna (Mission Anaga TF-12)
   12: 'RADAZUL',    // Puerto Deportivo Radazul (Mission Côte Est)
   13: 'EL MÉDANO',  // Plaza de El Médano (Mission Côte Est)
-  10: 'ABADES',     // Abades, village fantôme (Escapade Côte Est)
-  11: 'HUMBOLDT',   // Mirador de Humboldt / El Sauzal (Escapade Nord)
   17: 'DIEGO H.',   // Playa de Diego Hernández (Plage)
   18: 'TERESITAS',  // Playa de Las Teresitas (Plage)
   19: 'DUQUE',      // Playa del Duque (Plage)
@@ -52,6 +50,7 @@ export const COVER_LABELS: Record<number, string> = {
   24: 'BENIJO',     // Playa de Benijo (Plage NE Anaga / Taganana)
   25: 'DRAGO',      // Drago Milenario, Icod de los Vinos (Escapade photo)
   26: 'GIGANTES',   // Mirador de Archipenque, Los Gigantes (Escapade photo)
+  27: 'M. ROJA',    // Montaña Roja, El Médano (Escapade photo)
 };
 
 export type CoverSlotStatus = 'locked' | 'unlockable' | 'filled';

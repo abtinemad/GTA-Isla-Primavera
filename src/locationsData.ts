@@ -70,22 +70,6 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "info": "MISSION ANAGA. Fin de secteur forestier humide TF-12. Grip variable. Trophée: 'Maître du Flow'."
   },
   {
-    "id": 10,
-    "name": "Abades (Sortie 42 TF-1)",
-    "category": "Escapades",
-    "lat": 28.1442, "lng": -16.4428,
-    "info": "ESCAPADE CÔTE EST. Village fantôme et léproserie abandonnée des années 1940. Trophée: 'Chasseur de Fantômes'.",
-    "missionType": "photo-principale"
-  },
-  {
-    "id": 11,
-    "name": "Mirador de Humboldt / El Sauzal",
-    "category": "Escapades",
-    "lat": 28.3881, "lng": -16.5161,
-    "info": "ESCAPADE CÔTE NORD (TF-5). Points d'arrêt vertigineux sur la vallée d'Orotava.",
-    "missionType": "photo-annexe"
-  },
-  {
     "id": 12,
     "name": "Puerto Deportivo Radazul",
     "category": "Missions",
@@ -181,7 +165,7 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "name": "Drago Milenario (Icod de los Vinos)",
     "category": "Escapades",
     "lat": 28.366547, "lng": -16.722216,
-    "info": "Le dragonnier millénaire d'Icod — 800 à 1000 ans, symbole vivant de Ténérife, dressé au-dessus de la ville.",
+    "info": "Le dragonnier millénaire d'Icod — 800 à 1000 ans, symbole vivant de Ténérife.",
     "missionType": "photo-annexe"
   },
   {
@@ -189,7 +173,15 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "name": "Mirador de Archipenque (Los Gigantes)",
     "category": "Escapades",
     "lat": 28.240415, "lng": -16.837012,
-    "info": "Le balcon sur les Acantilados de los Gigantes : des falaises de basalte de 800 m plongeant à pic dans l'Atlantique. Spot coucher de soleil.",
+    "info": "Le balcon sur les Acantilados de los Gigantes — falaises de 800 m à pic dans l'océan. Spot coucher de soleil.",
+    "missionType": "photo-annexe"
+  },
+  {
+    "id": 27,
+    "name": "Montaña Roja (El Médano)",
+    "category": "Escapades",
+    "lat": 28.031037, "lng": -16.547755,
+    "info": "Le cône volcanique rouge sur les plages dorées du sud, face à l'Atlantique.",
     "missionType": "photo-annexe"
   },
   {
