@@ -525,7 +525,14 @@ export default function App() {
         <section className={`app-bg hidden md:block w-80 lg:w-96 h-full shrink-0 border-r border-[color:var(--hairline)] pt-12 z-10 transition-all ${activeTab === 'trophies' ? 'opacity-0 select-none pointer-events-none absolute' : ''}`}>
           <div className="flex flex-col h-full">
             {/* Quick Filters blended inside sidebar */}
-            <div className="bg-slate-900 py-1 border-b border-slate-800 shadow-md shrink-0">
+            <div
+              className="py-1 border-b border-[color:var(--hairline)] shadow-md shrink-0"
+              style={{
+                background: 'color-mix(in srgb, var(--surface) 55%, transparent)',
+                backdropFilter: 'blur(var(--blur-glass))',
+                WebkitBackdropFilter: 'blur(var(--blur-glass))',
+              }}
+            >
               <QuickFilterBar
                 selectedCategory={selectedCategory}
                 onSelectCategory={(cat) => {
@@ -566,7 +573,14 @@ export default function App() {
         <section className={`app-bg absolute inset-0 z-40 md:hidden pt-12 pb-14 ${activeTab === 'list' ? 'block' : 'hidden'}`}>
           <div className="w-full h-full flex flex-col">
             {/* Quick Filters blended inside mobile Spots page */}
-            <div className="bg-slate-900 py-1 border-b border-slate-800 shadow-md shrink-0">
+            <div
+              className="py-1 border-b border-[color:var(--hairline)] shadow-md shrink-0"
+              style={{
+                background: 'color-mix(in srgb, var(--surface) 55%, transparent)',
+                backdropFilter: 'blur(var(--blur-glass))',
+                WebkitBackdropFilter: 'blur(var(--blur-glass))',
+              }}
+            >
               <QuickFilterBar
                 selectedCategory={selectedCategory}
                 onSelectCategory={(cat) => {
