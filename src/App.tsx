@@ -224,6 +224,10 @@ export default function App() {
 
   const selectAllGroups = useCallback(() => setActiveGroups(ALL_GROUP_IDS), []);
 
+  // Course routes are revealed across the map only when the filter is narrowed
+  // to Courses alone; otherwise a route shows just for the clicked depart pin.
+  const coursesFocused = activeGroups.length === 1 && activeGroups[0] === 'Courses';
+
   // Keep the spot selection consistent with the filters: if the open spot's
   // group gets hidden, close it. Trophy selections (fly-to targets) are exempt.
   useEffect(() => {
@@ -472,7 +476,10 @@ export default function App() {
         if (activeRunLocationId !== null) {
           const runTarget = allLocations.find(l => l.id === activeRunLocationId);
           if (runTarget) {
-            const currentDist = computeDistance(userLat, userLng, runTarget.lat, runTarget.lng);
+            // A course's finish line is its `end`; other missions use their own
+            // point. The depart pin (lat/lng) is where the run starts, not stops.
+            const finish = runTarget.course?.end ?? { lat: runTarget.lat, lng: runTarget.lng };
+            const currentDist = computeDistance(userLat, userLng, finish.lat, finish.lng);
             if (currentDist <= 0.050) { // 50m geofence reached!
               // Freeze time and wrap up
               const formatTime = (ms: number) => {
@@ -659,6 +666,7 @@ export default function App() {
             userCoords={userCoords}
             onRequestGeolocation={requestGeolocation}
             completedLocations={completedLocationIds}
+            coursesFocused={coursesFocused}
           />
 
           {/* Filters exposed directly on the map (hidden during an active run so

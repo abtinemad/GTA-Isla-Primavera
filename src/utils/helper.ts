@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Category } from '../types';
+import { Category, CourseData, LatLng, LocationItem } from '../types';
 
 /**
  * Great-circle distance in kilometres between two lat/lng points.
@@ -190,8 +190,8 @@ export type MarkerVariant =
   | 'cocktail'
   | 'cannabis'
   | 'plage'
-  | 'mission-photo'         // mission photo principale (appareil photo plein)
-  | 'mission-photo-annexe'  // mission photo annexe (contour, atténué, plus petit)
+  | 'mission-photo-principale' // mission photo principale (appareil photo plein)
+  | 'mission-photo-annexe'     // mission photo annexe (contour, atténué, plus petit)
   | 'course-depart'         // course : ligne de départ (fanion)
   | 'course-arrivee';       // course : ligne d'arrivée (drapeau à damier)
 
@@ -229,7 +229,7 @@ const MARKER_VARIANTS: Record<MarkerVariant, MarkerVariantStyle> = {
     glyph: (g) => `<path d="M3 10a7 7 0 0 1 14 0ZM10 4V2.5M10 10v7M10 17h2.6" fill="none" stroke="${g}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
   // Mission photo principale — rose néon vif, appareil photo plein
-  'mission-photo': {
+  'mission-photo-principale': {
     fill: '#FF2E9A', glyphColor: '#FFFFFF', scale: 1,
     glyph: (g, fill) => `<path d="M3 7h2.6l1.3-1.9h6.2L14.4 7H17a1.3 1.3 0 0 1 1.3 1.3V15a1.3 1.3 0 0 1-1.3 1.3H3A1.3 1.3 0 0 1 1.7 15V8.3A1.3 1.3 0 0 1 3 7Z" fill="${g}"/><circle cx="10" cy="11.7" r="3.1" fill="${fill}"/><circle cx="10" cy="11.7" r="1.4" fill="${g}"/>`,
   },
@@ -262,9 +262,52 @@ export function categoryToVariant(category: Category): MarkerVariant {
   if (category.includes('Bars')) return 'cocktail';
   if (category.includes('Ravitaillement')) return 'cannabis';
   if (category.includes('Plages')) return 'plage';
-  if (category.includes('Escapades')) return 'mission-photo';
-  if (category.includes('Missions')) return 'course-arrivee';
-  return 'mission-photo';
+  if (category.includes('Escapades')) return 'mission-photo-principale';
+  if (category.includes('Missions')) return 'course-depart';
+  return 'mission-photo-principale';
+}
+
+/**
+ * Marker variant for a specific spot. Missions branch on their `missionType`
+ * (photo-principale / photo-annexe / course → the clickable depart pin); every
+ * other spot falls back to its category default.
+ */
+export function locationVariant(loc: LocationItem): MarkerVariant {
+  switch (loc.missionType) {
+    case 'photo-principale':
+      return 'mission-photo-principale';
+    case 'photo-annexe':
+      return 'mission-photo-annexe';
+    case 'course':
+      return 'course-depart';
+    default:
+      return categoryToVariant(loc.category);
+  }
+}
+
+/** Route points of a course; straight start→end fallback when none defined. */
+export function courseRoutePoints(course: CourseData): LatLng[] {
+  if (course.route && course.route.length >= 2) return course.route;
+  return [course.start, course.end];
+}
+
+/** Course distance in km — uses `distanceKm` when set, else sums the route. */
+export function courseDistanceKm(course: CourseData): number {
+  if (typeof course.distanceKm === 'number') return course.distanceKm;
+  const pts = courseRoutePoints(course);
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) {
+    total += haversineKm(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng);
+  }
+  return total;
+}
+
+/** Seconds → "mm:ss" (indicative chrono display). */
+export function formatChrono(totalSec: number): string {
+  const safe = Math.max(0, Math.round(totalSec));
+  const m = Math.floor(safe / 60);
+  const s = safe % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
 /**
@@ -284,7 +327,7 @@ function buildPinSvg(fill: string, rim: string, glyphInner: string): string {
  * Active = cyan rim + cyan ping ring + 1.16× scale. Completed = green ✓ badge.
  */
 export function buildMarkerHtml(variant: MarkerVariant, isActive: boolean, isCompleted?: boolean): string {
-  const v = MARKER_VARIANTS[variant] ?? MARKER_VARIANTS['mission-photo'];
+  const v = MARKER_VARIANTS[variant] ?? MARKER_VARIANTS['mission-photo-principale'];
   const rim = isActive ? '#00F5D4' : '#FFFFFF';
   const scale = v.scale * (isActive ? 1.16 : 1);
   const pin = buildPinSvg(v.fill, rim, v.glyph(v.glyphColor, v.fill));

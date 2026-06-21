@@ -195,28 +195,24 @@ html, body, #root {
   color: #cdd !important;
 }
 
-/* TF road tracks — subtle glow so the network reads as a HUD overlay */
-.tf-road-major {
-  filter: drop-shadow(0 0 3px rgba(229, 169, 60, 0.55));
-}
-.tf-road-mission {
-  filter: drop-shadow(0 0 3px rgba(200, 35, 51, 0.55));
-}
-
-/* Active itinerary track — pulsing neon cyan vector (Spec §2.2) */
-.neon-route {
-  filter: drop-shadow(0 0 6px rgba(0, 245, 212, 0.85)) drop-shadow(0 0 2px rgba(0, 245, 212, 0.9));
-  stroke-dasharray: 10 8;
-  animation: route-flow 0.9s linear infinite, route-glow 2.2s ease-in-out infinite;
+/* Course track — the only line drawn on the map. Crisp red GTA-HUD vector with
+   a discreet glow and a light animated dash flow over the dark casing. */
+.course-route {
+  filter: drop-shadow(0 0 5px rgba(234, 68, 35, 0.7)) drop-shadow(0 0 2px rgba(234, 68, 35, 0.85));
+  stroke-dasharray: 12 9;
+  animation: course-flow 0.9s linear infinite;
 }
 
-@keyframes route-flow {
-  to { stroke-dashoffset: -18; }
+@keyframes course-flow {
+  to { stroke-dashoffset: -21; }
 }
 
-@keyframes route-glow {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 1; }
+/* Respect reduced-motion: freeze the dash flow into a clean static line. */
+@media (prefers-reduced-motion: reduce) {
+  .course-route {
+    animation: none;
+    stroke-dasharray: none;
+  }
 }
 
 /* Ensure tooltips never intercept hover, tap, or click events on any interactive objects underneath */

@@ -7,8 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LocationItem } from '../types';
-import { getMarkerHtml } from '../utils/helper';
-import { TENERIFE_ROADS } from '../roadsData';
+import { buildMarkerHtml, courseRoutePoints, locationVariant } from '../utils/helper';
 import { Compass, Navigation, Layers } from 'lucide-react';
 
 interface MapContainerProps {
@@ -18,6 +17,8 @@ interface MapContainerProps {
   userCoords: { lat: number; lng: number } | null;
   onRequestGeolocation: () => void;
   completedLocations?: number[];
+  /** Reveal every course route at once (Courses filter isolated). */
+  coursesFocused?: boolean;
 }
 
 export default function MapContainer({
@@ -26,7 +27,8 @@ export default function MapContainer({
   onSelectLocation,
   userCoords,
   onRequestGeolocation,
-  completedLocations = []
+  completedLocations = [],
+  coursesFocused = false
 }: MapContainerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -36,11 +38,8 @@ export default function MapContainer({
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [mapStyle, setMapStyle] = useState<'satellite' | 'plan'>('satellite');
   const tileLayersRef = useRef<L.TileLayer[]>([]);
-  const routeLineRef = useRef<L.Polyline | null>(null);
-
-  // Spawn point (QG — Royal Hideaway Corales Villas) used as the route origin
-  // when no live GPS fix is available, so the neon track is always visible.
-  const SPAWN_ORIGIN = { lat: 28.1026, lng: -16.7483 };
+  // Course tracks (route line + finish pin) — only mounted when revealed.
+  const courseLayersRef = useRef<L.LayerGroup | null>(null);
 
   // 1. Initialize Map (run only once on mount)
   useEffect(() => {
@@ -61,19 +60,9 @@ export default function MapContainer({
     mapRef.current = map;
     setMapInstance(map);
 
-    // High-Contrast Track: draw the TF network as continuous lines with a hard
-    // black casing under an amber (major axes) / crimson (mission) top line.
-    const roadCasing = L.layerGroup().addTo(map);
-    const roadTop = L.layerGroup().addTo(map);
-    TENERIFE_ROADS.forEach((seg) => {
-      const isMajor = seg.tier === 'major';
-      // Vice palette: gold TF axes, Manrique-red mission roads.
-      const color = isMajor ? '#e7b53a' : '#EA4423';
-      const topW = isMajor ? 4.5 : 3.5;
-      const casingW = topW + 3;
-      L.polyline(seg.path, { color: '#000000', weight: casingW, opacity: 0.9, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(roadCasing);
-      L.polyline(seg.path, { color, weight: topW, opacity: 0.95, lineCap: 'round', lineJoin: 'round', interactive: false, className: isMajor ? 'tf-road-major' : 'tf-road-mission' }).addTo(roadTop);
-    });
+    // No permanent tracks are drawn on the map: navigation happens in Google
+    // Maps via the sheet's "Y aller" button. The only line ever rendered is a
+    // course route, and only when revealed (see the course effect below).
 
     // Cleanup on unmount
     return () => {
@@ -87,7 +76,7 @@ export default function MapContainer({
       userMarkerRef.current = null;
       markersRef.current = {};
       tileLayersRef.current = [];
-      routeLineRef.current = null;
+      courseLayersRef.current = null;
       setMapInstance(null);
     };
   }, []);
@@ -180,7 +169,7 @@ export default function MapContainer({
       const isCompleted = completedLocations.includes(loc.id);
       
       const customIcon = L.divIcon({
-        html: getMarkerHtml(loc.category, isSelected, loc.name, isCompleted),
+        html: buildMarkerHtml(locationVariant(loc), isSelected, isCompleted),
         className: 'custom-div-icon',
         iconSize: [34, 34],
         iconAnchor: [17, 17],
@@ -232,7 +221,7 @@ export default function MapContainer({
 
       if (loc) {
         const updatedIcon = L.divIcon({
-          html: getMarkerHtml(loc.category, isSelected, loc.name, isCompleted),
+          html: buildMarkerHtml(locationVariant(loc), isSelected, isCompleted),
           className: 'custom-div-icon',
           iconSize: [34, 34],
           iconAnchor: [17, 17],
@@ -248,43 +237,75 @@ export default function MapContainer({
 
   }, [selectedLocation, locations, completedLocations]);
 
-  // 5. Active itinerary track (Spec §2.2): a pulsing neon-cyan vector line from
-  // the spawn point / live position to the selected target.
+  // 5. Course tracks — the ONLY line ever drawn, and never permanently. A course
+  // route (+ its finish pin) is revealed when the Courses filter is isolated
+  // (coursesFocused) OR when its depart pin is selected. Otherwise only the
+  // depart pin shows.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    if (routeLineRef.current) {
-      routeLineRef.current.remove();
-      routeLineRef.current = null;
+    if (courseLayersRef.current) {
+      courseLayersRef.current.remove();
+      courseLayersRef.current = null;
     }
 
-    if (selectedLocation) {
-      const origin = userCoords ?? SPAWN_ORIGIN;
-      const line = L.polyline(
-        [
-          [origin.lat, origin.lng],
-          [selectedLocation.lat, selectedLocation.lng],
-        ],
-        {
-          color: '#00F5D4',
-          weight: 4,
-          opacity: 0.95,
-          lineCap: 'round',
-          lineJoin: 'round',
-          className: 'neon-route',
-        }
-      ).addTo(map);
-      routeLineRef.current = line;
-    }
+    const group = L.layerGroup();
+
+    locations.forEach((loc) => {
+      if (loc.missionType !== 'course' || !loc.course) return;
+      const isSelected = !!selectedLocation && selectedLocation.id === loc.id;
+      if (!coursesFocused && !isSelected) return;
+
+      const pts = courseRoutePoints(loc.course).map(
+        (p) => [p.lat, p.lng] as [number, number]
+      );
+
+      // Dark casing underneath for contrast, red top line with a soft glow +
+      // an animated dash flow (the flow is disabled by prefers-reduced-motion
+      // in CSS — see `.course-route`).
+      L.polyline(pts, {
+        color: '#000000',
+        weight: 8,
+        opacity: 0.5,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false,
+      }).addTo(group);
+      L.polyline(pts, {
+        color: '#EA4423',
+        weight: 4,
+        opacity: 0.97,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false,
+        className: 'course-route',
+      }).addTo(group);
+
+      // Finish pin (checkered flag), non-interactive.
+      const { end } = loc.course;
+      L.marker([end.lat, end.lng], {
+        icon: L.divIcon({
+          html: buildMarkerHtml('course-arrivee', isSelected, false),
+          className: 'custom-div-icon',
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+        }),
+        interactive: false,
+        zIndexOffset: 400,
+      }).addTo(group);
+    });
+
+    group.addTo(map);
+    courseLayersRef.current = group;
 
     return () => {
-      if (routeLineRef.current) {
-        routeLineRef.current.remove();
-        routeLineRef.current = null;
+      if (courseLayersRef.current) {
+        courseLayersRef.current.remove();
+        courseLayersRef.current = null;
       }
     };
-  }, [selectedLocation, userCoords]);
+  }, [locations, selectedLocation, coursesFocused]);
   const handleRecenterIsland = () => {
     if (mapRef.current) {
       mapRef.current.flyTo([28.18, -16.65], 11, { duration: 1.2 });

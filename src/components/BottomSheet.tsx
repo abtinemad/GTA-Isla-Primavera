@@ -5,14 +5,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { LocationItem } from '../types';
-import { CATEGORY_MAP } from '../utils/helper';
+import { CATEGORY_MAP, courseDistanceKm, formatChrono } from '../utils/helper';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Navigation, 
   MapPin, 
-  X, 
-  Share2, 
-  Compass, 
+  X,
+  Share2,
   ExternalLink,
   Milestone,
   CheckCircle2,
@@ -21,7 +20,10 @@ import {
   Sparkles,
   Trophy,
   Play,
-  Square
+  Square,
+  Flag,
+  Timer,
+  Route
 } from 'lucide-react';
 
 const LOCATION_TROPHIES: Record<number, string> = {
@@ -444,14 +446,38 @@ export default function BottomSheet({
                 </div>
               )}
 
+              {/* Course stats : distance + indicative chrono */}
+              {location.missionType === 'course' && location.course && (
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center gap-2.5 shadow-xs">
+                    <Route size={18} className="text-red-600 shrink-0" />
+                    <div className="text-left">
+                      <span className="block text-[10px] uppercase font-bold text-red-700 tracking-wider">Distance</span>
+                      <span className="block text-sm font-black text-zinc-900 font-mono">
+                        {courseDistanceKm(location.course).toFixed(1)} km
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center gap-2.5 shadow-xs">
+                    <Timer size={18} className="text-red-600 shrink-0" />
+                    <div className="text-left">
+                      <span className="block text-[10px] uppercase font-bold text-red-700 tracking-wider">Chrono indicatif</span>
+                      <span className="block text-sm font-black text-zinc-900 font-mono">
+                        {formatChrono(location.course.chronoIndicatifSec)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action details if it is a Mission */}
               {location.category === 'Missions' && (
                 <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-start gap-3 shadow-xs">
-                  <Compass size={18} className="text-red-600 shrink-0 mt-0.5 animate-spin-slow" />
+                  <Flag size={18} className="text-red-600 shrink-0 mt-0.5" />
                   <div>
                     <span className="block text-xs font-bold text-red-700 tracking-wide uppercase">Briefing Épreuve Chrono</span>
                     <span className="block text-xs text-zinc-650 mt-0.5 leading-normal">
-                      Démarrez le chrono puis rejoignez la destination. Le timer s'arrête automatiquement dès votre entrée dans le périmètre de 50m.
+                      Démarrez au pin de départ, suivez le tracé rouge et franchissez la ligne d'arrivée (drapeau à damier). Le timer s'arrête dès votre entrée dans le périmètre de 50&nbsp;m.
                     </span>
                   </div>
                 </div>
