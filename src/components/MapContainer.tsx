@@ -314,6 +314,11 @@ export default function MapContainer({
 
   }, [selectedLocation, locations, completedLocations]);
 
+  // Signature STABLE de l'ensemble des courses « proches » (ids triés) → l'effet de
+  // construction du layer course ne se relance QUE quand cet ensemble change (pas à
+  // chaque fix GPS). Le niveau soft/strong, lui, est appliqué par le toggle de classe.
+  const coursePulseKey = Object.keys(coursePulseLevels).sort().join(',');
+
   // 5. Courses (races) — sole source = coursesData. When the Courses filter is
   // on, every course shows a depart pin (clickable) + a finish pin. The route
   // line is the ONLY line ever drawn and never permanently: it is revealed only
@@ -329,47 +334,25 @@ export default function MapContainer({
     }
     courseDepartMarkersRef.current = {};
 
-    if (!coursesActive) return;
-
     const group = L.layerGroup();
 
     courses.forEach((course) => {
+      // PROXIMITÉ > FILTRE : une course s'affiche si le filtre Courses est actif OU
+      // si on est dans son rayon d'approche (coursePulseLevels) — même chip masqué.
+      const nearby = coursePulseLevels[course.id] !== undefined;
+      if (!coursesActive && !nearby) return;
+
       const isSelected = selectedCourseId === course.id;
-      const reveal = coursesFocused || isSelected;
-      // The photo point (and thus the ✓ run badge + 📸 photo badge) is the start
-      // when photoAtStart, else the end.
       const isCompleted = completedCourseIds.includes(course.id);
+      // The photo point (✓ run + 📸 photo) is the start when photoAtStart, else the end.
       const departDone = isCompleted && !!course.photoAtStart;
       const arriveeDone = isCompleted && !course.photoAtStart;
       const hasPhoto = !!coursePhotos[course.id];
       const departPhoto = hasPhoto && !!course.photoAtStart;
       const arriveePhoto = hasPhoto && !course.photoAtStart;
 
-      // Route (on demand only): dark casing for contrast, red top line with a
-      // soft glow + animated dash flow (flow disabled by prefers-reduced-motion
-      // in CSS — see `.course-route`).
-      if (reveal && course.route.length >= 2) {
-        const pts = course.route.map((p) => [p.lat, p.lng] as [number, number]);
-        L.polyline(pts, {
-          color: '#000000',
-          weight: 8,
-          opacity: 0.5,
-          lineCap: 'round',
-          lineJoin: 'round',
-          interactive: false,
-        }).addTo(group);
-        L.polyline(pts, {
-          color: '#EA4423',
-          weight: 4,
-          opacity: 0.97,
-          lineCap: 'round',
-          lineJoin: 'round',
-          interactive: false,
-          className: 'course-route',
-        }).addTo(group);
-      }
-
-      // Depart pin (clickable → opens the course sheet).
+      // Depart pin (clickable → opens the course sheet) — toujours rendu pour une
+      // course affichée (filtre actif OU proche). C'est lui qui porte le pulse.
       const depart = L.marker([course.start.lat, course.start.lng], {
         icon: L.divIcon({
           html: buildMarkerHtml('course-depart', isSelected, departDone, departPhoto),
@@ -381,9 +364,6 @@ export default function MapContainer({
       });
       depart.on('click', () => onSelectCourse?.(course));
       courseDepartMarkersRef.current[course.id] = depart;
-      // Label = the course title only, on the depart pin only (the arrival pin
-      // never carries one, so short courses don't double up). Shown only when a
-      // single filter group is isolated.
       if (singleGroupActive) {
         depart.bindTooltip(course.title, {
           permanent: true,
@@ -394,17 +374,30 @@ export default function MapContainer({
       }
       depart.addTo(group);
 
-      // Finish pin (checkered flag), non-interactive.
-      L.marker([course.end.lat, course.end.lng], {
-        icon: L.divIcon({
-          html: buildMarkerHtml('course-arrivee', isSelected, arriveeDone, arriveePhoto),
-          className: 'custom-div-icon',
-          iconSize: [34, 34],
-          iconAnchor: [17, 17],
-        }),
-        interactive: false,
-        zIndexOffset: isSelected ? 880 : 280,
-      }).addTo(group);
+      // Tracé + pin d'arrivée : détails complets UNIQUEMENT quand le filtre Courses
+      // est actif. Une course juste « proche » (hors filtre) n'affiche que son départ.
+      if (coursesActive) {
+        const reveal = coursesFocused || isSelected;
+        if (reveal && course.route.length >= 2) {
+          const pts = course.route.map((p) => [p.lat, p.lng] as [number, number]);
+          L.polyline(pts, {
+            color: '#000000', weight: 8, opacity: 0.5, lineCap: 'round', lineJoin: 'round', interactive: false,
+          }).addTo(group);
+          L.polyline(pts, {
+            color: '#EA4423', weight: 4, opacity: 0.97, lineCap: 'round', lineJoin: 'round', interactive: false, className: 'course-route',
+          }).addTo(group);
+        }
+        L.marker([course.end.lat, course.end.lng], {
+          icon: L.divIcon({
+            html: buildMarkerHtml('course-arrivee', isSelected, arriveeDone, arriveePhoto),
+            className: 'custom-div-icon',
+            iconSize: [34, 34],
+            iconAnchor: [17, 17],
+          }),
+          interactive: false,
+          zIndexOffset: isSelected ? 880 : 280,
+        }).addTo(group);
+      }
     });
 
     group.addTo(map);
@@ -417,7 +410,10 @@ export default function MapContainer({
       }
       courseDepartMarkersRef.current = {};
     };
-  }, [courses, coursesActive, coursesFocused, completedCourseIds, coursePhotos, selectedCourseId, onSelectCourse, singleGroupActive]);
+    // coursePulseLevels lu pour la PRÉSENCE (proximité > filtre) ; on dépend de
+    // coursePulseKey (signature stable) pour éviter un rebuild à chaque fix GPS.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courses, coursesActive, coursesFocused, completedCourseIds, coursePhotos, selectedCourseId, onSelectCourse, singleGroupActive, coursePulseKey]);
 
   // 5c. Pulse de proximité sur les pins de course (depart) — MÊME mécanisme que les
   // pins de spot : toggle de classe sur l'élément, garde d'existence. Dépend aussi des

@@ -54,9 +54,11 @@ import { buildPhotoCollection } from './utils/photoCollection';
 // les initialiseurs d'état (ci-dessous) ne lisent les nouvelles clés.
 migrateLegacyKeys();
 
-// Rayon d'approche ANTICIPÉE des courses (km) : large car on roule jusqu'au départ —
-// signal précoce, complémentaire du CoursePhotoPrompt (action sur place à 50 m).
+// Rayons des courses (km) : approche ANTICIPÉE large (on roule jusqu'au départ →
+// signal précoce 'soft'), puis RENFORT 'strong' à 1 km. Complémentaire du
+// CoursePhotoPrompt (action sur place à 50 m).
 const COURSE_APPROACH_KM = 5;
+const COURSE_REINFORCE_KM = 1;
 
 export default function App() {
   // --- CORE GAMEPLAY STATE ---
@@ -477,7 +479,7 @@ export default function App() {
     for (const c of courses) {
       if (completedCourseIds.includes(c.id)) continue;
       const d = haversineKm(userCoords.lat, userCoords.lng, c.start.lat, c.start.lng);
-      if (d <= COURSE_APPROACH_KM) out[c.id] = d <= GEOFENCE_KM ? 'strong' : 'soft';
+      if (d <= COURSE_APPROACH_KM) out[c.id] = d <= COURSE_REINFORCE_KM ? 'strong' : 'soft';
     }
     return out;
   }, [userCoords, completedCourseIds]);
