@@ -355,8 +355,8 @@ export default function BottomSheet({
         let width = img.width;
         let height = img.height;
         
-        // Target compact preview size
-        const max_size = 280;
+        // Original haute-déf (Gemini + poster), resize/compression seulement.
+        const max_size = 1280;
         if (width > height) {
           if (width > max_size) {
             height *= max_size / width;
@@ -377,7 +377,7 @@ export default function BottomSheet({
           // image (proxy serverless) — ne pas pré-grader pour éviter le double
           // traitement. Seul un resize/compression pour le quota de stockage.
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.65)); // 65% quality JPEG
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
         } else {
           resolve(base64Str);
         }

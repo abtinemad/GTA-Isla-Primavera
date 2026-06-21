@@ -19,8 +19,9 @@ interface CoursePhotoPromptProps {
   onClose: () => void;
 }
 
-// Keep course photos under the localStorage quota (same budget as cover snaps).
-const MAX_DIM = 420;
+// Originaux haute-déf pour Gemini (stylisation) ET le poster. IndexedDB (pas de
+// quota localStorage serré ici), resize/compression uniquement, zéro colorimétrie.
+const MAX_DIM = 1280;
 
 /** Resize + compress a captured/imported photo to a compact JPEG dataURL. */
 function compress(base64: string): Promise<string> {
@@ -38,7 +39,7 @@ function compress(base64: string): Promise<string> {
       // Stocke l'ORIGINAL non gradé : la stylisation GTA viendra de l'API image
       // (proxy serverless), pas d'un grade algo baké ici — pas de double traitement.
       ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', 0.72));
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
     };
     img.onerror = () => resolve(base64);
     img.src = base64;
