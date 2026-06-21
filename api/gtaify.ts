@@ -25,7 +25,7 @@ const DEFAULT_PROMPT = `An artistic digital illustration in the style of a GTA-s
 
 Restyle the scene exactly as it appears: keep the original composition and layout, only transform it into this art style. Do not add or remove major elements.
 
-Color palette & atmosphere — sun-soaked Miami / neon-coast vibe, applied PURELY through color, light and mood (do NOT add new objects such as palm trees, neon signs or skylines): a warm golden-hour grade LED BY coral, amber and gold highlights with electric cyan-teal accents; cool teal-blue shadows (NOT purple); keep pink/magenta only as a subtle minor accent, never dominant; where sky or background is visible, push it toward a warm orange-to-teal sunset with soft neon glow and tropical haze; pastel art-deco warmth, high saturation, cinematic contrast.
+Color palette & atmosphere — sun-soaked Miami / neon-coast vibe, applied PURELY through color, light and mood (do NOT add new objects such as palm trees, neon signs or skylines): a warm "golden-hour-into-neon-night" grade; signature accents of hot neon pink / magenta and electric cyan-teal; warm coral-and-orange highlights with deep teal-to-purple shadows; where sky or background is visible, push it toward a magenta–orange–violet sunset gradient with soft neon glow and tropical haze; pastel art-deco warmth, high saturation, cinematic contrast.
 
 No real trademarks (no "Grand Theft Auto", no "Vice City", no VCPD, no Rockstar/R* star, no real brand logos).`;
 
