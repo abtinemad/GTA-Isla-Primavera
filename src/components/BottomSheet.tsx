@@ -25,7 +25,8 @@ import {
   Flag,
   Timer,
   Route,
-  Globe
+  Globe,
+  Instagram
 } from 'lucide-react';
 
 const LOCATION_TROPHIES: Record<number, string> = {
@@ -282,6 +283,12 @@ export default function BottomSheet({
 
   const catInfo = CATEGORY_MAP[location.category];
   const associatedTrophy = LOCATION_TROPHIES[location.id];
+
+  // Boutons de liens externes (site / Instagram / TikTok) — style GTA-HUD à l'accent
+  // catégorie, partagé par les 3 icônes.
+  const socialBtnClass =
+    'flex items-center justify-center w-11 h-11 rounded-xl border-2 bg-white hover:bg-zinc-50 transition-all duration-200 shadow-sm cursor-pointer active:scale-95';
+  const socialBtnStyle = { borderColor: `${catInfo.accentColor}55`, color: catInfo.accentColor };
 
   // Calculate distance in km
   const getRawDistanceKm = () => {
@@ -756,20 +763,53 @@ export default function BottomSheet({
                 </>
               )}
 
-              {/* Site web officiel — Restaurants / Beach Club / QG (hôtel).
-                  Affiché uniquement si une URL `website` existe pour ce spot. */}
-              {!isAnalyzing && location.website && (
-                <a
-                  href={location.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border-2 bg-white hover:bg-zinc-50 text-sm font-bold transition-all duration-200 shadow-sm cursor-pointer active:scale-95 text-center"
-                  style={{ borderColor: `${catInfo.accentColor}55`, color: catInfo.accentColor }}
-                >
-                  <Globe size={16} />
-                  <span>Site web</span>
-                  <ExternalLink size={13} className="opacity-60" />
-                </a>
+              {/* Liens externes officiels — Restaurants / Beach Club / QG (hôtel).
+                  Rangée d'icônes : chaque bouton n'apparaît que si l'URL existe ;
+                  la rangée entière disparaît si aucun lien. */}
+              {!isAnalyzing && (location.website || location.instagram || location.tiktok) && (
+                <div className="sm:col-span-2 flex items-center gap-2.5">
+                  {location.website && (
+                    <a
+                      href={location.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Site web"
+                      title="Site web"
+                      className={socialBtnClass}
+                      style={socialBtnStyle}
+                    >
+                      <Globe size={18} />
+                    </a>
+                  )}
+                  {location.instagram && (
+                    <a
+                      href={location.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Instagram"
+                      title="Instagram"
+                      className={socialBtnClass}
+                      style={socialBtnStyle}
+                    >
+                      <Instagram size={18} />
+                    </a>
+                  )}
+                  {location.tiktok && (
+                    <a
+                      href={location.tiktok}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="TikTok"
+                      title="TikTok"
+                      className={socialBtnClass}
+                      style={socialBtnStyle}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M16.5 3c.26 2.07 1.42 3.31 3.43 3.44v2.4c-1.17.11-2.19-.27-3.38-.99v5.8c0 3.64-2.5 5.95-5.7 5.95-2.98 0-5.35-2.2-5.35-5.18 0-3.24 2.66-5.42 6.07-4.96v2.64c-.4-.13-.83-.2-1.27-.2-1.4 0-2.42 1-2.42 2.4 0 1.48 1.1 2.5 2.6 2.5 1.55 0 2.62-1.1 2.62-3.02V3h3.37z" />
+                      </svg>
+                    </a>
+                  )}
+                </div>
               )}
 
               {/* Share Button */}
