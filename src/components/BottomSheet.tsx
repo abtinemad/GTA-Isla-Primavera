@@ -54,7 +54,7 @@ interface BottomSheetProps {
   onCenterOnMap?: (location: LocationItem) => void;
   userCoords?: { lat: number; lng: number } | null;
   isCompleted?: boolean;
-  onCompleteLocation?: (location: LocationItem) => void;
+  onCompleteLocation?: (location: LocationItem, finishTime?: string) => void;
   /** Fired when the player launches navigation (Google Maps) toward the spot. */
   onLaunchNavigation?: () => void;
 
@@ -100,12 +100,17 @@ export default function BottomSheet({
   // conditionnel plus bas, sinon le nombre de hooks change entre les rendus
   // (location null vs défini) → crash « Rendered more hooks… » (page blanche).
   const ambianceInputRef = useRef<HTMLInputElement>(null);
+  // Mission chrono — filet manuel : temps figé en attente de validation (null = pas
+  // d'attente). + l'input photo de validation Mission. Hooks AVANT le return.
+  const [pendingTime, setPendingTime] = useState<string | null>(null);
+  const missionPhotoInputRef = useRef<HTMLInputElement>(null);
 
   // Verification-flow cancellation token. Bumped whenever the targeted spot
   // changes or the sheet closes, so an in-flight (decorative) analysis can't
   // complete a stale location or save its photo after the user has moved on.
   const verifyTokenRef = useRef(0);
   useEffect(() => {
+    setPendingTime(null); // reset l'attente de validation quand on change de spot
     return () => {
       verifyTokenRef.current++;
     };
@@ -484,6 +489,28 @@ export default function BottomSheet({
 
   const isCurrentRunActive = activeRunLocationId === location.id;
 
+  // ── Mission chrono — FILET MANUEL (le géofence n'est qu'un déclencheur bonus) ──
+  // « Arrêter le chrono » : fige le temps AVANT le reset, puis demande validation.
+  const stopMissionForValidation = () => {
+    setPendingTime(formatTime(elapsedTime)); // capture le temps courant
+    onStopRun();                              // arrête le moteur (handler existant)
+  };
+  // « Valider + photo » : enregistre la photo (→ Social Club) et complète la mission
+  // avec le temps en métadonnée (completedTimes). Pas de géofence requis (filet).
+  const handleMissionPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || pendingTime === null) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const compressed = await compressPhoto(reader.result as string);
+      onSavePhoto(location.id, compressed);          // photo → capturedPhotos (Social Club)
+      onCompleteLocation?.(location, pendingTime);    // complétion + temps (handler existant)
+      setPendingTime(null);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[1000] pointer-events-none flex items-end justify-center px-4 pb-4 md:pb-6">
@@ -527,6 +554,16 @@ export default function BottomSheet({
             capture="environment"
             ref={fileInputRef}
             onChange={handlePhotoUpload}
+            className="hidden"
+          />
+
+          {/* Photo de validation Mission (après « Valider ce temps ») */}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            ref={missionPhotoInputRef}
+            onChange={handleMissionPhoto}
             className="hidden"
           />
 
@@ -701,34 +738,65 @@ export default function BottomSheet({
                 </button>
               )}
 
-              {/* MISSION ACTIVE CHRONO BUTTONS */}
+              {/* MISSION CHRONO — flux entièrement manuel (géofence = bonus).
+                  3 états : en cours → arrêt+validation → ou démarrage. */}
               {location.category === 'Missions' && !isCompleted && !isAnalyzing && (
                 <div className="col-span-1 sm:col-span-2 flex flex-col gap-2">
-                  {!isCurrentRunActive ? (
+                  {isCurrentRunActive ? (
+                    /* EN COURS : chrono visible + arrêt manuel (+ abandon). */
+                    <div className="flex flex-col gap-2 p-3 bg-red-50 border border-red-250 rounded-2xl items-center text-center">
+                      <div className="text-[10px] font-mono text-red-700 font-bold uppercase tracking-wider animate-pulse">
+                        ⚠️ CHRONO EN COURS
+                      </div>
+                      <div className="text-2xl font-black text-red-650 font-mono tracking-wider">
+                        {formatTime(elapsedTime)}
+                      </div>
+                      <button
+                        onClick={stopMissionForValidation}
+                        className="w-full mt-1.5 flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-black uppercase tracking-wide transition-all active:scale-95 cursor-pointer shadow-md"
+                      >
+                        <Square size={13} fill="currentColor" />
+                        <span>Arrêter le chrono</span>
+                      </button>
+                      <button
+                        onClick={onStopRun}
+                        className="text-[10px] font-mono text-zinc-500 hover:text-zinc-700 underline underline-offset-2 cursor-pointer"
+                      >
+                        Abandonner (sans valider)
+                      </button>
+                    </div>
+                  ) : pendingTime !== null ? (
+                    /* TEMPS FIGÉ : confirmation « Valider ce temps ? » → photo. */
+                    <div className="flex flex-col gap-2 p-3 bg-amber-50 border border-amber-300 rounded-2xl items-center text-center">
+                      <div className="text-[10px] font-mono text-amber-700 font-bold uppercase tracking-wider">
+                        Temps figé · Valider ce temps ?
+                      </div>
+                      <div className="text-2xl font-black text-amber-800 font-mono tracking-wider">
+                        {pendingTime}
+                      </div>
+                      <button
+                        onClick={() => missionPhotoInputRef.current?.click()}
+                        className="w-full mt-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-black uppercase tracking-wide transition-all active:scale-95 cursor-pointer shadow-md"
+                      >
+                        <Camera size={15} />
+                        <span>Valider + prendre la photo</span>
+                      </button>
+                      <button
+                        onClick={() => setPendingTime(null)}
+                        className="text-[10px] font-mono text-zinc-500 hover:text-zinc-700 underline underline-offset-2 cursor-pointer"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  ) : (
+                    /* PRÊT : démarrage manuel. */
                     <button
                       onClick={() => onStartRun(location.id)}
                       className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-red-600 hover:bg-red-500 text-white text-sm font-black tracking-wide uppercase transition-all shadow-md active:scale-95 cursor-pointer"
                     >
                       <Play size={15} fill="currentColor" />
-                      <span>Démarrer le Run (Chrono)</span>
+                      <span>Démarrer le chrono</span>
                     </button>
-                  ) : (
-                    <div className="flex flex-col gap-2 p-3 bg-red-50 border border-red-250 rounded-2xl items-center text-center">
-                      <div className="text-[10px] font-mono text-red-700 font-bold uppercase tracking-wider animate-pulse">
-                        ⚠️ COURSE CHRONOMÉTRÉE ACTIVE
-                      </div>
-                      <div className="text-2xl font-black text-red-650 font-mono tracking-wider">
-                        {formatTime(elapsedTime)}
-                      </div>
-                      
-                      <button
-                        onClick={onStopRun}
-                        className="w-full mt-1.5 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold uppercase transition-all cursor-pointer"
-                      >
-                        <Square size={12} fill="currentColor" />
-                        <span>Abandonner le Run</span>
-                      </button>
-                    </div>
                   )}
                 </div>
               )}

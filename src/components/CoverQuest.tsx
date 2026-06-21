@@ -28,6 +28,8 @@ interface CoverQuestProps {
   gtaPhotos: Record<string, string>;
   /** Styling status per key: 'pending' (en cours) | 'error'. */
   gtaStatus: Record<string, 'pending' | 'error'>;
+  /** Temps de complétion par id de spot (Missions chrono) — affiché en label. */
+  completedTimes: Record<number, string>;
   /** Re-run the proxy for one photo (keeps the original). */
   onRegenerate: (key: string) => void;
   /** Add a perso photo (already compressed ~1280 px). */
@@ -80,6 +82,7 @@ export default function CoverQuest({
   freePhotos,
   gtaPhotos,
   gtaStatus,
+  completedTimes,
   onRegenerate,
   onAddFreePhoto,
   onDeleteFreePhoto,
@@ -231,6 +234,8 @@ export default function CoverQuest({
             const hasGta = !!gtaPhotos[p.key];
             const showOrig = !hasGta || !!showOriginal[p.key];
             const status = gtaStatus[p.key];
+            // Temps chrono (Mission) : clé loc:<id> → completedTimes[id], affiché en label.
+            const chronoTime = p.key.startsWith('loc:') ? completedTimes[Number(p.key.slice(4))] : undefined;
             return (
               <div
                 key={p.key}
@@ -293,6 +298,11 @@ export default function CoverQuest({
                 )}
 
                 <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                  {chronoTime && (
+                    <span className="inline-block mb-0.5 px-1.5 py-0.5 rounded-md bg-black/55 border border-white/20 font-mono text-[9px] font-bold text-amber-300 tabular-nums drop-shadow">
+                      ⏱ {chronoTime}
+                    </span>
+                  )}
                   <span className="font-display font-black text-white text-[11px] uppercase tracking-wide leading-tight drop-shadow truncate block">
                     {p.label}
                   </span>

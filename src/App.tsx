@@ -415,13 +415,13 @@ export default function App() {
     return INITIAL_LOCATIONS;
   }, []);
 
-  // Filter chips toggle group visibility (multi-select). Excluded from the
-  // pins/list: trophy markers (id 101-105) and Missions — the latter are now
-  // represented on the map by the dedicated course layer (see coursesData),
-  // but kept in INITIAL_LOCATIONS so the Social Club / completion are untouched.
+  // Filter chips toggle group visibility (multi-select). Seules les entrées
+  // trophées (id 101-105) sont exclues des pins/liste. Les Missions sont à NOUVEAU
+  // visibles (sous le chip « Missions », à côté des courses) → tap → bottom sheet →
+  // chrono manuel (le géofence reste un déclencheur bonus).
   const visibleLocations = useMemo(() => {
     return allLocations
-      .filter((loc) => !loc.category.startsWith('🏆') && loc.category !== 'Missions')
+      .filter((loc) => !loc.category.startsWith('🏆'))
       .filter((loc) => isCategoryVisible(loc.category, activeGroups));
   }, [allLocations, activeGroups]);
 
@@ -735,21 +735,23 @@ export default function App() {
     }
 
     // Approach notification — ping once when entering an incomplete PHOTO slot's
-    // zone (Escapades/Plages, 500 m). On NE notifie PAS les Missions : elles sont
-    // exclues de la carte/liste (visibleLocations) → le run n'est pas lançable là où
-    // la notif apparaîtrait, donc on ne promet pas une action indisponible. Les vraies
-    // courses chrono ont leur propre prompt (courses.forEach + CoursePhotoPrompt).
+    // zone : Escapades/Plages (500 m, photo) OU Missions (100 m, chrono). Les
+    // Missions sont à nouveau accessibles (pin/fiche) → la notif pointe vers une
+    // action réelle. Les vraies courses chrono ont en plus leur propre prompt
+    // (courses.forEach + CoursePhotoPrompt).
     completableLocations.forEach((loc) => {
       if (completedLocationIds.includes(loc.id)) return;
-      if (!isPhotoSlot(loc.category)) return; // Missions : pas d'action dispo → pas de notif
       const d = computeDistance(userLat, userLng, loc.lat, loc.lng);
       const radius = approachRadiusKm(loc.category);
       const alerted = approachAlertedRef.current.has(loc.id);
       if (d <= radius && !alerted) {
         approachAlertedRef.current.add(loc.id);
         const label = shortLabel(loc);
-        const body = `Tu es sur ${label}. Ouvre la fiche du spot et prends ta photo pour valider.`;
-        setDenzelMessage({ text: body, panel: 'corales' });
+        const isPhoto = isPhotoSlot(loc.category);
+        const body = isPhoto
+          ? `Tu es sur ${label}. Ouvre la fiche du spot et prends ta photo pour valider.`
+          : `Tu es sur ${label}. Ouvre la fiche et lance/arrête ton chrono pour valider.`;
+        setDenzelMessage({ text: body, panel: isPhoto ? 'corales' : 'car' });
         playSmsChirp();
         void notifyOS(`Zone atteinte · ${label}`, body, `approach_${loc.id}`);
       } else if (alerted && d > radius * 1.6) {
@@ -975,6 +977,7 @@ export default function App() {
             freePhotos={freePhotos}
             gtaPhotos={gtaPhotos}
             gtaStatus={gtaStatus}
+            completedTimes={completedTimes}
             onRegenerate={regenerateGta}
             onAddFreePhoto={handleAddFreePhoto}
             onDeleteFreePhoto={handleDeleteFreePhoto}
