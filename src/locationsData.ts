@@ -15,10 +15,10 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
   },
   {
     "id": 2,
-    "name": "Cannabis Club Mr Bruno",
+    "name": "Mr Bruno",
     "category": "Ravitaillement",
-    "lat": 28.0991, "lng": -16.7389,
-    "info": "Dispensaire. Point de drop et réapprovisionnement."
+    "lat": 28.081801, "lng": -16.735468,
+    "info": "Dispensaire (Costa Adeje). Point de drop et réapprovisionnement."
   },
   {
     "id": 3,

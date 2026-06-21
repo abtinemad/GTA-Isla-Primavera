@@ -40,11 +40,18 @@ import {
   X,
   MessageSquare
 } from 'lucide-react';
-import { migrateLegacyKeys, loadCoursePhotos, putCoursePhoto } from './utils/storage';
+import { migrateLegacyKeys, loadCoursePhotos, putCoursePhoto, loadSpotPhotos, putSpotPhoto } from './utils/storage';
 
 // Renomme les clés héritées « tenirife_* » → « tenerife_* » une fois, AVANT que
 // les initialiseurs d'état (ci-dessous) ne lisent les nouvelles clés.
 migrateLegacyKeys();
+
+// Lignes Denzel à la capture d'une photo "ambiance", par id de spot. Spécifique
+// quand fournie, générique sinon (voir handleCaptureSpotPhoto). N'altère PAS
+// denzelMessages.ts — ce sont des lignes propres au spot.
+const AMBIANCE_DENZEL: Record<number, string> = {
+  2: 'Le seul Social Club où le patron est un chien. Profil bas, respect maximal.',
+};
 
 export default function App() {
   // --- CORE GAMEPLAY STATE ---
@@ -102,13 +109,18 @@ export default function App() {
   // in the Social Club "Courses" gallery (CoverQuest).
   const [coursePhotos, setCoursePhotos] = useState<Record<string, string>>({});
 
+  // "Ambiance" photos taken freely on POI spots (beach clubs/restos/ravito/bars/
+  // plages) — IndexedDB, keyed by spot id. Joins the Social Club + jaquette pool.
+  const [spotPhotos, setSpotPhotos] = useState<Record<number, string>>({});
+
   // El Jefe info-bulle shown when within 50 m of a course's photo point.
   const [coursePhotoPrompt, setCoursePhotoPrompt] = useState<CourseData | null>(null);
 
-  // Hydrate course photos from IndexedDB once on mount (also migrates any old
-  // localStorage blob into IndexedDB the first time).
+  // Hydrate IndexedDB photo stores once on mount (course photos also migrate any
+  // old localStorage blob the first time).
   useEffect(() => {
     loadCoursePhotos().then(setCoursePhotos).catch(() => {});
+    loadSpotPhotos().then(setSpotPhotos).catch(() => {});
   }, []);
 
   // UI state
@@ -473,6 +485,16 @@ export default function App() {
 
     setCoursePhotoPrompt(null);
     setDenzelMessage({ text: `Beau cliché. « ${course.title} » rejoint ta collection.`, panel: 'happy' });
+  };
+
+  // Ambiance photo committed from a spot's "📸 Photo ici" action. No geofence
+  // (she's there). Persists to IndexedDB → Social Club + jaquette pool. NOT
+  // counted in any X/Y tally — it's a free, extra souvenir.
+  const handleCaptureSpotPhoto = (locId: number, base64: string) => {
+    setSpotPhotos((prev) => ({ ...prev, [locId]: base64 }));
+    void putSpotPhoto(locId, base64);
+    const line = AMBIANCE_DENZEL[locId] ?? 'Belle prise. Direction la collection.';
+    setDenzelMessage({ text: line, panel: 'happy' });
   };
 
   // Cover Quest snap = front-end of the existing validation. The camera only
@@ -845,6 +867,7 @@ export default function App() {
         activeRunCourseId={activeRunCourseId}
         onStartCourseRun={handleStartCourseRun}
         completedCourseIds={completedCourseIds}
+        onCaptureSpotPhoto={handleCaptureSpotPhoto}
       />
 
       {/* ACTIVE STOPWATCH RUN DYNAMIC MULTI-VIEW GLOBAL HUD OVERLAY */}

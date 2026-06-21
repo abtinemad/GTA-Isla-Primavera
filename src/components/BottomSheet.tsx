@@ -65,6 +65,8 @@ interface BottomSheetProps {
   activeRunCourseId?: string | null;
   onStartCourseRun?: (course: CourseData) => void;
   completedCourseIds?: string[];
+  /** Free "ambiance" photo on a POI spot (no geofence) → IndexedDB collection. */
+  onCaptureSpotPhoto?: (locId: number, base64: string) => void;
 }
 
 export default function BottomSheet({
@@ -84,6 +86,7 @@ export default function BottomSheet({
   activeRunCourseId = null,
   onStartCourseRun,
   completedCourseIds = [],
+  onCaptureSpotPhoto,
 }: BottomSheetProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisLogs, setAnalysisLogs] = useState<string[]>([]);
@@ -325,6 +328,21 @@ export default function BottomSheet({
 
   const clickInput = () => {
     fileInputRef.current?.click();
+  };
+
+  // Free "ambiance" capture (no geofence, no co-validation) — beach clubs/restos/
+  // ravito/bars/plages. Compresses and hands the photo to the IndexedDB collection.
+  const ambianceInputRef = useRef<HTMLInputElement>(null);
+  const handleAmbianceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !location) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const compressed = await compressPhoto(reader.result as string);
+      onCaptureSpotPhoto?.(location.id, compressed);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // allow re-picking the same file
   };
 
   // Resizes & compresses uploaded photo to avoid localstorage quota overflow (>5MB)
@@ -706,6 +724,31 @@ export default function BottomSheet({
                   <MapPin size={16} className="text-zinc-600" />
                   <span>Centrer sur la carte</span>
                 </button>
+              )}
+
+              {/* 📸 Photo ici — capture "ambiance" libre (sans géofence) sur les POI
+                  non-photo (ravito/beach club/restos/bars) → collection IndexedDB.
+                  Les Plages gardent leur co-validation (réconciliation Phase 3). */}
+              {!isAnalyzing && onCaptureSpotPhoto &&
+                ['Ravitaillement', 'Beach Club', 'Restaurants', 'Bars'].includes(location.category) && (
+                <>
+                  <button
+                    onClick={() => ambianceInputRef.current?.click()}
+                    className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl text-white text-sm font-bold transition-all duration-200 shadow-lg cursor-pointer active:scale-95 sm:col-span-2"
+                    style={{ backgroundColor: catInfo.accentColor, boxShadow: `0 4px 14px ${catInfo.accentColor}40` }}
+                  >
+                    <Camera size={16} />
+                    <span>📸 Photo ici</span>
+                  </button>
+                  <input
+                    ref={ambianceInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleAmbianceUpload}
+                    className="hidden"
+                  />
+                </>
               )}
 
               {/* Share Button */}

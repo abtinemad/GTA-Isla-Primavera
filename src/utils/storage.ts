@@ -51,8 +51,11 @@ export function migrateLegacyKeys(): void {
 // --- 2. Photos de course en IndexedDB --------------------------------------
 
 const DB_NAME = 'tenerife';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const PHOTO_STORE = 'course_photos';
+// Photos "ambiance" libres sur les spots (beach clubs/restos/ravito/bars/plages),
+// indexées par l'id numérique du spot.
+const SPOT_STORE = 'spot_photos';
 // Anciens emplacements localStorage du blob photos (les deux orthographes).
 const LEGACY_PHOTO_KEYS = ['tenerife_course_photos', 'tenirife_course_photos'];
 
@@ -63,6 +66,9 @@ function openDB(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(PHOTO_STORE)) {
         db.createObjectStore(PHOTO_STORE);
+      }
+      if (!db.objectStoreNames.contains(SPOT_STORE)) {
+        db.createObjectStore(SPOT_STORE);
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -140,6 +146,58 @@ export async function loadCoursePhotos(): Promise<Record<string, string>> {
   }
   try {
     return await getAllCoursePhotos();
+  } catch {
+    return {};
+  }
+}
+
+// --- 3. Photos "ambiance" de spots en IndexedDB (clé = id numérique) --------
+
+/** Toutes les photos de spot sous la forme { [spotId]: base64 }. */
+export async function getAllSpotPhotos(): Promise<Record<number, string>> {
+  const db = await openDB();
+  try {
+    return await new Promise<Record<number, string>>((resolve, reject) => {
+      const out: Record<number, string> = {};
+      const cursorReq = db
+        .transaction(SPOT_STORE, 'readonly')
+        .objectStore(SPOT_STORE)
+        .openCursor();
+      cursorReq.onsuccess = () => {
+        const cursor = cursorReq.result;
+        if (cursor) {
+          out[Number(cursor.key)] = cursor.value as string;
+          cursor.continue();
+        } else {
+          resolve(out);
+        }
+      };
+      cursorReq.onerror = () => reject(cursorReq.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+/** Persiste une photo "ambiance" (base64) indexée par l'id du spot. */
+export async function putSpotPhoto(id: number, base64: string): Promise<void> {
+  const db = await openDB();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(SPOT_STORE, 'readwrite');
+      tx.objectStore(SPOT_STORE).put(base64, id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+/** Charge toutes les photos "ambiance" de spots. */
+export async function loadSpotPhotos(): Promise<Record<number, string>> {
+  try {
+    return await getAllSpotPhotos();
   } catch {
     return {};
   }

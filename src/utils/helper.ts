@@ -230,10 +230,12 @@ const MARKER_VARIANTS: Record<MarkerVariant, MarkerVariantStyle> = {
     fill: '#00E0CB', glyphColor: '#053330', scale: 1,
     glyph: (g) => `<path d="M3.5 5h13l-6.5 7zM10 12v4M6.5 16h7" fill="none" stroke="${g}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
-  // Cannabis club — cyan/vert néon, feuille
+  // Cannabis club — vert néon, VRAIE feuille de cannabis (lucide `Cannabis`,
+  // icône 24×24 stroke mappée dans la box 20×20 centrée en 10,10 ; stroke = glyphColor,
+  // épaissi pour rester lisible à la taille du pin). Couleurs inchangées.
   cannabis: {
     fill: '#2BE38A', glyphColor: '#053A22', scale: 1,
-    glyph: (g) => `<path d="M5.5 16c0-6.5 4.3-11 10.5-11C16 11.3 11.5 16 5.5 16ZM5.5 16l5.5-6.2" fill="none" stroke="${g}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+    glyph: (g) => `<g transform="translate(10 10) scale(0.8) translate(-12 -12)" fill="none" stroke="${g}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-4"/><path d="M7 12c-1.5 0-4.5 1.5-5 3 3.5 1.5 6 1 6 1-1.5 1.5-2 3.5-2 5 2.5 0 4.5-1.5 6-3 1.5 1.5 3.5 3 6 3 0-1.5-.5-3.5-2-5 0 0 2.5.5 6-1-.5-1.5-3.5-3-5-3 1.5-1 4-4 4-6-2.5 0-5.5 1.5-7 3 0-2.5-.5-5-2-7-1.5 2-2 4.5-2 7-1.5-1.5-4.5-3-7-3 0 2 2.5 5 4 6"/></g>`,
   },
   // Plage — JAUNE, parasol
   plage: {
