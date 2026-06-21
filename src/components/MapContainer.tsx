@@ -18,6 +18,8 @@ interface MapContainerProps {
   userCoords: { lat: number; lng: number } | null;
   /** Opens El Jefe's messages (the dog) — replay of the guided onboarding. */
   onOpenDenzel: () => void;
+  /** Pin labels (tooltips) show only when exactly one filter group is active. */
+  singleGroupActive?: boolean;
   completedLocations?: number[];
   /** Races — sole source of courses (src/data/coursesData.ts). */
   courses?: CourseData[];
@@ -37,6 +39,7 @@ export default function MapContainer({
   onSelectLocation,
   userCoords,
   onOpenDenzel,
+  singleGroupActive = false,
   completedLocations = [],
   courses = [],
   coursesActive = false,
@@ -193,19 +196,22 @@ export default function MapContainer({
         onSelectLocation(loc);
       });
 
-      // Bind permanent tooltip with dynamic category class for stark neon colors
-      const categoryClass = 'tooltip-' + loc.category.toLowerCase().replace(/[^a-z0-9]/g, '');
-      marker.bindTooltip(loc.name, {
-        permanent: true,
-        direction: 'bottom',
-        offset: [0, 16],
-        className: `custom-map-tooltip ${categoryClass}`
-      });
+      // Permanent label, but only when a single category is isolated — otherwise
+      // labels overlap (esp. around the QG cluster), so we keep pins only.
+      if (singleGroupActive) {
+        const categoryClass = 'tooltip-' + loc.category.toLowerCase().replace(/[^a-z0-9]/g, '');
+        marker.bindTooltip(loc.name, {
+          permanent: true,
+          direction: 'bottom',
+          offset: [0, 16],
+          className: `custom-map-tooltip ${categoryClass}`
+        });
+      }
 
       marker.addTo(map);
       markersRef.current[loc.id] = marker;
     });
-  }, [locations, selectedLocation, onSelectLocation, completedLocations]);
+  }, [locations, selectedLocation, onSelectLocation, completedLocations, singleGroupActive]);
 
   // 4. Handle smooth focusing when selectedLocation changes (e.g., from lists or indicators)
   useEffect(() => {
@@ -308,12 +314,17 @@ export default function MapContainer({
         zIndexOffset: isSelected ? 900 : 300,
       });
       depart.on('click', () => onSelectCourse?.(course));
-      depart.bindTooltip(course.title, {
-        permanent: true,
-        direction: 'bottom',
-        offset: [0, 16],
-        className: 'custom-map-tooltip tooltip-missions',
-      });
+      // Label = the course title only, on the depart pin only (the arrival pin
+      // never carries one, so short courses don't double up). Shown only when a
+      // single filter group is isolated.
+      if (singleGroupActive) {
+        depart.bindTooltip(course.title, {
+          permanent: true,
+          direction: 'bottom',
+          offset: [0, 16],
+          className: 'custom-map-tooltip tooltip-missions',
+        });
+      }
       depart.addTo(group);
 
       // Finish pin (checkered flag), non-interactive.
@@ -338,7 +349,7 @@ export default function MapContainer({
         courseLayersRef.current = null;
       }
     };
-  }, [courses, coursesActive, coursesFocused, completedCourseIds, selectedCourseId, onSelectCourse]);
+  }, [courses, coursesActive, coursesFocused, completedCourseIds, selectedCourseId, onSelectCourse, singleGroupActive]);
 
   // 5b. Fly to a course when it is selected (its depart pin was tapped).
   useEffect(() => {

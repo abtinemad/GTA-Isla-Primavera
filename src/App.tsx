@@ -264,6 +264,10 @@ export default function App() {
   // routes are revealed only when it is isolated (focused) or a course is tapped.
   const coursesActive = activeGroups.includes('Courses');
   const coursesFocused = activeGroups.length === 1 && activeGroups[0] === 'Courses';
+  // Pin labels (tooltips) only show when a SINGLE filter group is isolated —
+  // with several (or all) groups on, labels overlap (esp. around the QG), so we
+  // hide them and keep pins only.
+  const singleGroupActive = activeGroups.length === 1;
 
   // Open a race sheet (and close any spot sheet — one at a time).
   const handleSelectCourse = useCallback((course: CourseData) => {
@@ -693,6 +697,7 @@ export default function App() {
             userCoords={userCoords}
             onOpenDenzel={() => setShowTutorial(true)}
             completedLocations={completedLocationIds}
+            singleGroupActive={singleGroupActive}
             courses={courses}
             coursesActive={coursesActive}
             coursesFocused={coursesFocused}
