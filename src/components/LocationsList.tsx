@@ -4,8 +4,9 @@
  */
 
 import { useState, useMemo } from 'react';
-import { LocationItem, Category } from '../types';
+import { LocationItem } from '../types';
 import { CATEGORY_MAP } from '../utils/helper';
+import { FilterGroup, isCategoryVisible } from '../filterGroups';
 import { Compass, Info, Trophy, MapPin } from 'lucide-react';
 
 // Maps each category to its design-token accent (see src/styles/tokens.css)
@@ -24,7 +25,7 @@ const CATEGORY_RAIL: Record<string, string> = {
 interface LocationsListProps {
   locations: LocationItem[];
   selectedLocation: LocationItem | null;
-  selectedCategory: Category | 'Tous';
+  activeGroups: FilterGroup[];
   onSelectLocation: (location: LocationItem) => void;
   userCoords?: { lat: number; lng: number } | null;
 }
@@ -32,7 +33,7 @@ interface LocationsListProps {
 export default function LocationsList({
   locations,
   selectedLocation,
-  selectedCategory,
+  activeGroups,
   onSelectLocation,
   userCoords
 }: LocationsListProps) {
@@ -46,13 +47,10 @@ export default function LocationsList({
     [locations]
   );
 
-  // Filter locations based on category
+  // Filter locations based on the active filter groups (shared source of truth)
   const filteredLocations = useMemo(() => {
-    return physicalLocations.filter((loc) => {
-      const matchesCategory = selectedCategory === 'Tous' || loc.category === selectedCategory;
-      return matchesCategory;
-    });
-  }, [physicalLocations, selectedCategory]);
+    return physicalLocations.filter((loc) => isCategoryVisible(loc.category, activeGroups));
+  }, [physicalLocations, activeGroups]);
 
   // Calculate distance if available
   const getDistance = (lat: number, lng: number) => {

@@ -5,9 +5,11 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LocationItem, Category } from './types';
+import { LocationItem } from './types';
 import { INITIAL_LOCATIONS } from './locationsData';
+import { FilterGroup, ALL_GROUP_IDS, isCategoryVisible } from './filterGroups';
 import QuickFilterBar from './components/QuickFilterBar';
+import MapFilterBar from './components/MapFilterBar';
 import MapContainer from './components/MapContainer';
 import { CATEGORY_MAP, haversineKm } from './utils/helper';
 import LocationsList from './components/LocationsList';
@@ -42,7 +44,9 @@ import {
 
 export default function App() {
   // --- CORE GAMEPLAY STATE ---
-  const [selectedCategory, setSelectedCategory] = useState<Category | 'Tous'>('Tous');
+  // Shared filter state: which groups are currently visible (multi-select).
+  // Single source of truth for the map overlay, the spot bar and the spot list.
+  const [activeGroups, setActiveGroups] = useState<FilterGroup[]>(ALL_GROUP_IDS);
   const [selectedLocation, setSelectedLocation] = useState<LocationItem | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   
@@ -203,15 +207,34 @@ export default function App() {
     return INITIAL_LOCATIONS;
   }, []);
 
-  // Trophy markers (id 101-105, "🏆 Trophées - …") duplicate physical spots and
-  // are surfaced via the trophy panels, not as map pins / list spots.
-  const filteredListLocations = useMemo(() => {
-    const physical = allLocations.filter((loc) => !loc.category.startsWith('🏆'));
-    if (selectedCategory === 'Tous') {
-      return physical;
+  // Filter chips toggle group visibility (multi-select). Trophy markers
+  // (id 101-105, "🏆 Trophées - …") duplicate physical spots and are surfaced
+  // via the trophy panels, not as map pins / list spots, so they are excluded.
+  const visibleLocations = useMemo(() => {
+    return allLocations
+      .filter((loc) => !loc.category.startsWith('🏆'))
+      .filter((loc) => isCategoryVisible(loc.category, activeGroups));
+  }, [allLocations, activeGroups]);
+
+  const toggleGroup = useCallback((group: FilterGroup) => {
+    setActiveGroups((prev) =>
+      prev.includes(group) ? prev.filter((g) => g !== group) : [...prev, group]
+    );
+  }, []);
+
+  const selectAllGroups = useCallback(() => setActiveGroups(ALL_GROUP_IDS), []);
+
+  // Keep the spot selection consistent with the filters: if the open spot's
+  // group gets hidden, close it. Trophy selections (fly-to targets) are exempt.
+  useEffect(() => {
+    if (
+      selectedLocation &&
+      !selectedLocation.category.startsWith('🏆') &&
+      !isCategoryVisible(selectedLocation.category, activeGroups)
+    ) {
+      setSelectedLocation(null);
     }
-    return physical.filter((loc) => loc.category === selectedCategory);
-  }, [allLocations, selectedCategory]);
+  }, [activeGroups, selectedLocation]);
 
   // Only Missions / Escapades / Plages have an in-app completion flow (chrono
   // geofence or photo). Other categories and the trophy markers (id 101-105)
@@ -609,20 +632,16 @@ export default function App() {
               }}
             >
               <QuickFilterBar
-                selectedCategory={selectedCategory}
-                onSelectCategory={(cat) => {
-                  setSelectedCategory(cat);
-                  if (cat !== 'Tous' && selectedLocation && selectedLocation.category !== cat) {
-                    setSelectedLocation(null);
-                  }
-                }}
+                activeGroups={activeGroups}
+                onToggleGroup={toggleGroup}
+                onSelectAll={selectAllGroups}
               />
             </div>
             <div className="flex-1 overflow-hidden">
               <LocationsList
                 locations={allLocations}
                 selectedLocation={selectedLocation}
-                selectedCategory={selectedCategory}
+                activeGroups={activeGroups}
                 onSelectLocation={handleSelectLocation}
                 userCoords={userCoords}
               />
@@ -632,15 +651,25 @@ export default function App() {
 
         {/* MAP STAGE FRAME (re-centers automatically) */}
         <section data-tour="map" className={`flex-1 h-full relative ${activeTab === 'map' ? 'block' : 'hidden md:block'} ${activeTab === 'trophies' ? 'hidden md:hidden' : ''}`}>
-          
+
           <MapContainer
-            locations={filteredListLocations}
+            locations={visibleLocations}
             selectedLocation={selectedLocation}
             onSelectLocation={handleSelectLocation}
             userCoords={userCoords}
             onRequestGeolocation={requestGeolocation}
             completedLocations={completedLocationIds}
           />
+
+          {/* Filters exposed directly on the map (hidden during an active run so
+              the chrono HUD owns the top of the screen). */}
+          {activeRunLocationId === null && (
+            <MapFilterBar
+              activeGroups={activeGroups}
+              onToggleGroup={toggleGroup}
+              onSelectAll={selectAllGroups}
+            />
+          )}
 
         </section>
 
@@ -657,20 +686,16 @@ export default function App() {
               }}
             >
               <QuickFilterBar
-                selectedCategory={selectedCategory}
-                onSelectCategory={(cat) => {
-                  setSelectedCategory(cat);
-                  if (cat !== 'Tous' && selectedLocation && selectedLocation.category !== cat) {
-                    setSelectedLocation(null);
-                  }
-                }}
+                activeGroups={activeGroups}
+                onToggleGroup={toggleGroup}
+                onSelectAll={selectAllGroups}
               />
             </div>
             <div className="flex-1 overflow-hidden">
               <LocationsList
                 locations={allLocations}
                 selectedLocation={selectedLocation}
-                selectedCategory={selectedCategory}
+                activeGroups={activeGroups}
                 onSelectLocation={handleSelectLocation}
                 userCoords={userCoords}
               />
@@ -778,7 +803,7 @@ export default function App() {
           <div className="relative flex items-center justify-center">
             <Compass size={18} className={activeTab === 'list' ? 'text-amber-400' : ''} />
             <span className="absolute -top-1 -right-3 font-mono text-[8px] bg-slate-950 text-amber-400 px-1 rounded border border-slate-800">
-              {filteredListLocations.length}
+              {visibleLocations.length}
             </span>
           </div>
           <span className="text-[9px] tracking-wide font-display font-medium uppercase mt-0.5">Spots</span>

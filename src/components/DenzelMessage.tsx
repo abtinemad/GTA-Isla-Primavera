@@ -44,7 +44,7 @@ export default function DenzelMessage({ message, onDismiss, autoHideMs = 6000 }:
   return (
     <div
       className="fixed left-1/2 -translate-x-1/2 z-[900] w-[92%] max-w-sm sm:max-w-md pointer-events-none"
-      style={{ top: 'calc(3.4rem + env(safe-area-inset-top))' }}
+      style={{ top: 'calc(6.8rem + env(safe-area-inset-top))' }}
     >
       {/* mode="popLayout" so the outgoing and incoming messages crossfade in place. */}
       <AnimatePresence mode="popLayout">
