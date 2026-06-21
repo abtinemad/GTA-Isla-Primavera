@@ -23,9 +23,9 @@ const MODELS = ['gemini-3.1-flash-image', 'gemini-3.1-flash-image-preview'];
 // via l'env GTA_PROMPT sans redéploiement.
 const DEFAULT_PROMPT = `An artistic digital illustration in the style of a GTA-style loading-screen poster, based directly on the composition of the provided image. Hand-drawn comic-book aesthetic: clean bold black outlines, dynamic cell-shading, vivid saturated colors, painterly textures, high-contrast dramatic lighting, premium Rockstar loading-screen finish.
 
-Restyle the scene exactly as it appears: keep the original composition and layout, only transform it into this art style. Do not add or remove major elements.
+Render the EXACT same scene as an illustration in this art style — keep the original composition, layout, subjects, faces, expressions and proportions identical to the photo. Only the drawing/rendering style changes; do not add, remove, move or alter any elements.
 
-Color palette & atmosphere — sun-soaked Miami / neon-coast vibe, applied PURELY through color, light and mood (do NOT add new objects such as palm trees, neon signs or skylines): a warm "golden-hour-into-neon-night" grade; signature accents of hot neon pink / magenta and electric cyan-teal; warm coral-and-orange highlights with deep teal-to-purple shadows; where sky or background is visible, push it toward a magenta–orange–violet sunset gradient with soft neon glow and tropical haze; pastel art-deco warmth, high saturation, cinematic contrast.
+Color palette & atmosphere — KEEP the photo's real colors true, vivid and dominant; they must stay clearly recognizable. Layer only a SUBTLE, light-touch Miami / neon-coast vibe on top (do NOT add objects like palms, neon signs or skylines, and do NOT recolor or override the photo's true colors): a gentle warm golden-hour glow, a faint coral/amber warmth in the highlights and a light cyan-teal hint in the cool tones, with at most a whisper of neon accent. The Miami feel is only a light atmospheric layer, never a global recolor.
 
 No real trademarks (no "Grand Theft Auto", no "Vice City", no VCPD, no Rockstar/R* star, no real brand logos).`;
 
