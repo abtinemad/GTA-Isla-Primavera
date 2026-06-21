@@ -4,6 +4,7 @@
  */
 
 import { FilterGroup, FILTER_GROUPS } from '../filterGroups';
+import { Map as MapIcon } from 'lucide-react';
 
 interface MapFilterBarProps {
   activeGroups: FilterGroup[];
@@ -48,12 +49,13 @@ export default function MapFilterBar({ activeGroups, onToggleGroup, onSelectAll 
             opacity: allActive ? 1 : 0.85,
           }}
         >
-          <span className="text-[12px]">🗺️</span>
+          <MapIcon size={13} />
           <span>Tous</span>
         </button>
 
         {FILTER_GROUPS.map((g) => {
           const isActive = activeGroups.includes(g.id);
+          const Icon = g.icon;
           return (
             <button
               key={g.id}
@@ -69,9 +71,7 @@ export default function MapFilterBar({ activeGroups, onToggleGroup, onSelectAll 
                 opacity: isActive ? 1 : 0.55,
               }}
             >
-              <span className="text-[12px]" style={{ filter: isActive ? 'none' : 'grayscale(0.6)' }}>
-                {g.emoji}
-              </span>
+              <Icon size={13} />
               <span>{g.label}</span>
             </button>
           );

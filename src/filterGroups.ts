@@ -4,45 +4,73 @@
  */
 
 import { Category } from './types';
+import { CATEGORY_MAP } from './utils/helper';
+import {
+  Home,
+  Utensils,
+  Umbrella,
+  GlassWater,
+  Cannabis,
+  Trees,
+  Compass,
+  Flag,
+  type LucideIcon,
+} from 'lucide-react';
 
 /**
- * Map/list filters are grouped into six editorial families (chips / legend),
- * not the seven raw data categories. This is the SINGLE source of truth shared
- * by the map overlay (MapFilterBar), the spot-view bar (QuickFilterBar) and the
- * spot list (LocationsList) — so toggling a chip anywhere shows/hides the same
- * markers and cards.
+ * SOURCE DE VÉRITÉ UNIQUE des filtres carte/liste — DÉRIVÉE de `CATEGORY_MAP`
+ * (la même config que les pins), pas d'une liste codée en dur. Une entrée par
+ * catégorie de données réellement affichée (trophées 🏆 exclus) → le bandeau ne
+ * peut plus diverger des pins. Partagée par MapFilterBar, QuickFilterBar et la
+ * logique de visibilité (LocationsList, App).
  *
- * Multi-select: each group is independently visible/hidden. Colours are aligned
- * with the map marker palette (see `MARKER_VARIANTS` in utils/helper.ts).
+ * - `id` / `label` = la catégorie telle quelle dans les données (CATEGORY_MAP.label).
+ * - `color` = CATEGORY_MAP.accentColor (palette des marqueurs).
+ * - `icon` = icône lucide par catégorie (Cannabis conservé pour Ravitaillement).
  */
-export type FilterGroup =
-  | 'QG'
-  | 'Restaurants'
-  | 'Bars' // coctelería (Bars)
-  | 'Cannabis' // dispensaire (Ravitaillement)
-  | 'Beach Club'
-  | 'Plages'
-  | 'Photos' // missions photo (Escapades)
-  | 'Courses'; // missions chronométrées (Missions)
+
+// Catégories filtrables, dans l'ordre d'affichage du bandeau (hors trophées).
+const FILTER_CATEGORIES = [
+  'QG',
+  'Restaurants',
+  'Beach Club',
+  'Bars',
+  'Ravitaillement',
+  'Plages',
+  'Escapades',
+  'Missions',
+] as const satisfies readonly Category[];
+
+export type FilterGroup = (typeof FILTER_CATEGORIES)[number];
+
+// Icône lucide par catégorie. Cannabis conservé pour Ravitaillement (déjà décidé) ;
+// les autres suivent CATEGORY_MAP.iconName.
+const FILTER_ICONS: Record<FilterGroup, LucideIcon> = {
+  QG: Home,
+  Restaurants: Utensils,
+  'Beach Club': Umbrella,
+  Bars: GlassWater,
+  Ravitaillement: Cannabis,
+  Plages: Trees,
+  Escapades: Compass,
+  Missions: Flag,
+};
 
 export interface FilterGroupDef {
   id: FilterGroup;
   label: string;
-  emoji: string;
-  color: string; // chip accent (aligned with the map marker palette)
-  categories: Category[]; // raw data categories this chip controls
+  color: string; // chip accent (= palette marqueur)
+  icon: LucideIcon;
+  categories: Category[]; // catégorie(s) data contrôlée(s) par ce chip
 }
 
-export const FILTER_GROUPS: FilterGroupDef[] = [
-  { id: 'QG', label: 'QG', emoji: '🏠', color: '#EDEFF2', categories: ['QG'] },
-  { id: 'Restaurants', label: 'Restaurants', emoji: '🍴', color: '#9E7AD2', categories: ['Restaurants'] },
-  { id: 'Beach Club', label: 'Beach Club', emoji: '🍹', color: '#17B0A7', categories: ['Beach Club'] },
-  { id: 'Bars', label: 'Bars', emoji: '🍸', color: '#E0479B', categories: ['Bars'] },
-  { id: 'Cannabis', label: 'Cannabis', emoji: '🌿', color: '#46AE3C', categories: ['Ravitaillement'] },
-  { id: 'Plages', label: 'Plages', emoji: '🏖️', color: '#3F6CC4', categories: ['Plages'] },
-  { id: 'Photos', label: 'Photos', emoji: '📸', color: '#F0941E', categories: ['Escapades'] },
-  { id: 'Courses', label: 'Courses', emoji: '🏁', color: '#EA4423', categories: ['Missions'] },
-];
+export const FILTER_GROUPS: FilterGroupDef[] = FILTER_CATEGORIES.map((cat) => ({
+  id: cat,
+  label: CATEGORY_MAP[cat].label,
+  color: CATEGORY_MAP[cat].accentColor,
+  icon: FILTER_ICONS[cat],
+  categories: [cat],
+}));
 
 export const ALL_GROUP_IDS: FilterGroup[] = FILTER_GROUPS.map((g) => g.id);
 

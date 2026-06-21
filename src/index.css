@@ -191,7 +191,8 @@ html, body, #root {
 }
 
 @keyframes course-flow {
-  to { stroke-dashoffset: -21; }
+  /* Flux départ → destination (signe inversé pour le bon sens). */
+  to { stroke-dashoffset: 21; }
 }
 
 /* Respect reduced-motion: freeze the dash flow into a clean static line. */

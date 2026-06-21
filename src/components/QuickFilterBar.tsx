@@ -5,7 +5,7 @@
 
 import { useRef } from 'react';
 import { FilterGroup, FILTER_GROUPS } from '../filterGroups';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Map as MapIcon } from 'lucide-react';
 
 interface QuickFilterBarProps {
   activeGroups: FilterGroup[];
@@ -73,12 +73,13 @@ export default function QuickFilterBar({
               textShadow: allActive ? 'none' : '0 1px 2.5px rgba(0,0,0,0.95)',
             }}
           >
-            <span className="text-[12px]">🗺️</span>
+            <MapIcon size={14} />
             <span className="uppercase font-bold tracking-wide">Tous</span>
           </button>
 
           {FILTER_GROUPS.map((g) => {
             const isActive = activeGroups.includes(g.id);
+            const Icon = g.icon;
             return (
               <button
                 key={g.id}
@@ -101,9 +102,7 @@ export default function QuickFilterBar({
                   opacity: isActive ? 1 : 0.7,
                 }}
               >
-                <span className="text-[12px]" style={{ filter: isActive ? 'none' : 'grayscale(0.6)' }}>
-                  {g.emoji}
-                </span>
+                <Icon size={14} />
                 <span className="uppercase font-bold tracking-wide">{g.label}</span>
               </button>
             );

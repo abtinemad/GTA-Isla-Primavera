@@ -396,10 +396,10 @@ export default function App() {
 
   const selectAllGroups = useCallback(() => setActiveGroups(ALL_GROUP_IDS), []);
 
-  // The Courses chip drives the course layer: pins show when it is active;
+  // The Missions chip drives the course layer: pins show when it is active;
   // routes are revealed only when it is isolated (focused) or a course is tapped.
-  const coursesActive = activeGroups.includes('Courses');
-  const coursesFocused = activeGroups.length === 1 && activeGroups[0] === 'Courses';
+  const coursesActive = activeGroups.includes('Missions');
+  const coursesFocused = activeGroups.length === 1 && activeGroups[0] === 'Missions';
   // Pin labels (tooltips) only show when a SINGLE filter group is isolated —
   // with several (or all) groups on, labels overlap (esp. around the QG), so we
   // hide them and keep pins only.
