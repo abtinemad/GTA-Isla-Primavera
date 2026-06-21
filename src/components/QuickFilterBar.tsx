@@ -79,7 +79,6 @@ export default function QuickFilterBar({
 
           {FILTER_GROUPS.map((g) => {
             const isActive = activeGroups.includes(g.id);
-            const Icon = g.icon;
             return (
               <button
                 key={g.id}
@@ -102,7 +101,11 @@ export default function QuickFilterBar({
                   opacity: isActive ? 1 : 0.7,
                 }}
               >
-                <Icon size={14} />
+                <span
+                  className="inline-block w-3.5 h-3.5 shrink-0"
+                  aria-hidden
+                  dangerouslySetInnerHTML={{ __html: g.iconSvg }}
+                />
                 <span className="uppercase font-bold tracking-wide">{g.label}</span>
               </button>
             );

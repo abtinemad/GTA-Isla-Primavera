@@ -271,6 +271,17 @@ const MARKER_VARIANTS: Record<MarkerVariant, MarkerVariantStyle> = {
 };
 
 /**
+ * SVG du SEUL glyphe d'un variant (box 20×20, sans la goutte du pin). Le glyphe
+ * est dessiné en `currentColor` → il hérite de la couleur de son conteneur, et le
+ * « trou » éventuel (objectif de l'appareil photo) est transparent. SOURCE UNIQUE
+ * d'icônes partagée pins ↔ bandeau de filtres : même dessin, aucune liste parallèle.
+ */
+export function markerGlyphSvg(variant: MarkerVariant): string {
+  const v = MARKER_VARIANTS[variant] ?? MARKER_VARIANTS['mission-photo-principale'];
+  return `<svg viewBox="0 0 20 20" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">${v.glyph('currentColor', 'transparent')}</svg>`;
+}
+
+/**
  * Default mapping of a data `Category` onto a marker variant. The data only
  * carries seven families, so the finer pairs (photo annexe, course départ) are
  * not auto-assigned here — pass an explicit variant to `buildMarkerHtml` when a

@@ -4,18 +4,7 @@
  */
 
 import { Category } from './types';
-import { CATEGORY_MAP } from './utils/helper';
-import {
-  Home,
-  Utensils,
-  Umbrella,
-  Martini,
-  Cannabis,
-  Waves,
-  Compass,
-  Flag,
-  type LucideIcon,
-} from 'lucide-react';
+import { CATEGORY_MAP, categoryToVariant, markerGlyphSvg } from './utils/helper';
 
 /**
  * SOURCE DE VÉRITÉ UNIQUE des filtres carte/liste — DÉRIVÉE de `CATEGORY_MAP`
@@ -26,7 +15,9 @@ import {
  *
  * - `id` / `label` = la catégorie telle quelle dans les données (CATEGORY_MAP.label).
  * - `color` = CATEGORY_MAP.accentColor (palette des marqueurs).
- * - `icon` = icône lucide par catégorie (Cannabis conservé pour Ravitaillement).
+ * - `iconSvg` = EXACTEMENT le glyphe du pin de la catégorie (markerGlyphSvg ∘
+ *   categoryToVariant). Aucune liste d'icônes parallèle : une seule source, donc le
+ *   bandeau ne peut plus diverger des pins.
  */
 
 // Catégories filtrables, dans l'ordre d'affichage du bandeau (hors trophées).
@@ -43,24 +34,11 @@ const FILTER_CATEGORIES = [
 
 export type FilterGroup = (typeof FILTER_CATEGORIES)[number];
 
-// Icône lucide par catégorie. Cannabis conservé pour Ravitaillement (déjà décidé) ;
-// les autres suivent CATEGORY_MAP.iconName.
-const FILTER_ICONS: Record<FilterGroup, LucideIcon> = {
-  QG: Home,
-  Restaurants: Utensils,
-  'Beach Club': Umbrella,
-  Bars: Martini,
-  Ravitaillement: Cannabis,
-  Plages: Waves,
-  Escapades: Compass,
-  Missions: Flag,
-};
-
 export interface FilterGroupDef {
   id: FilterGroup;
   label: string;
   color: string; // chip accent (= palette marqueur)
-  icon: LucideIcon;
+  iconSvg: string; // glyphe du pin (currentColor), rendu via dangerouslySetInnerHTML
   categories: Category[]; // catégorie(s) data contrôlée(s) par ce chip
 }
 
@@ -68,7 +46,7 @@ export const FILTER_GROUPS: FilterGroupDef[] = FILTER_CATEGORIES.map((cat) => ({
   id: cat,
   label: CATEGORY_MAP[cat].label,
   color: CATEGORY_MAP[cat].accentColor,
-  icon: FILTER_ICONS[cat],
+  iconSvg: markerGlyphSvg(categoryToVariant(cat)),
   categories: [cat],
 }));
 

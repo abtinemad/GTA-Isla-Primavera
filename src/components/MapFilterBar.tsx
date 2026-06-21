@@ -55,7 +55,6 @@ export default function MapFilterBar({ activeGroups, onToggleGroup, onSelectAll 
 
         {FILTER_GROUPS.map((g) => {
           const isActive = activeGroups.includes(g.id);
-          const Icon = g.icon;
           return (
             <button
               key={g.id}
@@ -71,7 +70,11 @@ export default function MapFilterBar({ activeGroups, onToggleGroup, onSelectAll 
                 opacity: isActive ? 1 : 0.55,
               }}
             >
-              <Icon size={13} />
+              <span
+                className="inline-block w-[13px] h-[13px] shrink-0"
+                aria-hidden
+                dangerouslySetInnerHTML={{ __html: g.iconSvg }}
+              />
               <span>{g.label}</span>
             </button>
           );
