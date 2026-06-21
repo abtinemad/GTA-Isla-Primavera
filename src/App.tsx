@@ -126,6 +126,11 @@ export default function App() {
   // El Jefe info-bulle shown when within 50 m of a course's photo point.
   const [coursePhotoPrompt, setCoursePhotoPrompt] = useState<CourseData | null>(null);
 
+  // Persistance du stockage (iOS/Safari peut purger IndexedDB après ~7 j d'inactivité).
+  // Bandeau discret affiché seulement si la persistance est refusée/indispo.
+  const [showStorageBanner, setShowStorageBanner] = useState(false);
+  const persistCheckedRef = useRef(false);
+
   // Hydrate IndexedDB photo stores once on mount (course photos also migrate any
   // old localStorage blob the first time).
   useEffect(() => {
@@ -365,6 +370,42 @@ export default function App() {
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
+
+  // Demande la persistance du stockage (empêche iOS/Safari de purger IndexedDB).
+  // Doit suivre un geste utilisateur. Une seule tentative par session ; mémorisé en
+  // localStorage pour ne PAS redemander en boucle. Si refusé/indispo → bandeau.
+  const ensurePersistentStorage = async () => {
+    if (persistCheckedRef.current) return;
+    persistCheckedRef.current = true;
+    const state = safeLocalStorage.getItem('tenerife_persist');
+    if (state === 'granted' || state === 'dismissed') return; // déjà réglé → on ne redemande pas
+    try {
+      const sm = navigator.storage;
+      if (sm && typeof sm.persist === 'function') {
+        const already = typeof sm.persisted === 'function' ? await sm.persisted() : false;
+        if (already || (await sm.persist())) {
+          safeLocalStorage.setItem('tenerife_persist', 'granted');
+          return;
+        }
+      }
+      setShowStorageBanner(true); // refusé ou API indispo → bandeau non bloquant
+    } catch {
+      /* best-effort */
+    }
+  };
+
+  // Premier geste utilisateur dans l'app → tente la persistance (une fois).
+  useEffect(() => {
+    const onFirstGesture = () => void ensurePersistentStorage();
+    window.addEventListener('pointerdown', onFirstGesture, { once: true });
+    return () => window.removeEventListener('pointerdown', onFirstGesture);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dismissStorageBanner = () => {
+    setShowStorageBanner(false);
+    safeLocalStorage.setItem('tenerife_persist', 'dismissed'); // ne plus afficher
+  };
 
   const allLocations = useMemo(() => {
     return INITIAL_LOCATIONS;
@@ -1139,6 +1180,28 @@ export default function App() {
         onCapture={handleCaptureCoursePhoto}
         onClose={() => setCoursePhotoPrompt(null)}
       />
+
+      {/* Bandeau persistance stockage — discret, non bloquant, dismissable.
+          Affiché seulement si navigator.storage.persist() a été refusé/indispo. */}
+      {showStorageBanner && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-[850] w-[92%] max-w-md flex items-start gap-2.5 px-3.5 py-2.5 rounded-2xl bg-zinc-950/95 backdrop-blur-md border border-amber-500/40 shadow-[0_12px_30px_rgba(0,0,0,0.55)]"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 4rem)' }}
+          role="status"
+        >
+          <span className="text-base leading-none mt-0.5">📥</span>
+          <p className="flex-1 text-[11px] leading-snug text-zinc-200">
+            Pour ne pas perdre tes photos, garde l'app sur l'écran d'accueil et ouvre-la régulièrement.
+          </p>
+          <button
+            onClick={dismissStorageBanner}
+            aria-label="Fermer"
+            className="shrink-0 p-1 rounded-full text-zinc-400 hover:text-white active:scale-95 cursor-pointer"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
 
     </div>
   );
