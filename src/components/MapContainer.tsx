@@ -76,11 +76,11 @@ export default function MapContainer({
   const [mapStyle, setMapStyle] = useState<'satellite' | 'plan'>('satellite');
   const tileLayersRef = useRef<L.TileLayer[]>([]);
 
-  // Aphorismes Isla Primavera (bas de carte) — rotation simple ~7 s (séquentielle,
+  // Aphorismes Isla Primavera (bas de carte) — rotation simple 10 s (séquentielle,
   // donc sans répétition consécutive). Source unique : src/data/islaPhrases.ts.
   const [phraseIdx, setPhraseIdx] = useState(0);
   useEffect(() => {
-    const id = window.setInterval(() => setPhraseIdx((i) => (i + 1) % ISLA_PHRASES.length), 7000);
+    const id = window.setInterval(() => setPhraseIdx((i) => (i + 1) % ISLA_PHRASES.length), 10000);
     return () => window.clearInterval(id);
   }, []);
   // Course tracks (route line + finish pin) — only mounted when revealed.
