@@ -526,108 +526,135 @@ export default function App() {
     playSmsChirp();
   };
 
-  // Continuous geofencing watchdog — keeps userCoords fresh so cover slots and
-  // map proximity stay accurate. Subscribed once for the app's lifetime.
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-
+  // Geofence processing — the SAME checks run for a live GPS fix AND for the DEV
+  // simulator below, so "simulate arrival" exercises the real flow (not a mock).
+  const applyGeofence = (userLat: number, userLng: number) => {
     const computeDistance = (lat1: number, lng1: number, lat2: number, lng2: number) =>
       haversineKm(lat1, lng1, lat2, lng2);
 
+    // Mission completion = crossing the 50 m chrono finish line (legacy spots —
+    // pins hidden now, kept for completeness).
+    if (activeRunLocationId !== null) {
+      const runTarget = allLocations.find((l) => l.id === activeRunLocationId);
+      if (runTarget) {
+        const currentDist = computeDistance(userLat, userLng, runTarget.lat, runTarget.lng);
+        if (currentDist <= 0.050) {
+          const formatTime = (ms: number) => {
+            const totalSec = Math.floor(ms / 1000);
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            const h = Math.floor((ms % 1000) / 10);
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${h.toString().padStart(2, '0')}`;
+          };
+          const finishScore = formatTime(elapsedTimeRef.current);
+          handleCompleteLocation(runTarget, finishScore);
+          handleStopRun();
+        }
+      }
+    }
+
+    // Course run completion = crossing the 50 m line at the ARRIVAL. Marks the
+    // run done (a state SEPARATE from the course photo).
+    if (activeRunCourseId !== null) {
+      const runCourse = courses.find((c) => c.id === activeRunCourseId);
+      if (runCourse) {
+        const d = computeDistance(userLat, userLng, runCourse.end.lat, runCourse.end.lng);
+        if (d <= 0.050) {
+          markCourseRunDone(runCourse);
+          handleStopCourseRun();
+          setDenzelMessage({ text: `Run bouclé — « ${runCourse.trophy} » décroché.`, panel: 'happy' });
+        }
+      }
+    }
+
+    // Approach notification — ping once when entering an incomplete slot's zone
+    // (Missions 100 m, Escapades/Plages 500 m).
+    completableLocations.forEach((loc) => {
+      if (completedLocationIds.includes(loc.id)) return;
+      const d = computeDistance(userLat, userLng, loc.lat, loc.lng);
+      const radius = approachRadiusKm(loc.category);
+      const alerted = approachAlertedRef.current.has(loc.id);
+      if (d <= radius && !alerted) {
+        approachAlertedRef.current.add(loc.id);
+        const label = shortLabel(loc);
+        const isPhoto = isPhotoSlot(loc.category);
+        const body = isPhoto
+          ? `Tu es sur ${label}. Ouvre la jaquette (Social Club) et prends ta photo pour valider.`
+          : `Tu approches de ${label}. Prépare ton run chrono.`;
+        setDenzelMessage({ text: body, panel: isPhoto ? 'corales' : 'car' });
+        playSmsChirp();
+        void notifyOS(`Zone atteinte · ${label}`, body, `approach_${loc.id}`);
+      } else if (alerted && d > radius * 1.6) {
+        approachAlertedRef.current.delete(loc.id); // left the zone → re-armable
+      }
+    });
+
+    // Course photo point — within 50 m of a course's photo point (arrival by
+    // default, start when photoAtStart). Fire-once until the player leaves.
+    courses.forEach((course) => {
+      if (coursePhotos[course.id]) return; // photo already taken (independent of the run)
+      const pt = course.photoAtStart ? course.start : course.end;
+      const d = computeDistance(userLat, userLng, pt.lat, pt.lng);
+      const alerted = coursePromptAlertedRef.current.has(course.id);
+      if (d <= 0.050 && !alerted) {
+        coursePromptAlertedRef.current.add(course.id);
+        setCoursePhotoPrompt(course);
+        playSmsChirp();
+        void notifyOS(`Spot photo · ${course.title}`, course.visuel, `course_${course.id}`);
+      } else if (alerted && d > 0.080) {
+        coursePromptAlertedRef.current.delete(course.id); // left → re-armable
+      }
+    });
+  };
+
+  // ─── DEV · TEMP — simulate reaching a geofence without being on site. Calls
+  // the REAL applyGeofence at the target coords. Remove once the flow is OK. ───
+  const devSimulateArrival = () => {
+    let target: { lat: number; lng: number } | null = null;
+    if (activeRunCourseId) {
+      const c = courses.find((c) => c.id === activeRunCourseId);
+      if (c) target = c.end;
+    } else if (activeRunLocationId !== null) {
+      const l = allLocations.find((l) => l.id === activeRunLocationId);
+      if (l) target = { lat: l.lat, lng: l.lng };
+    }
+    if (!target) return;
+    // Re-arm the photo prompt for this course so it can pop again on re-test.
+    if (activeRunCourseId) coursePromptAlertedRef.current.delete(activeRunCourseId);
+    setUserCoords(target);
+    applyGeofence(target.lat, target.lng);
+  };
+
+  const devSimulatePhotoSpot = () => {
+    const c = selectedCourse ?? courses.find((c) => c.id === activeRunCourseId) ?? null;
+    if (!c) return;
+    const pt = c.photoAtStart ? c.start : c.end;
+    coursePromptAlertedRef.current.delete(c.id); // re-arm so the prompt re-fires
+    setUserCoords({ lat: pt.lat, lng: pt.lng });
+    applyGeofence(pt.lat, pt.lng);
+  };
+
+  // Continuous geofencing watchdog — keeps userCoords fresh + runs the geofence
+  // checks. Subscribed once for the app's lifetime.
+  useEffect(() => {
+    if (!navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         const userLat = position.coords.latitude;
         const userLng = position.coords.longitude;
         setUserCoords({ lat: userLat, lng: userLng });
-
-        // Mission completion = crossing the 50 m chrono finish line (canonical
-        // model, see CLAUDE.md). Cover Quest does NOT replace this; mission cover
-        // tiles fill from this completion. Escapades/Plages validate by photo.
-        if (activeRunLocationId !== null) {
-          const runTarget = allLocations.find(l => l.id === activeRunLocationId);
-          if (runTarget) {
-            const currentDist = computeDistance(userLat, userLng, runTarget.lat, runTarget.lng);
-            if (currentDist <= 0.050) { // 50m geofence reached!
-              // Freeze time and wrap up
-              const formatTime = (ms: number) => {
-                const totalSec = Math.floor(ms / 1000);
-                const m = Math.floor(totalSec / 60);
-                const s = totalSec % 60;
-                const h = Math.floor((ms % 1000) / 10);
-                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${h.toString().padStart(2, '0')}`;
-              };
-              const finishScore = formatTime(elapsedTimeRef.current);
-              handleCompleteLocation(runTarget, finishScore);
-              handleStopRun();
-            }
-          }
-        }
-
-        // Course run completion = crossing the 50 m line at the ARRIVAL. Marks
-        // the run done (a state SEPARATE from the course photo).
-        if (activeRunCourseId !== null) {
-          const runCourse = courses.find((c) => c.id === activeRunCourseId);
-          if (runCourse) {
-            const d = computeDistance(userLat, userLng, runCourse.end.lat, runCourse.end.lng);
-            if (d <= 0.050) {
-              markCourseRunDone(runCourse);
-              handleStopCourseRun();
-              setDenzelMessage({ text: `Run bouclé — « ${runCourse.trophy} » décroché.`, panel: 'happy' });
-            }
-          }
-        }
-
-        // Approach notification — ping once when entering an incomplete slot's
-        // zone (Missions 100 m, Escapades/Plages 500 m). Reuses the QG toast.
-        completableLocations.forEach((loc) => {
-          if (completedLocationIds.includes(loc.id)) return;
-          const d = computeDistance(userLat, userLng, loc.lat, loc.lng);
-          const radius = approachRadiusKm(loc.category);
-          const alerted = approachAlertedRef.current.has(loc.id);
-          if (d <= radius && !alerted) {
-            approachAlertedRef.current.add(loc.id);
-            const label = shortLabel(loc);
-            const isPhoto = isPhotoSlot(loc.category);
-            const body = isPhoto
-              ? `Tu es sur ${label}. Ouvre la jaquette (Social Club) et prends ta photo pour valider.`
-              : `Tu approches de ${label}. Prépare ton run chrono.`;
-            setDenzelMessage({ text: body, panel: isPhoto ? 'corales' : 'car' });
-            playSmsChirp();
-            void notifyOS(`Zone atteinte · ${label}`, body, `approach_${loc.id}`);
-          } else if (alerted && d > radius * 1.6) {
-            approachAlertedRef.current.delete(loc.id); // left the zone → re-armable
-          }
-        });
-
-        // Course photo point — within 50 m of a course's photo point (the
-        // arrival by default, the start when photoAtStart), El Jefe pops the
-        // info-bulle to take the best shot. Fire-once until the player leaves.
-        courses.forEach((course) => {
-          if (coursePhotos[course.id]) return; // photo already taken (independent of the run)
-          const pt = course.photoAtStart ? course.start : course.end;
-          const d = computeDistance(userLat, userLng, pt.lat, pt.lng);
-          const alerted = coursePromptAlertedRef.current.has(course.id);
-          if (d <= 0.050 && !alerted) {
-            coursePromptAlertedRef.current.add(course.id);
-            setCoursePhotoPrompt(course);
-            playSmsChirp();
-            void notifyOS(`Spot photo · ${course.title}`, course.visuel, `course_${course.id}`);
-          } else if (alerted && d > 0.080) {
-            coursePromptAlertedRef.current.delete(course.id); // left → re-armable
-          }
-        });
+        applyGeofence(userLat, userLng);
       },
       (err) => {
         console.warn("Geofence watchPosition telemetry error:", err);
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
-
     return () => {
       navigator.geolocation.clearWatch(watchId);
     };
-    // elapsedTime intentionally excluded — read via elapsedTimeRef so the watch
-    // is not torn down and re-registered on every stopwatch tick (~30x/s).
+    // applyGeofence reads live state via closure; deps re-subscribe on the state
+    // it needs. elapsedTime read via elapsedTimeRef to avoid ~30x/s churn.
   }, [completedLocationIds, completedCourseIds, allLocations, activeRunLocationId, activeRunCourseId, coursePhotos]);
 
   // When a spot is targeted (closes any open race sheet — one sheet at a time).
@@ -858,6 +885,34 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ════ DEV · TEMP — simulateur de géofence (À RETIRER après tests) ════
+          Teste à froid : chrono-stop + validation run + prompt photo, sans GPS
+          réel. Appelle le vrai applyGeofence aux coords cibles. */}
+      <div className="fixed left-2 bottom-20 md:bottom-4 z-[9000] flex flex-col gap-1 p-2 rounded-xl bg-fuchsia-950/95 border border-fuchsia-500/60 shadow-2xl font-mono text-[10px] select-none">
+        <span className="text-fuchsia-300 font-black uppercase tracking-wider">DEV · géofence</span>
+        <button
+          onClick={devSimulateArrival}
+          className="px-2 py-1 rounded bg-fuchsia-700 hover:bg-fuchsia-600 active:scale-95 text-white font-bold cursor-pointer text-left"
+        >
+          🏁 Simuler arrivée (run)
+        </button>
+        <button
+          onClick={devSimulatePhotoSpot}
+          className="px-2 py-1 rounded bg-fuchsia-700 hover:bg-fuchsia-600 active:scale-95 text-white font-bold cursor-pointer text-left"
+        >
+          📸 Simuler spot photo
+        </button>
+        <span className="text-fuchsia-300/70 max-w-[160px] truncate">
+          {activeRunCourseId
+            ? `run: ${activeRunCourseId}`
+            : activeRunLocationId !== null
+              ? `run spot #${activeRunLocationId}`
+              : selectedCourse
+                ? `course: ${selectedCourse.id}`
+                : 'lance/sélectionne une course'}
+        </span>
+      </div>
 
       {/* 4. MOBILE PERSISTENT BOTTOM NAVIGATION SWITCHER FOOTER */}
       <footer className="fixed bottom-0 left-0 right-0 h-14 bg-slate-900/80 backdrop-blur-md border-t border-slate-800 z-[9999] pb-safe flex items-center justify-around select-none md:hidden">
