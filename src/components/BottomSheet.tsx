@@ -5,7 +5,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { LocationItem } from '../types';
-import { CATEGORY_MAP, courseDistanceKm, formatChrono } from '../utils/helper';
+import { CourseData } from '../data/coursesData';
+import { CATEGORY_MAP } from '../utils/helper';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Navigation, 
@@ -44,6 +45,8 @@ const PHOTO_VALIDATION_RADIUS_KM = 0.5; // 500 m
 
 interface BottomSheetProps {
   location: LocationItem | null;
+  /** When set, the sheet renders a race (course) instead of a spot. */
+  course?: CourseData | null;
   onClose: () => void;
   onCenterOnMap?: (location: LocationItem) => void;
   userCoords?: { lat: number; lng: number } | null;
@@ -62,6 +65,7 @@ interface BottomSheetProps {
 
 export default function BottomSheet({
   location,
+  course,
   onClose,
   onCenterOnMap,
   userCoords,
@@ -89,6 +93,154 @@ export default function BottomSheet({
       verifyTokenRef.current++;
     };
   }, [location?.id]);
+
+  // ─── RACE (COURSE) SHEET ───────────────────────────────────────────────────
+  // Rendered when a course is selected (its depart pin was tapped). Reuses the
+  // existing bottom-sheet shell. "Y aller" deep-links navigation to the START
+  // (that's where the race begins) — Google Maps / Waze / Apple Plans.
+  if (course) {
+    const { lat, lng } = course.start;
+    const navLinks = [
+      { label: 'Google Maps', href: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}` },
+      { label: 'Waze', href: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes` },
+      { label: 'Plans', href: `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d` },
+    ];
+    const chronoMin = Math.round(course.chronoIndicatifSec / 60);
+
+    return (
+      <AnimatePresence>
+        <div className="fixed inset-0 z-[1000] pointer-events-none flex items-end justify-center px-4 pb-4 md:pb-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-zinc-950 pointer-events-auto md:hidden"
+          />
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+            className="relative w-full max-w-lg bg-white border border-zinc-200 rounded-3xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col"
+          >
+            <div className="w-full flex justify-center pt-3 pb-2 cursor-pointer md:cursor-default" onClick={onClose}>
+              <div className="w-12 h-1.5 rounded-full bg-zinc-250" />
+            </div>
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 rounded-full border border-zinc-200 bg-zinc-100/95 text-zinc-550 hover:text-black transition-all cursor-pointer z-10 shadow-xs"
+              aria-label="Fermer"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="p-6 pt-2 overflow-y-auto max-h-[75vh]">
+              {/* Badge course + tutorial tag */}
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-lg border flex items-center gap-1.5 bg-[#EA4423]/15 text-[#C2371B] border-[#EA4423]/30">
+                  <Flag size={12} />
+                  <span>Course</span>
+                </span>
+                {course.tutorial && (
+                  <span className="bg-sky-50 text-sky-800 border border-sky-200 px-2 py-1 text-[10px] font-bold tracking-wider rounded-lg uppercase">
+                    Prologue · hors 100%
+                  </span>
+                )}
+              </div>
+
+              {/* Title */}
+              <h3 className="font-display text-xl md:text-2xl font-extrabold text-zinc-950 tracking-tight leading-snug mb-2">
+                {course.title}
+              </h3>
+
+              {/* Trophy */}
+              <div className="mb-4 bg-amber-500/10 border border-amber-520/20 rounded-2xl p-3 flex items-center gap-2.5">
+                <Trophy size={18} className="text-amber-500 shrink-0" />
+                <div className="text-left">
+                  <span className="block text-[10px] uppercase font-bold text-amber-800 tracking-wider">Trophée</span>
+                  <span className="block text-xs font-extrabold text-zinc-900">{course.trophy}</span>
+                </div>
+              </div>
+
+              {/* Distance + indicative chrono */}
+              <div className="grid grid-cols-2 gap-2.5 mb-4">
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center gap-2.5 shadow-xs">
+                  <Route size={18} className="text-red-600 shrink-0" />
+                  <div className="text-left">
+                    <span className="block text-[10px] uppercase font-bold text-red-700 tracking-wider">Distance</span>
+                    <span className="block text-sm font-black text-zinc-900 font-mono">{course.distanceKm} km</span>
+                  </div>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center gap-2.5 shadow-xs">
+                  <Timer size={18} className="text-red-600 shrink-0" />
+                  <div className="text-left">
+                    <span className="block text-[10px] uppercase font-bold text-red-700 tracking-wider">Chrono indicatif</span>
+                    <span className="block text-sm font-black text-zinc-900 font-mono">{chronoMin} min</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Axe */}
+              <div className="flex items-center gap-2 font-mono text-xs text-zinc-600 bg-zinc-50 px-3 py-2 rounded-xl border border-zinc-200 mb-4">
+                <Milestone size={13} className="text-zinc-500 shrink-0" />
+                <span className="text-zinc-400 font-bold uppercase">Axe :</span>
+                <span className="text-zinc-800 font-semibold">{course.axe}</span>
+              </div>
+
+              {/* Note */}
+              <div className="mb-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5">Briefing</h4>
+                <p className="text-sm text-zinc-700 leading-relaxed bg-zinc-50 p-4 border border-zinc-200 rounded-2xl font-sans">
+                  {course.note}
+                </p>
+              </div>
+
+              {/* Visuel à l'arrivée */}
+              <div className="mb-6">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5 flex items-center gap-1.5">
+                  <Camera size={13} className="text-zinc-500" />
+                  À l'arrivée
+                </h4>
+                <p className="text-sm text-zinc-700 leading-relaxed bg-amber-50/60 p-4 border border-amber-200/70 rounded-2xl font-sans italic">
+                  {course.visuelArrivee}
+                </p>
+              </div>
+
+              {/* "Y aller" — deep-link navigation to the START */}
+              <div className="flex flex-col gap-2">
+                <a
+                  href={navLinks[0].href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-900 text-white text-sm font-bold transition-all duration-200 shadow-lg cursor-pointer active:scale-95 text-center"
+                  style={{ boxShadow: '0 4px 14px rgba(234,68,35,0.25)' }}
+                >
+                  <Navigation size={15} fill="currentColor" />
+                  <span>Y aller (point de départ)</span>
+                  <ExternalLink size={13} className="opacity-60" />
+                </a>
+                <div className="grid grid-cols-2 gap-2">
+                  {navLinks.slice(1).map((l) => (
+                    <a
+                      key={l.label}
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-250 bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
+                    >
+                      <Navigation size={13} className="text-zinc-500" />
+                      <span>{l.label}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </AnimatePresence>
+    );
+  }
 
   // Hooks must run on every render — bail out only after they are declared,
   // otherwise the hook count changes between renders (Rules of Hooks).
@@ -446,30 +598,6 @@ export default function BottomSheet({
                 </div>
               )}
 
-              {/* Course stats : distance + indicative chrono */}
-              {location.missionType === 'course' && location.course && (
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center gap-2.5 shadow-xs">
-                    <Route size={18} className="text-red-600 shrink-0" />
-                    <div className="text-left">
-                      <span className="block text-[10px] uppercase font-bold text-red-700 tracking-wider">Distance</span>
-                      <span className="block text-sm font-black text-zinc-900 font-mono">
-                        {courseDistanceKm(location.course).toFixed(1)} km
-                      </span>
-                    </div>
-                  </div>
-                  <div className="bg-red-50 border border-red-200 rounded-2xl p-3 flex items-center gap-2.5 shadow-xs">
-                    <Timer size={18} className="text-red-600 shrink-0" />
-                    <div className="text-left">
-                      <span className="block text-[10px] uppercase font-bold text-red-700 tracking-wider">Chrono indicatif</span>
-                      <span className="block text-sm font-black text-zinc-900 font-mono">
-                        {formatChrono(location.course.chronoIndicatifSec)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Action details if it is a Mission */}
               {location.category === 'Missions' && (
                 <div className="bg-red-50 border border-red-200 p-3.5 rounded-2xl flex items-start gap-3 shadow-xs">
@@ -477,7 +605,7 @@ export default function BottomSheet({
                   <div>
                     <span className="block text-xs font-bold text-red-700 tracking-wide uppercase">Briefing Épreuve Chrono</span>
                     <span className="block text-xs text-zinc-650 mt-0.5 leading-normal">
-                      Démarrez au pin de départ, suivez le tracé rouge et franchissez la ligne d'arrivée (drapeau à damier). Le timer s'arrête dès votre entrée dans le périmètre de 50&nbsp;m.
+                      Démarrez le chrono puis rejoignez la destination. Le timer s'arrête automatiquement dès votre entrée dans le périmètre de 50&nbsp;m.
                     </span>
                   </div>
                 </div>

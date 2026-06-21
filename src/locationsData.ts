@@ -53,58 +53,21 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "name": "Parador de Las Cañadas del Teide",
     "category": "Missions",
     "lat": 28.2526, "lng": -16.6226,
-    "info": "MISSION VOLCAN. Plateau central TF-21. Asphalte abrasif, courbes rapides. Trophée: 'Au-dessus des Nuages'.",
-    "missionType": "course",
-    "course": {
-      "start": { "lat": 28.2526, "lng": -16.6226 },
-      "end": { "lat": 28.2710, "lng": -16.6095 },
-      "route": [
-        { "lat": 28.2526, "lng": -16.6226 },
-        { "lat": 28.2588, "lng": -16.6178 },
-        { "lat": 28.2655, "lng": -16.6132 },
-        { "lat": 28.2710, "lng": -16.6095 }
-      ],
-      "chronoIndicatifSec": 480
-    }
+    "info": "MISSION VOLCAN. Plateau central TF-21. Asphalte abrasif, courbes rapides. Trophée: 'Au-dessus des Nuages'."
   },
   {
     "id": 8,
     "name": "Point de vue de Cherfe",
     "category": "Missions",
     "lat": 28.3005, "lng": -16.8294,
-    "info": "MISSION TENO. Sommet TF-436. Épingles serrées, déclivités extrêmes. Trophée: 'Roi de la Gomme'.",
-    "missionType": "course",
-    "course": {
-      "start": { "lat": 28.3005, "lng": -16.8294 },
-      "end": { "lat": 28.2876, "lng": -16.8336 },
-      "route": [
-        { "lat": 28.3005, "lng": -16.8294 },
-        { "lat": 28.2962, "lng": -16.8298 },
-        { "lat": 28.2918, "lng": -16.8319 },
-        { "lat": 28.2876, "lng": -16.8336 }
-      ],
-      "chronoIndicatifSec": 540
-    }
+    "info": "MISSION TENO. Sommet TF-436. Épingles serrées, déclivités extrêmes. Trophée: 'Roi de la Gomme'."
   },
   {
     "id": 9,
     "name": "Plaza del Cristo (La Laguna)",
     "category": "Missions",
     "lat": 28.4919, "lng": -16.3142,
-    "info": "MISSION ANAGA. Fin de secteur forestier humide TF-12. Grip variable. Trophée: 'Maître du Flow'.",
-    "missionType": "course",
-    "course": {
-      "start": { "lat": 28.4919, "lng": -16.3142 },
-      "end": { "lat": 28.5232, "lng": -16.2602 },
-      "route": [
-        { "lat": 28.4919, "lng": -16.3142 },
-        { "lat": 28.5028, "lng": -16.2972 },
-        { "lat": 28.5138, "lng": -16.2784 },
-        { "lat": 28.5232, "lng": -16.2602 }
-      ],
-      "distanceKm": 9.4,
-      "chronoIndicatifSec": 600
-    }
+    "info": "MISSION ANAGA. Fin de secteur forestier humide TF-12. Grip variable. Trophée: 'Maître du Flow'."
   },
   {
     "id": 10,
@@ -127,32 +90,14 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "name": "Puerto Deportivo Radazul",
     "category": "Missions",
     "lat": 28.4025, "lng": -16.3242,
-    "info": "MISSION CÔTE EST. Marina, run de refroidissement via TF-1. Trophée: 'Grand Tourer'.",
-    "missionType": "course",
-    "course": {
-      "start": { "lat": 28.4025, "lng": -16.3242 },
-      "end": { "lat": 28.3760, "lng": -16.3520 },
-      "route": [
-        { "lat": 28.4025, "lng": -16.3242 },
-        { "lat": 28.3938, "lng": -16.3340 },
-        { "lat": 28.3848, "lng": -16.3438 },
-        { "lat": 28.3760, "lng": -16.3520 }
-      ],
-      "chronoIndicatifSec": 360
-    }
+    "info": "MISSION CÔTE EST. Marina, run de refroidissement via TF-1. Trophée: 'Grand Tourer'."
   },
   {
     "id": 13,
     "name": "Plaza de El Médano",
     "category": "Missions",
     "lat": 28.0472, "lng": -16.5361,
-    "info": "MISSION CÔTE EST. Esplanade Sud-Est. Trophée: 'Grand Tourer'.",
-    "missionType": "course",
-    "course": {
-      "start": { "lat": 28.0472, "lng": -16.5361 },
-      "end": { "lat": 28.0335, "lng": -16.5495 },
-      "chronoIndicatifSec": 300
-    }
+    "info": "MISSION CÔTE EST. Esplanade Sud-Est. Trophée: 'Grand Tourer'."
   },
   {
     "id": 14,

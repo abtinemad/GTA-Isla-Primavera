@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LocationItem } from '../types';
-import { buildMarkerHtml, courseRoutePoints, locationVariant } from '../utils/helper';
+import { buildMarkerHtml, locationVariant } from '../utils/helper';
+import { CourseData } from '../data/coursesData';
 import { Compass, Navigation, Layers } from 'lucide-react';
 
 interface MapContainerProps {
@@ -17,8 +18,14 @@ interface MapContainerProps {
   userCoords: { lat: number; lng: number } | null;
   onRequestGeolocation: () => void;
   completedLocations?: number[];
+  /** Races — sole source of courses (src/data/coursesData.ts). */
+  courses?: CourseData[];
+  /** Whether the Courses filter is on (show course pins at all). */
+  coursesActive?: boolean;
   /** Reveal every course route at once (Courses filter isolated). */
   coursesFocused?: boolean;
+  selectedCourseId?: string | null;
+  onSelectCourse?: (course: CourseData) => void;
 }
 
 export default function MapContainer({
@@ -28,7 +35,11 @@ export default function MapContainer({
   userCoords,
   onRequestGeolocation,
   completedLocations = [],
-  coursesFocused = false
+  courses = [],
+  coursesActive = false,
+  coursesFocused = false,
+  selectedCourseId = null,
+  onSelectCourse
 }: MapContainerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -237,10 +248,11 @@ export default function MapContainer({
 
   }, [selectedLocation, locations, completedLocations]);
 
-  // 5. Course tracks — the ONLY line ever drawn, and never permanently. A course
-  // route (+ its finish pin) is revealed when the Courses filter is isolated
-  // (coursesFocused) OR when its depart pin is selected. Otherwise only the
-  // depart pin shows.
+  // 5. Courses (races) — sole source = coursesData. When the Courses filter is
+  // on, every course shows a depart pin (clickable) + a finish pin. The route
+  // line is the ONLY line ever drawn and never permanently: it is revealed only
+  // when the Courses filter is isolated (coursesFocused) OR when a course's
+  // depart pin is tapped. Otherwise only the depart/finish pins show.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -250,41 +262,59 @@ export default function MapContainer({
       courseLayersRef.current = null;
     }
 
+    if (!coursesActive) return;
+
     const group = L.layerGroup();
 
-    locations.forEach((loc) => {
-      if (loc.missionType !== 'course' || !loc.course) return;
-      const isSelected = !!selectedLocation && selectedLocation.id === loc.id;
-      if (!coursesFocused && !isSelected) return;
+    courses.forEach((course) => {
+      const isSelected = selectedCourseId === course.id;
+      const reveal = coursesFocused || isSelected;
 
-      const pts = courseRoutePoints(loc.course).map(
-        (p) => [p.lat, p.lng] as [number, number]
-      );
-
-      // Dark casing underneath for contrast, red top line with a soft glow +
-      // an animated dash flow (the flow is disabled by prefers-reduced-motion
+      // Route (on demand only): dark casing for contrast, red top line with a
+      // soft glow + animated dash flow (flow disabled by prefers-reduced-motion
       // in CSS — see `.course-route`).
-      L.polyline(pts, {
-        color: '#000000',
-        weight: 8,
-        opacity: 0.5,
-        lineCap: 'round',
-        lineJoin: 'round',
-        interactive: false,
-      }).addTo(group);
-      L.polyline(pts, {
-        color: '#EA4423',
-        weight: 4,
-        opacity: 0.97,
-        lineCap: 'round',
-        lineJoin: 'round',
-        interactive: false,
-        className: 'course-route',
-      }).addTo(group);
+      if (reveal && course.route.length >= 2) {
+        const pts = course.route.map((p) => [p.lat, p.lng] as [number, number]);
+        L.polyline(pts, {
+          color: '#000000',
+          weight: 8,
+          opacity: 0.5,
+          lineCap: 'round',
+          lineJoin: 'round',
+          interactive: false,
+        }).addTo(group);
+        L.polyline(pts, {
+          color: '#EA4423',
+          weight: 4,
+          opacity: 0.97,
+          lineCap: 'round',
+          lineJoin: 'round',
+          interactive: false,
+          className: 'course-route',
+        }).addTo(group);
+      }
+
+      // Depart pin (clickable → opens the course sheet).
+      const depart = L.marker([course.start.lat, course.start.lng], {
+        icon: L.divIcon({
+          html: buildMarkerHtml('course-depart', isSelected, false),
+          className: 'custom-div-icon',
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+        }),
+        zIndexOffset: isSelected ? 900 : 300,
+      });
+      depart.on('click', () => onSelectCourse?.(course));
+      depart.bindTooltip(course.title, {
+        permanent: true,
+        direction: 'bottom',
+        offset: [0, 16],
+        className: 'custom-map-tooltip tooltip-missions',
+      });
+      depart.addTo(group);
 
       // Finish pin (checkered flag), non-interactive.
-      const { end } = loc.course;
-      L.marker([end.lat, end.lng], {
+      L.marker([course.end.lat, course.end.lng], {
         icon: L.divIcon({
           html: buildMarkerHtml('course-arrivee', isSelected, false),
           className: 'custom-div-icon',
@@ -292,7 +322,7 @@ export default function MapContainer({
           iconAnchor: [17, 17],
         }),
         interactive: false,
-        zIndexOffset: 400,
+        zIndexOffset: isSelected ? 880 : 280,
       }).addTo(group);
     });
 
@@ -305,7 +335,20 @@ export default function MapContainer({
         courseLayersRef.current = null;
       }
     };
-  }, [locations, selectedLocation, coursesFocused]);
+  }, [courses, coursesActive, coursesFocused, selectedCourseId, onSelectCourse]);
+
+  // 5b. Fly to a course when it is selected (its depart pin was tapped).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedCourseId) return;
+    const course = courses.find((c) => c.id === selectedCourseId);
+    if (!course) return;
+    const targetZoom = map.getZoom() < 12 ? 12 : map.getZoom();
+    map.flyTo([course.start.lat - 0.012, course.start.lng], targetZoom, {
+      duration: 1.2,
+      easeLinearity: 0.25,
+    });
+  }, [selectedCourseId, courses]);
   const handleRecenterIsland = () => {
     if (mapRef.current) {
       mapRef.current.flyTo([28.18, -16.65], 11, { duration: 1.2 });

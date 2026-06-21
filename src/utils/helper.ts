@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Category, CourseData, LatLng, LocationItem } from '../types';
+import { Category, LocationItem } from '../types';
 
 /**
  * Great-circle distance in kilometres between two lat/lng points.
@@ -268,9 +268,9 @@ export function categoryToVariant(category: Category): MarkerVariant {
 }
 
 /**
- * Marker variant for a specific spot. Missions branch on their `missionType`
- * (photo-principale / photo-annexe / course → the clickable depart pin); every
- * other spot falls back to its category default.
+ * Marker variant for a specific spot. Photo spots branch on their `missionType`
+ * (principale / annexe); every other spot falls back to its category default.
+ * (Courses/races have their own pins — see MapContainer + coursesData.)
  */
 export function locationVariant(loc: LocationItem): MarkerVariant {
   switch (loc.missionType) {
@@ -278,36 +278,9 @@ export function locationVariant(loc: LocationItem): MarkerVariant {
       return 'mission-photo-principale';
     case 'photo-annexe':
       return 'mission-photo-annexe';
-    case 'course':
-      return 'course-depart';
     default:
       return categoryToVariant(loc.category);
   }
-}
-
-/** Route points of a course; straight start→end fallback when none defined. */
-export function courseRoutePoints(course: CourseData): LatLng[] {
-  if (course.route && course.route.length >= 2) return course.route;
-  return [course.start, course.end];
-}
-
-/** Course distance in km — uses `distanceKm` when set, else sums the route. */
-export function courseDistanceKm(course: CourseData): number {
-  if (typeof course.distanceKm === 'number') return course.distanceKm;
-  const pts = courseRoutePoints(course);
-  let total = 0;
-  for (let i = 1; i < pts.length; i++) {
-    total += haversineKm(pts[i - 1].lat, pts[i - 1].lng, pts[i].lat, pts[i].lng);
-  }
-  return total;
-}
-
-/** Seconds → "mm:ss" (indicative chrono display). */
-export function formatChrono(totalSec: number): string {
-  const safe = Math.max(0, Math.round(totalSec));
-  const m = Math.floor(safe / 60);
-  const s = safe % 60;
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
 /**

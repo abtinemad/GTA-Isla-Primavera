@@ -39,11 +39,11 @@ export default function LocationsList({
 }: LocationsListProps) {
   const [showCanaryStats, setShowCanaryStats] = useState(true);
 
-  // Trophy entries (category "🏆 Trophées - …", id 101-105) duplicate the
-  // coordinates of a physical spot and only exist as fly-to targets for the
-  // "Trophées Disponibles" panel below — they must not appear as spot cards.
+  // Trophy entries (category "🏆 Trophées - …", id 101-105) are fly-to targets,
+  // not spot cards. Missions are now shown as races on the map (see coursesData),
+  // so they are excluded from the spot list too.
   const physicalLocations = useMemo(
-    () => locations.filter((loc) => !loc.category.startsWith('🏆')),
+    () => locations.filter((loc) => !loc.category.startsWith('🏆') && loc.category !== 'Missions'),
     [locations]
   );
 

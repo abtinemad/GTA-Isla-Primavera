@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LocationItem } from './types';
 import { INITIAL_LOCATIONS } from './locationsData';
+import { courses, CourseData } from './data/coursesData';
 import { FilterGroup, ALL_GROUP_IDS, isCategoryVisible } from './filterGroups';
 import QuickFilterBar from './components/QuickFilterBar';
 import MapFilterBar from './components/MapFilterBar';
@@ -48,6 +49,9 @@ export default function App() {
   // Single source of truth for the map overlay, the spot bar and the spot list.
   const [activeGroups, setActiveGroups] = useState<FilterGroup[]>(ALL_GROUP_IDS);
   const [selectedLocation, setSelectedLocation] = useState<LocationItem | null>(null);
+  // Selected race (course). Mutually exclusive with selectedLocation — opening
+  // one closes the other so a single bottom sheet is shown at a time.
+  const [selectedCourse, setSelectedCourse] = useState<CourseData | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   
   // Persistence state
@@ -207,12 +211,13 @@ export default function App() {
     return INITIAL_LOCATIONS;
   }, []);
 
-  // Filter chips toggle group visibility (multi-select). Trophy markers
-  // (id 101-105, "🏆 Trophées - …") duplicate physical spots and are surfaced
-  // via the trophy panels, not as map pins / list spots, so they are excluded.
+  // Filter chips toggle group visibility (multi-select). Excluded from the
+  // pins/list: trophy markers (id 101-105) and Missions — the latter are now
+  // represented on the map by the dedicated course layer (see coursesData),
+  // but kept in INITIAL_LOCATIONS so the Social Club / completion are untouched.
   const visibleLocations = useMemo(() => {
     return allLocations
-      .filter((loc) => !loc.category.startsWith('🏆'))
+      .filter((loc) => !loc.category.startsWith('🏆') && loc.category !== 'Missions')
       .filter((loc) => isCategoryVisible(loc.category, activeGroups));
   }, [allLocations, activeGroups]);
 
@@ -224,9 +229,16 @@ export default function App() {
 
   const selectAllGroups = useCallback(() => setActiveGroups(ALL_GROUP_IDS), []);
 
-  // Course routes are revealed across the map only when the filter is narrowed
-  // to Courses alone; otherwise a route shows just for the clicked depart pin.
+  // The Courses chip drives the course layer: pins show when it is active;
+  // routes are revealed only when it is isolated (focused) or a course is tapped.
+  const coursesActive = activeGroups.includes('Courses');
   const coursesFocused = activeGroups.length === 1 && activeGroups[0] === 'Courses';
+
+  // Open a race sheet (and close any spot sheet — one at a time).
+  const handleSelectCourse = useCallback((course: CourseData) => {
+    setSelectedLocation(null);
+    setSelectedCourse(course);
+  }, []);
 
   // Keep the spot selection consistent with the filters: if the open spot's
   // group gets hidden, close it. Trophy selections (fly-to targets) are exempt.
@@ -476,10 +488,7 @@ export default function App() {
         if (activeRunLocationId !== null) {
           const runTarget = allLocations.find(l => l.id === activeRunLocationId);
           if (runTarget) {
-            // A course's finish line is its `end`; other missions use their own
-            // point. The depart pin (lat/lng) is where the run starts, not stops.
-            const finish = runTarget.course?.end ?? { lat: runTarget.lat, lng: runTarget.lng };
-            const currentDist = computeDistance(userLat, userLng, finish.lat, finish.lng);
+            const currentDist = computeDistance(userLat, userLng, runTarget.lat, runTarget.lng);
             if (currentDist <= 0.050) { // 50m geofence reached!
               // Freeze time and wrap up
               const formatTime = (ms: number) => {
@@ -531,8 +540,9 @@ export default function App() {
     // is not torn down and re-registered on every stopwatch tick (~30x/s).
   }, [completedLocationIds, allLocations, activeRunLocationId]);
 
-  // When a spot is targeted
+  // When a spot is targeted (closes any open race sheet — one sheet at a time).
   const handleSelectLocation = (location: LocationItem) => {
+    setSelectedCourse(null);
     setSelectedLocation(location);
     if (activeTab === 'list' || activeTab === 'trophies') {
       setActiveTab('map');
@@ -666,7 +676,11 @@ export default function App() {
             userCoords={userCoords}
             onRequestGeolocation={requestGeolocation}
             completedLocations={completedLocationIds}
+            courses={courses}
+            coursesActive={coursesActive}
             coursesFocused={coursesFocused}
+            selectedCourseId={selectedCourse?.id ?? null}
+            onSelectCourse={handleSelectCourse}
           />
 
           {/* Filters exposed directly on the map (hidden during an active run so
@@ -731,7 +745,8 @@ export default function App() {
       {/* RENDER THE BOTTOM SHEET DYNAMIC PANEL */}
       <BottomSheet
         location={selectedLocation}
-        onClose={() => setSelectedLocation(null)}
+        course={selectedCourse}
+        onClose={() => { setSelectedLocation(null); setSelectedCourse(null); }}
         onCenterOnMap={handleCenterOnMap}
         userCoords={userCoords}
         isCompleted={selectedLocation ? completedLocationIds.includes(selectedLocation.id) : false}
