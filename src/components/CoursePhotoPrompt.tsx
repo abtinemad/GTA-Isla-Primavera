@@ -35,8 +35,8 @@ function compress(base64: string): Promise<string> {
       canvas.height = h;
       const ctx = canvas.getContext('2d');
       if (!ctx) return resolve(base64);
-      // Same cinematic grade as the cover camera, for a consistent look.
-      ctx.filter = 'contrast(1.18) saturate(1.35) brightness(1.02)';
+      // Stocke l'ORIGINAL non gradé : la stylisation GTA viendra de l'API image
+      // (proxy serverless), pas d'un grade algo baké ici — pas de double traitement.
       ctx.drawImage(img, 0, 0, w, h);
       resolve(canvas.toDataURL('image/jpeg', 0.72));
     };

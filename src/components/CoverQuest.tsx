@@ -128,7 +128,8 @@ export default function CoverQuest({
         </div>
       </div>
 
-      {/* Galerie de TOUTES les photos capturées (filtre GTA baké à la capture) */}
+      {/* Galerie de TOUTES les photos capturées (originaux non gradés ; la
+          stylisation GTA viendra de l'API image en version séparée) */}
       {photos.length === 0 ? (
         <div className="rounded-xl border border-[color:var(--hairline)] px-4 py-10 text-center" style={GLASS}>
           <p className="text-[color:var(--text-muted)] text-xs leading-relaxed">
