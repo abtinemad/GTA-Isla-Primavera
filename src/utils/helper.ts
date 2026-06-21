@@ -212,9 +212,9 @@ export function getMarkerHtml(category: Category, isActive: boolean, label: stri
 
   let body: string;
   if (cleanCategory === 'Missions') {
-    // Red diamond + white centre dot
+    // Red diamond + volcano glyph (counter-rotated so it stays upright)
     body = `<div style="width:26px;height:26px;background:${blip.color};border:2px solid ${rim};border-radius:6px;transform:rotate(45deg) ${scale};box-shadow:0 2px 6px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:auto;">
-      <span style="width:7px;height:7px;border-radius:50%;background:#fff;"></span>
+      <span style="font-size:14px;line-height:1;transform:rotate(-45deg);filter:drop-shadow(0 1px 1px rgba(0,0,0,.55));">${blip.emoji}</span>
     </div>`;
   } else if (cleanCategory === 'QG') {
     // White teardrop pin + black H
