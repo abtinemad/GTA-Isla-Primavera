@@ -357,30 +357,54 @@ const POSTER_KEY = 'composition';
 
 /** Logo libre : centre (x,y en fraction 0..1 du poster) + largeur (fraction). */
 export type PosterLogo = { x: number; y: number; w: number };
-export type PosterComposition = { slots: (string | null)[]; logo: PosterLogo };
+/** Cadrage d'une photo dans sa case : zoom (≥1) + pan normalisé (offset ∈ [-1,1]). */
+export type SlotTransform = { scale: number; offsetX: number; offsetY: number };
+export type PosterSlot = { photoId: string | null; transform: SlotTransform };
+export type PosterComposition = { slots: PosterSlot[]; logo: PosterLogo };
 
-// Défaut : haut-centre, taille raisonnable (déjà beau sans rien toucher).
-export const DEFAULT_POSTER_LOGO: PosterLogo = { x: 0.5, y: 0.17, w: 0.8 };
+// Défauts : logo centré ~60% de large ; cadrage = cover centré.
+export const DEFAULT_POSTER_LOGO: PosterLogo = { x: 0.5, y: 0.16, w: 0.6 };
+export const DEFAULT_SLOT_TRANSFORM: SlotTransform = { scale: 1, offsetX: 0, offsetY: 0 };
 
-/** Persiste TOUTE la composition : photos par case + position/taille du logo. */
+export const emptyPosterSlots = (): PosterSlot[] =>
+  Array.from({ length: 9 }, () => ({ photoId: null, transform: { ...DEFAULT_SLOT_TRANSFORM } }));
+
+// Normalise une case quel que soit le format stocké (rétro-compat : id seul → cover).
+function normalizeSlot(raw: unknown): PosterSlot {
+  if (raw === null || typeof raw === 'string') {
+    return { photoId: (raw as string | null) ?? null, transform: { ...DEFAULT_SLOT_TRANSFORM } };
+  }
+  const o = raw as { photoId?: unknown; transform?: { scale?: unknown; offsetX?: unknown; offsetY?: unknown } };
+  const t = o?.transform ?? {};
+  return {
+    photoId: typeof o?.photoId === 'string' ? o.photoId : null,
+    transform: {
+      scale: typeof t.scale === 'number' ? t.scale : 1,
+      offsetX: typeof t.offsetX === 'number' ? t.offsetX : 0,
+      offsetY: typeof t.offsetY === 'number' ? t.offsetY : 0,
+    },
+  };
+}
+
+/** Persiste TOUTE la composition : cases {photoId,transform} + logo {x,y,w}. */
 export async function savePosterComposition(comp: PosterComposition): Promise<void> {
   await putInStore(POSTER_STORE, POSTER_KEY, JSON.stringify(comp));
 }
 
-/** Charge la composition. Rétro-compatible avec l'ancien format (tableau seul). */
+/** Charge la composition. Rétro-compatible (tableau d'ids OU {slots:ids|objets,logo}). */
 export async function loadPosterComposition(): Promise<PosterComposition> {
   try {
     for (const [k, v] of await getAllFromStore(POSTER_STORE)) {
       if (String(k) === POSTER_KEY) {
         const parsed = JSON.parse(v) as unknown;
         const rawSlots = Array.isArray(parsed)
-          ? (parsed as (string | null)[])
-          : ((parsed as PosterComposition)?.slots ?? []);
+          ? (parsed as unknown[])
+          : ((parsed as { slots?: unknown[] })?.slots ?? []);
         const logo = Array.isArray(parsed)
           ? DEFAULT_POSTER_LOGO
-          : { ...DEFAULT_POSTER_LOGO, ...((parsed as PosterComposition)?.logo ?? {}) };
+          : { ...DEFAULT_POSTER_LOGO, ...((parsed as { logo?: PosterLogo })?.logo ?? {}) };
         return {
-          slots: Array.from({ length: 9 }, (_, i) => rawSlots[i] ?? null),
+          slots: Array.from({ length: 9 }, (_, i) => normalizeSlot(rawSlots[i] ?? null)),
           logo,
         };
       }
@@ -388,5 +412,5 @@ export async function loadPosterComposition(): Promise<PosterComposition> {
   } catch {
     /* ignore */
   }
-  return { slots: Array(9).fill(null), logo: DEFAULT_POSTER_LOGO };
+  return { slots: emptyPosterSlots(), logo: DEFAULT_POSTER_LOGO };
 }

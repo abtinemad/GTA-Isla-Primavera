@@ -3,15 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { X, Plus, Check, Move, Share2, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type SyntheticEvent } from 'react';
+import { X, Plus, Check, Move, Share2, Loader2, Trash2 } from 'lucide-react';
 import logoUrl from '../assets/logo-gta-isla-primavera.png';
 import { buildPhotoCollection } from '../utils/photoCollection';
 import {
   savePosterComposition,
   loadPosterComposition,
+  emptyPosterSlots,
   DEFAULT_POSTER_LOGO,
   type PosterLogo,
+  type PosterSlot,
 } from '../utils/storage';
 
 interface PosterComposerProps {
@@ -23,15 +25,62 @@ interface PosterComposerProps {
   gtaPhotos: Record<string, string>;
 }
 
-const SELECT_RING = '#00F5D4'; // même cyan que l'épingle sélectionnée
+const SELECT_RING = '#00F5D4';
+const POSTER_BG = '#0A0A0D'; // fond + filets noirs
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
-// Référence de design (le poster à l'écran fait max-w-[340px], aspect 4/5).
-// L'export scale tout par CANVAS_W / DESIGN_W pour rester WYSIWYG.
-const DESIGN_W = 340;
-const CANVAS_W = 1440;
-const CANVAS_H = 1800; // 4/5
-const EXPORT_FILENAME = 'grand-tenerife-auto-isla-primavera.jpg';
+// ── Mosaïque irrégulière (pavage exact, fractions du poster) ──────────────────
+const CELLS: [number, number, number, number][] = [
+  [0.0, 0.0, 0.6667, 0.2],     // 1 horizon haut
+  [0.6667, 0.0, 1.0, 0.3333],  // 2 portrait
+  [0.0, 0.2, 0.25, 0.4667],    // 3 portrait étroit
+  [0.25, 0.2, 0.6667, 0.6],    // 4 grand portrait centre
+  [0.6667, 0.3333, 1.0, 0.8],  // 5 portrait
+  [0.25, 0.6, 0.6667, 0.8],    // 6 paysage
+  [0.0, 0.4667, 0.25, 0.8],    // 7 portrait étroit
+  [0.0, 0.8, 0.3333, 1.0],     // 8 paysage
+  [0.3333, 0.8, 1.0, 1.0],     // 9 horizon bas-droit
+];
+
+const ASPECT = 4 / 5;          // posterW / posterH
+const FILET_X = 0.015;         // filet ~1.5% de la largeur
+const FILET_Y = FILET_X * ASPECT; // même épaisseur en px (fraction de la hauteur)
+const EPS = 0.001;
+
+type Rect = { left: number; top: number; width: number; height: number }; // fractions 0..1
+
+// Insère le filet noir : demi-filet sur les bords intérieurs, filet plein au pourtour.
+function insetRect([x0, y0, x1, y1]: [number, number, number, number]): Rect {
+  const il = x0 <= EPS ? FILET_X : FILET_X / 2;
+  const ir = x1 >= 1 - EPS ? FILET_X : FILET_X / 2;
+  const it = y0 <= EPS ? FILET_Y : FILET_Y / 2;
+  const ib = y1 >= 1 - EPS ? FILET_Y : FILET_Y / 2;
+  return { left: x0 + il, top: y0 + it, width: x1 - x0 - il - ir, height: y1 - y0 - it - ib };
+}
+
+const CELL_RECTS: Rect[] = CELLS.map(insetRect);
+// Ratio largeur/hauteur (px) de chaque case (indépendant de la résolution).
+const CASE_ASPECT: number[] = CELL_RECTS.map((r) => (r.width / r.height) * ASPECT);
+
+// Géométrie de placement d'une photo dans une case (cover + zoom + pan), en %
+// de la case. `ratio` = hauteurNaturelle / largeurNaturelle de l'image.
+function placePhoto(caseAspect: number, ratio: number, scale: number, offX: number, offY: number) {
+  const imageAspect = 1 / ratio; // largeur/hauteur
+  let drawWpct: number;
+  let drawHpct: number;
+  if (imageAspect >= caseAspect) {
+    drawHpct = 100 * scale;
+    drawWpct = (imageAspect / caseAspect) * 100 * scale;
+  } else {
+    drawWpct = 100 * scale;
+    drawHpct = (caseAspect / imageAspect) * 100 * scale;
+  }
+  const overW = drawWpct - 100;
+  const overH = drawHpct - 100;
+  const leftPct = (overW / 2) * (offX - 1);
+  const topPct = (overH / 2) * (offY - 1);
+  return { drawWpct, drawHpct, leftPct, topPct, overW, overH };
+}
 
 const loadImage = (src: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -41,23 +90,10 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
-function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  const rr = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
-}
+const EXPORT_FILENAME = 'grand-tenerife-auto-isla-primavera.jpg';
+const CANVAS_W = 1440;
+const CANVAS_H = 1800;
 
-/**
- * Phase 5 — Compositeur de la jaquette finale (poster 9 cases + LOGO LIBRE). Noé
- * arrange ses photos (toute la collection, version GTA si dispo) dans un poster
- * portrait façon box art GTA, et place/redimensionne le logo elle-même. Tout est
- * persisté en IndexedDB. Pas d'export ici (Phase 6).
- */
 export default function PosterComposer({
   onClose,
   coursePhotos,
@@ -66,17 +102,23 @@ export default function PosterComposer({
   freePhotos,
   gtaPhotos,
 }: PosterComposerProps) {
-  const [slots, setSlots] = useState<(string | null)[]>(() => Array(9).fill(null));
+  const [slots, setSlots] = useState<PosterSlot[]>(() => emptyPosterSlots());
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [logo, setLogo] = useState<PosterLogo>(DEFAULT_POSTER_LOGO);
   const [logoEdit, setLogoEdit] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [ratios, setRatios] = useState<Record<string, number>>({});
 
   const posterRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ sx: number; sy: number; bx: number; by: number; rect: DOMRect } | null>(null);
   const loadedRef = useRef(false);
+  // Drag d'une case (pan de la photo) + détection tap.
+  const panRef = useRef<
+    { i: number; sx: number; sy: number; bOX: number; bOY: number; mPX: number; mPY: number; moved: boolean; filled: boolean } | null
+  >(null);
+  // Drag du logo.
+  const logoDragRef = useRef<{ sx: number; sy: number; bx: number; by: number; rect: DOMRect } | null>(null);
 
-  // Charge la composition persistée (photos + logo) une fois au montage.
+  // Charge la composition persistée (cases + logo) une fois au montage.
   useEffect(() => {
     loadPosterComposition()
       .then((c) => { setSlots(c.slots); setLogo(c.logo); })
@@ -84,7 +126,7 @@ export default function PosterComposer({
       .finally(() => { loadedRef.current = true; });
   }, []);
 
-  // Sauvegarde debouncée (évite le spam d'écritures pendant le drag du logo).
+  // Sauvegarde debouncée (évite le spam pendant pan/zoom/drag).
   useEffect(() => {
     if (!loadedRef.current) return;
     const t = setTimeout(() => void savePosterComposition({ slots, logo }), 350);
@@ -101,62 +143,109 @@ export default function PosterComposer({
     return m;
   }, [collection]);
   const srcFor = (key: string): string | undefined => gtaPhotos[key] ?? originalByKey.get(key);
-  const placedKeys = useMemo(() => new Set(slots.filter((s): s is string => !!s)), [slots]);
+  const placedKeys = useMemo(
+    () => new Set(slots.map((s) => s.photoId).filter((id): id is string => !!id)),
+    [slots],
+  );
 
-  // ── Photos ────────────────────────────────────────────────────────────────
-  const tapSlot = (i: number) => {
-    if (logoEdit) return; // mode logo : cases inertes
+  const onImgLoad = (key: string, e: SyntheticEvent<HTMLImageElement>) => {
+    const el = e.currentTarget;
+    if (el.naturalWidth > 0 && ratios[key] === undefined) {
+      setRatios((r) => ({ ...r, [key]: el.naturalHeight / el.naturalWidth }));
+    }
+  };
+
+  // ── Cases : pan (drag) + tap (sélection/échange) ────────────────────────────
+  const onCasePointerDown = (i: number, e: ReactPointerEvent) => {
+    if (logoEdit || !posterRef.current) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const slot = slots[i];
+    const rect = posterRef.current.getBoundingClientRect();
+    let mPX = 0, mPY = 0;
+    if (slot.photoId) {
+      const r = CELL_RECTS[i];
+      const cellWpx = r.width * rect.width;
+      const cellHpx = r.height * rect.height;
+      const ratio = ratios[slot.photoId] ?? 1 / CASE_ASPECT[i];
+      const g = placePhoto(CASE_ASPECT[i], ratio, slot.transform.scale, slot.transform.offsetX, slot.transform.offsetY);
+      mPX = (cellWpx * g.overW) / 100 / 2;
+      mPY = (cellHpx * g.overH) / 100 / 2;
+    }
+    panRef.current = {
+      i, sx: e.clientX, sy: e.clientY,
+      bOX: slot.transform.offsetX, bOY: slot.transform.offsetY,
+      mPX, mPY, moved: false, filled: !!slot.photoId,
+    };
+  };
+  const onCasePointerMove = (e: ReactPointerEvent) => {
+    const p = panRef.current;
+    if (!p) return;
+    const dx = e.clientX - p.sx;
+    const dy = e.clientY - p.sy;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) p.moved = true;
+    if (p.filled && p.moved) {
+      const nox = p.mPX > 0 ? clamp(p.bOX + dx / p.mPX, -1, 1) : p.bOX;
+      const noy = p.mPY > 0 ? clamp(p.bOY + dy / p.mPY, -1, 1) : p.bOY;
+      setSlots((prev) => prev.map((s, idx) =>
+        idx === p.i ? { ...s, transform: { ...s.transform, offsetX: nox, offsetY: noy } } : s));
+    }
+  };
+  const onCasePointerUp = (i: number, e: ReactPointerEvent) => {
+    const p = panRef.current;
+    if (!p) return;
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    panRef.current = null;
+    if (!p.moved) tapCase(i);
+  };
+  const tapCase = (i: number) => {
     if (selectedSlot === null) { setSelectedSlot(i); return; }
     if (selectedSlot === i) { setSelectedSlot(null); return; }
-    setSlots((prev) => {
-      const next = prev.slice();
-      [next[selectedSlot], next[i]] = [next[i], next[selectedSlot]];
-      return next;
-    });
+    const a = selectedSlot;
+    setSlots((prev) => { const next = prev.slice(); [next[a], next[i]] = [next[i], next[a]]; return next; });
     setSelectedSlot(null);
   };
+
   const tapReserve = (key: string) => {
     let target = selectedSlot;
     if (target === null) {
-      target = slots.findIndex((s) => s === null);
+      target = slots.findIndex((s) => !s.photoId);
       if (target === -1) return;
     }
     const t = target;
     setSlots((prev) => {
-      const next = prev.slice();
-      for (let j = 0; j < next.length; j++) if (next[j] === key) next[j] = null;
-      next[t] = key;
+      const next = prev.map((s) => (s.photoId === key ? { ...s, photoId: null } : s));
+      next[t] = { photoId: key, transform: { scale: 1, offsetX: 0, offsetY: 0 } };
       return next;
     });
     setSelectedSlot(null);
   };
   const emptySlot = (i: number) => {
-    setSlots((prev) => { const next = prev.slice(); next[i] = null; return next; });
+    setSlots((prev) => { const next = prev.slice(); next[i] = { photoId: null, transform: { scale: 1, offsetX: 0, offsetY: 0 } }; return next; });
     if (selectedSlot === i) setSelectedSlot(null);
   };
+  const setSlotScale = (i: number, scale: number) => {
+    setSlots((prev) => prev.map((s, idx) => (idx === i ? { ...s, transform: { ...s.transform, scale } } : s)));
+  };
 
-  // ── Logo : drag (pointer/touch, borné au poster) ────────────────────────────
+  // ── Logo : drag ─────────────────────────────────────────────────────────────
   const onLogoPointerDown = (e: ReactPointerEvent) => {
     if (!logoEdit || !posterRef.current) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = {
-      sx: e.clientX, sy: e.clientY, bx: logo.x, by: logo.y,
-      rect: posterRef.current.getBoundingClientRect(),
-    };
+    logoDragRef.current = { sx: e.clientX, sy: e.clientY, bx: logo.x, by: logo.y, rect: posterRef.current.getBoundingClientRect() };
   };
   const onLogoPointerMove = (e: ReactPointerEvent) => {
-    const d = dragRef.current;
+    const d = logoDragRef.current;
     if (!d) return;
     const nx = clamp(d.bx + (e.clientX - d.sx) / d.rect.width, 0.08, 0.92);
     const ny = clamp(d.by + (e.clientY - d.sy) / d.rect.height, 0.08, 0.92);
     setLogo((l) => ({ ...l, x: nx, y: ny }));
   };
   const onLogoPointerUp = (e: ReactPointerEvent) => {
-    if (dragRef.current) { e.currentTarget.releasePointerCapture?.(e.pointerId); dragRef.current = null; }
+    if (logoDragRef.current) { e.currentTarget.releasePointerCapture?.(e.pointerId); logoDragRef.current = null; }
   };
 
-  // ── Export Canvas (Phase 6) — WYSIWYG strict avec le rendu écran ────────────
+  // ── Export Canvas (WYSIWYG) ─────────────────────────────────────────────────
   const exportPoster = async () => {
     if (exporting) return;
     setExporting(true);
@@ -167,109 +256,77 @@ export default function PosterComposer({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const scale = CANVAS_W / DESIGN_W;
-      const pad = 8 * scale;     // p-2
-      const gap = 6 * scale;     // gap-1.5
-      const radius = 8 * scale;  // rounded-lg
-
-      // Fond sombre du poster (#0a0a0b), plein cadre.
-      ctx.fillStyle = '#0a0a0b';
+      ctx.fillStyle = POSTER_BG;
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-      const gridW = CANVAS_W - 2 * pad;
-      const gridH = CANVAS_H - 2 * pad;
-      const cellW = (gridW - 2 * gap) / 3;
-      const cellH = (gridH - 2 * gap) / 3;
-
-      // Précharge les images des cases (dataURL : pas de CORS taint).
-      const slotImgs = await Promise.all(
-        slots.map(async (key) => {
-          if (!key) return null;
-          const s = srcFor(key);
-          if (!s) return null;
-          try { return await loadImage(s); } catch { return null; }
+      const imgs = await Promise.all(
+        slots.map(async (s) => {
+          if (!s.photoId) return null;
+          const src = srcFor(s.photoId);
+          if (!src) return null;
+          try { return await loadImage(src); } catch { return null; }
         }),
       );
 
       for (let i = 0; i < 9; i++) {
-        const c = i % 3;
-        const r = Math.floor(i / 3);
-        const x = pad + c * (cellW + gap);
-        const y = pad + r * (cellH + gap);
+        const r = CELL_RECTS[i];
+        const cx = r.left * CANVAS_W, cy = r.top * CANVAS_H;
+        const cw = r.width * CANVAS_W, ch = r.height * CANVAS_H;
         ctx.save();
-        roundRectPath(ctx, x, y, cellW, cellH, radius);
+        ctx.beginPath();
+        ctx.rect(cx, cy, cw, ch);
         ctx.clip();
-        const img = slotImgs[i];
-        if (img && img.naturalWidth > 0) {
-          // object-fit: cover — réplique le cadrage de l'affichage.
-          const sc = Math.max(cellW / img.naturalWidth, cellH / img.naturalHeight);
-          const dw = img.naturalWidth * sc;
-          const dh = img.naturalHeight * sc;
-          ctx.drawImage(img, x + (cellW - dw) / 2, y + (cellH - dh) / 2, dw, dh);
+        const img = imgs[i];
+        const slot = slots[i];
+        if (img && img.naturalWidth > 0 && slot.photoId) {
+          const ratio = img.naturalHeight / img.naturalWidth;
+          const g = placePhoto(CASE_ASPECT[i], ratio, slot.transform.scale, slot.transform.offsetX, slot.transform.offsetY);
+          const dw = (g.drawWpct / 100) * cw;
+          const dh = (g.drawHpct / 100) * ch;
+          const dx = cx + (g.leftPct / 100) * cw;
+          const dy = cy + (g.topPct / 100) * ch;
+          ctx.drawImage(img, dx, dy, dw, dh);
         } else {
-          // Case vide : même fond sombre stylé qu'à l'écran (bg-white/[0.04]).
-          ctx.fillStyle = 'rgba(255,255,255,0.04)';
-          ctx.fillRect(x, y, cellW, cellH);
+          ctx.fillStyle = 'rgba(255,255,255,0.05)';
+          ctx.fillRect(cx, cy, cw, ch);
         }
         ctx.restore();
       }
 
-      // Logo (scrim + drop-shadow + image) à sa position/taille sauvée.
       try {
         const logoImg = await loadImage(logoUrl);
         const lw = logo.w * CANVAS_W;
         const lh = lw * (logoImg.naturalHeight / logoImg.naturalWidth);
-        const cx = logo.x * CANVAS_W;
-        const cy = logo.y * CANVAS_H;
-
-        // Scrim radial sombre flouté (inset -10% / -14% comme à l'écran).
-        const sW = lw * 1.2;
-        const sH = lh * 1.28;
+        const lcx = logo.x * CANVAS_W, lcy = logo.y * CANVAS_H;
+        const sW = lw * 1.2, sH = lh * 1.28;
+        const scale = CANVAS_W / 340;
         ctx.save();
         ctx.filter = `blur(${Math.round(6 * scale)}px)`;
-        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(sW, sH) / 2);
+        const grad = ctx.createRadialGradient(lcx, lcy, 0, lcx, lcy, Math.max(sW, sH) / 2);
         grad.addColorStop(0, 'rgba(0,0,0,0.55)');
         grad.addColorStop(0.75, 'rgba(0,0,0,0)');
         ctx.fillStyle = grad;
-        ctx.fillRect(cx - sW / 2, cy - sH / 2, sW, sH);
+        ctx.fillRect(lcx - sW / 2, lcy - sH / 2, sW, sH);
         ctx.restore();
-
-        // Logo + drop-shadow (0 3px 10px rgba(0,0,0,.7)).
         ctx.save();
         ctx.shadowColor = 'rgba(0,0,0,0.7)';
         ctx.shadowBlur = 10 * scale;
         ctx.shadowOffsetY = 3 * scale;
-        ctx.drawImage(logoImg, cx - lw / 2, cy - lh / 2, lw, lh);
+        ctx.drawImage(logoImg, lcx - lw / 2, lcy - lh / 2, lw, lh);
         ctx.restore();
-      } catch {
-        /* logo introuvable — on exporte sans, pas de crash */
-      }
+      } catch { /* sans logo */ }
 
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92),
-      );
+      const blob = await new Promise<Blob | null>((res) => canvas.toBlob((b) => res(b), 'image/jpeg', 0.92));
       if (!blob) return;
-
       const file = new File([blob], EXPORT_FILENAME, { type: 'image/jpeg' });
-
-      // Partage natif si dispo (iOS Safari OK), sinon download.
       const canShareFiles =
-        typeof navigator !== 'undefined' &&
-        typeof navigator.canShare === 'function' &&
-        navigator.canShare({ files: [file] });
+        typeof navigator !== 'undefined' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
       if (typeof navigator !== 'undefined' && navigator.share && canShareFiles) {
         try {
-          await navigator.share({
-            files: [file],
-            title: 'Grand Tenerife Auto · Isla Primavera',
-            text: 'Ma jaquette',
-          });
+          await navigator.share({ files: [file], title: 'Grand Tenerife Auto · Isla Primavera', text: 'Ma jaquette' });
           return;
-        } catch {
-          /* annulé / échec → fallback download */
-        }
+        } catch { /* annulé → download */ }
       }
-
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -283,13 +340,13 @@ export default function PosterComposer({
     }
   };
 
+  const selSlot = selectedSlot !== null ? slots[selectedSlot] : null;
+
   return (
     <div className="fixed inset-0 z-[10000] bg-[#0a0a0b] flex flex-col select-none">
       {/* Top bar */}
       <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <span className="font-display font-black uppercase tracking-wide text-white text-sm">
-          Composer ma jaquette
-        </span>
+        <span className="font-display font-black uppercase tracking-wide text-white text-sm">Composer ma jaquette</span>
         <div className="flex items-center gap-2">
           <button
             onClick={exportPoster}
@@ -310,50 +367,76 @@ export default function PosterComposer({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
-        {/* ── POSTER (box art portrait) : 9 photos + logo libre par-dessus ── */}
+        {/* ── POSTER (mosaïque + logo libre) ── */}
         <div
           ref={posterRef}
-          className="relative mx-auto w-full max-w-[340px] aspect-[4/5] rounded-2xl overflow-hidden border border-white/15 bg-[#0a0a0b]"
-          style={{ boxShadow: '0 0 0 1px rgba(255,255,255,.06), 0 20px 50px rgba(0,0,0,.6)' }}
+          className="relative mx-auto w-full max-w-[340px] aspect-[4/5] overflow-hidden border border-white/10"
+          style={{ background: POSTER_BG, boxShadow: '0 20px 50px rgba(0,0,0,.6)' }}
         >
-          {/* 9 cases (fond) */}
-          <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-1.5 p-2">
-            {slots.map((key, i) => {
-              const src = key ? srcFor(key) : undefined;
-              const selected = selectedSlot === i && !logoEdit;
-              return (
-                <button
-                  key={i}
-                  onClick={() => tapSlot(i)}
-                  className={`relative rounded-lg overflow-hidden border transition-all ${
-                    selected ? 'border-transparent' : src ? 'border-white/15' : 'border-dashed border-white/20'
-                  }`}
-                  style={selected ? { boxShadow: `0 0 0 2px ${SELECT_RING}, 0 0 14px ${SELECT_RING}66` } : undefined}
-                >
-                  {src ? (
-                    <>
-                      <img src={src} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                      {!logoEdit && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); emptySlot(i); }}
-                          aria-label="Vider la case"
-                          className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 border border-white/30 text-white flex items-center justify-center active:scale-95 cursor-pointer"
-                        >
-                          <X size={9} />
-                        </button>
-                      )}
-                    </>
+          {/* Cases */}
+          {slots.map((slot, i) => {
+            const r = CELL_RECTS[i];
+            const selected = selectedSlot === i && !logoEdit;
+            const key = slot.photoId;
+            const src = key ? srcFor(key) : undefined;
+            const ratio = key ? ratios[key] : undefined;
+            const g = key && ratio !== undefined
+              ? placePhoto(CASE_ASPECT[i], ratio, slot.transform.scale, slot.transform.offsetX, slot.transform.offsetY)
+              : null;
+            return (
+              <div
+                key={i}
+                onPointerDown={(e) => onCasePointerDown(i, e)}
+                onPointerMove={onCasePointerMove}
+                onPointerUp={(e) => onCasePointerUp(i, e)}
+                className="absolute overflow-hidden"
+                style={{
+                  left: `${r.left * 100}%`,
+                  top: `${r.top * 100}%`,
+                  width: `${r.width * 100}%`,
+                  height: `${r.height * 100}%`,
+                  touchAction: 'none',
+                  cursor: logoEdit ? 'default' : src ? 'grab' : 'pointer',
+                  pointerEvents: logoEdit ? 'none' : 'auto',
+                  boxShadow: selected ? `inset 0 0 0 2px ${SELECT_RING}` : undefined,
+                  zIndex: selected ? 2 : 1,
+                }}
+              >
+                {src ? (
+                  g ? (
+                    <img
+                      src={src}
+                      alt=""
+                      draggable={false}
+                      onLoad={(e) => onImgLoad(key!, e)}
+                      className="absolute max-w-none pointer-events-none"
+                      style={{
+                        left: `${g.leftPct}%`,
+                        top: `${g.topPct}%`,
+                        width: `${g.drawWpct}%`,
+                        height: `${g.drawHpct}%`,
+                      }}
+                    />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/[0.04]">
-                      <Plus size={18} className="text-white/25" />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                    // ratio pas encore connu → cover CSS le temps du chargement
+                    <img
+                      src={src}
+                      alt=""
+                      draggable={false}
+                      onLoad={(e) => onImgLoad(key!, e)}
+                      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                    />
+                  )
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/[0.05]">
+                    <Plus size={16} className="text-white/25" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
-          {/* Logo libre (calque au-dessus) — draggable seulement en mode logo */}
+          {/* Logo libre (calque au-dessus) */}
           <div
             onPointerDown={onLogoPointerDown}
             onPointerMove={onLogoPointerMove}
@@ -369,17 +452,12 @@ export default function PosterComposer({
               pointerEvents: logoEdit ? 'auto' : 'none',
               outline: logoEdit ? `1.5px dashed ${SELECT_RING}` : 'none',
               outlineOffset: '4px',
-              borderRadius: '6px',
+              zIndex: 5,
             }}
           >
-            {/* Scrim sombre derrière le logo → lisible même sur une photo claire */}
             <div
               className="absolute"
-              style={{
-                inset: '-14% -10%',
-                background: 'radial-gradient(closest-side, rgba(0,0,0,.55), transparent 75%)',
-                filter: 'blur(6px)',
-              }}
+              style={{ inset: '-14% -10%', background: 'radial-gradient(closest-side, rgba(0,0,0,.55), transparent 75%)', filter: 'blur(6px)' }}
             />
             <img
               src={logoUrl}
@@ -390,44 +468,59 @@ export default function PosterComposer({
           </div>
         </div>
 
-        {/* ── Barre logo : déplacer + taille ── */}
-        <div className="mx-auto w-full max-w-[340px] mt-3 flex items-center gap-3">
-          <button
-            onClick={() => { setLogoEdit((v) => !v); setSelectedSlot(null); }}
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all active:scale-95 cursor-pointer border ${
-              logoEdit ? 'bg-[#00F5D4] text-[#062b27] border-transparent' : 'bg-white/5 text-white/80 border-white/20'
-            }`}
-          >
-            <Move size={14} />
-            {logoEdit ? 'Logo : OK' : 'Déplacer le logo'}
-          </button>
-          {logoEdit && (
-            <label className="flex-1 flex items-center gap-2">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-white/50">Taille</span>
-              <input
-                type="range"
-                min={0.3}
-                max={1.05}
-                step={0.01}
-                value={logo.w}
-                onChange={(e) => setLogo((l) => ({ ...l, w: parseFloat(e.target.value) }))}
-                className="flex-1 accent-[#00F5D4]"
-              />
-            </label>
+        {/* ── Barre d'outils ── */}
+        <div className="mx-auto w-full max-w-[340px] mt-3 flex flex-col gap-2">
+          {/* Logo : déplacer + taille */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setLogoEdit((v) => !v); setSelectedSlot(null); }}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all active:scale-95 cursor-pointer border ${
+                logoEdit ? 'bg-[#00F5D4] text-[#062b27] border-transparent' : 'bg-white/5 text-white/80 border-white/20'
+              }`}
+            >
+              <Move size={14} />
+              {logoEdit ? 'Logo : OK' : 'Déplacer le logo'}
+            </button>
+            {logoEdit && (
+              <label className="flex-1 flex items-center gap-2">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-white/50">Taille</span>
+                <input
+                  type="range" min={0.3} max={1.05} step={0.01} value={logo.w}
+                  onChange={(e) => setLogo((l) => ({ ...l, w: parseFloat(e.target.value) }))}
+                  className="flex-1 accent-[#00F5D4]"
+                />
+              </label>
+            )}
+          </div>
+
+          {/* Cadrage de la case sélectionnée (zoom + vider) */}
+          {!logoEdit && selSlot && (
+            selSlot.photoId ? (
+              <div className="flex items-center gap-3 rounded-lg bg-white/5 border border-white/15 px-3 py-2">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-white/50 shrink-0">Zoom</span>
+                <input
+                  type="range" min={1} max={3} step={0.01} value={selSlot.transform.scale}
+                  onChange={(e) => setSlotScale(selectedSlot!, parseFloat(e.target.value))}
+                  className="flex-1 accent-[#00F5D4]"
+                />
+                <button
+                  onClick={() => emptySlot(selectedSlot!)}
+                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md bg-red-950/70 border border-red-500/50 text-red-300 text-[10px] font-bold uppercase active:scale-95 cursor-pointer"
+                >
+                  <Trash2 size={11} /> Vider
+                </button>
+              </div>
+            ) : (
+              <p className="font-mono text-[10px] uppercase tracking-wider px-1" style={{ color: SELECT_RING }}>
+                Touche une photo de la réserve pour la case
+              </p>
+            )
           )}
         </div>
 
         {/* ── RÉSERVE (toute la collection) ── */}
         <div className="mx-auto w-full max-w-[480px] mt-5">
-          <div className="flex items-center justify-between px-0.5 mb-2">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-white/60">Ta collection</span>
-            {!logoEdit && selectedSlot !== null && (
-              <span className="font-mono text-[9px] uppercase tracking-wider" style={{ color: SELECT_RING }}>
-                Touche une photo → case {selectedSlot + 1}
-              </span>
-            )}
-          </div>
-
+          <span className="block font-mono text-[10px] uppercase tracking-wider text-white/60 mb-2 px-0.5">Ta collection</span>
           {collection.length === 0 ? (
             <p className="text-white/40 text-xs leading-relaxed px-0.5">
               Pas encore de photos. Capture des clichés (runs, spots, perso) pour composer ta jaquette.
@@ -440,15 +533,9 @@ export default function PosterComposer({
                   <button
                     key={e.key}
                     onClick={() => tapReserve(e.key)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border ${
-                      placed ? 'border-[#00F5D4]/60' : 'border-white/10'
-                    } active:scale-95 cursor-pointer`}
+                    className={`relative aspect-square rounded-lg overflow-hidden border ${placed ? 'border-[#00F5D4]/60' : 'border-white/10'} active:scale-95 cursor-pointer`}
                   >
-                    <img
-                      src={gtaPhotos[e.key] ?? e.original}
-                      alt={e.label}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
+                    <img src={gtaPhotos[e.key] ?? e.original} alt={e.label} className="absolute inset-0 w-full h-full object-cover" />
                     {placed && (
                       <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
                         <Check size={14} style={{ color: SELECT_RING }} />
