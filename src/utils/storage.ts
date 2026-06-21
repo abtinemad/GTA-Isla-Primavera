@@ -15,6 +15,38 @@
 
 import { DEFAULT_GUTTER } from './posterGeometry';
 
+/**
+ * Accès localStorage DÉFENSIF. En navigation privée Safari, en mode restreint ou
+ * quota plein, `localStorage.getItem/setItem/removeItem` LÈVENT une exception.
+ * Non gérée, elle ferait échouer la logique appelante (ex. une progression
+ * affichée comme validée sans avoir été persistée). Ce helper avale l'erreur :
+ * lecture → null en cas d'échec ; écriture/suppression → best-effort silencieux.
+ * TOUS les accès localStorage de l'app passent par ici.
+ */
+export const safeLocalStorage = {
+  getItem(key: string): string | null {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      /* best-effort (privé / quota) */
+    }
+  },
+  removeItem(key: string): void {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* best-effort */
+    }
+  },
+};
+
 // --- 1. Migration des clés localStorage : tenirife_* → tenerife_* -----------
 
 // Suffixes des clés conservées en localStorage (course_photos est exclu : il

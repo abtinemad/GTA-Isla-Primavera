@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import {
   migrateLegacyKeys,
+  safeLocalStorage,
   loadCoursePhotos, putCoursePhoto,
   loadSpotPhotos, putSpotPhoto,
   loadCapturedPhotos, putCapturedPhoto,
@@ -69,7 +70,7 @@ export default function App() {
   // Persistence state
   const [completedLocationIds, setCompletedLocationIds] = useState<number[]>(() => {
     try {
-      const saved = localStorage.getItem('tenerife_completed_locations');
+      const saved = safeLocalStorage.getItem('tenerife_completed_locations');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
@@ -83,7 +84,7 @@ export default function App() {
 
   const [completedTimes, setCompletedTimes] = useState<Record<number, string>>(() => {
     try {
-      const saved = localStorage.getItem('tenerife_completed_times');
+      const saved = safeLocalStorage.getItem('tenerife_completed_times');
       return saved ? JSON.parse(saved) : {};
     } catch (e) {
       return {};
@@ -95,7 +96,7 @@ export default function App() {
   // / Social Club; the prologue (tutorial:true) is excluded from any course tally.
   const [completedCourseIds, setCompletedCourseIds] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('tenerife_completed_courses');
+      const saved = safeLocalStorage.getItem('tenerife_completed_courses');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
@@ -142,6 +143,11 @@ export default function App() {
   const gtaQueueRef = useRef<Array<{ key: string; original: string }>>([]);
   const gtaRunningRef = useRef(false);
   const gtaInflightRef = useRef<Set<string>>(new Set());
+  // Clés stylisées avec SUCCÈS, marquées de façon SYNCHRONE. setGtaPhotos est une
+  // MAJ d'état asynchrone : entre le retrait de gtaInflightRef et le commit de
+  // gtaPhotos, l'auto-enqueue verrait gtaPhotos[key] encore vide → ré-ajout =
+  // double appel proxy (double facturation). Ce ref ferme cette fenêtre.
+  const gtaDoneRef = useRef<Set<string>>(new Set());
 
   const postGtaify = async (original: string): Promise<string> => {
     const data = original.includes(',') ? original.split(',')[1] : original;
@@ -169,6 +175,10 @@ export default function App() {
         try {
           const styled = await postGtaify(job.original);
           await putGtaPhoto(job.key, styled);
+          // Marque "completed" AVANT de libérer gtaInflightRef (plus bas), pour que
+          // l'auto-enqueue ne puisse pas ré-ajouter la clé tant que gtaPhotos n'a
+          // pas commité son nouvel état.
+          gtaDoneRef.current.add(job.key);
           setGtaPhotos((p) => ({ ...p, [job.key]: styled }));
           setGtaStatus((s) => { const n = { ...s }; delete n[job.key]; return n; });
         } catch {
@@ -184,7 +194,9 @@ export default function App() {
 
   const enqueueGta = (key: string, original: string, force = false) => {
     if (!original) return;
-    if (!force && gtaPhotos[key]) return;                        // already styled
+    // already styled — gtaPhotos (état) OU gtaDoneRef (marqueur synchrone, comble
+    // la fenêtre avant le commit de gtaPhotos).
+    if (!force && (gtaPhotos[key] || gtaDoneRef.current.has(key))) return;
     if (gtaInflightRef.current.has(key)) return;                 // in flight
     if (gtaQueueRef.current.some((j) => j.key === key)) return;  // already queued
     gtaQueueRef.current.push({ key, original });
@@ -231,6 +243,7 @@ export default function App() {
   const handleDeleteFreePhoto = (id: string) => {
     setFreePhotos((prev) => { const n = { ...prev }; delete n[id]; return n; });
     setGtaPhotos((prev) => { const n = { ...prev }; delete n[`free:${id}`]; return n; });
+    gtaDoneRef.current.delete(`free:${id}`); // symétrie : libère le marqueur "completed"
     void deleteFreePhoto(id);
   };
 
@@ -239,9 +252,9 @@ export default function App() {
   const devMode = useMemo(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('dev') === '1') { localStorage.setItem('dev', '1'); return true; }
-      if (params.get('dev') === '0') { localStorage.removeItem('dev'); return false; }
-      return localStorage.getItem('dev') === '1';
+      if (params.get('dev') === '1') { safeLocalStorage.setItem('dev', '1'); return true; }
+      if (params.get('dev') === '0') { safeLocalStorage.removeItem('dev'); return false; }
+      return safeLocalStorage.getItem('dev') === '1';
     } catch {
       return false;
     }
@@ -252,7 +265,7 @@ export default function App() {
   // First-run Denzel tutorial — shown once (persisted via "tutorialSeen").
   const [showTutorial, setShowTutorial] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('tutorialSeen') !== 'true';
+      return safeLocalStorage.getItem('tutorialSeen') !== 'true';
     } catch (e) {
       return true;
     }
@@ -260,7 +273,7 @@ export default function App() {
   const finishTutorial = useCallback(() => {
     setShowTutorial(false);
     try {
-      localStorage.setItem('tutorialSeen', 'true');
+      safeLocalStorage.setItem('tutorialSeen', 'true');
     } catch (e) {
       /* best-effort */
     }
@@ -283,7 +296,7 @@ export default function App() {
   // Theme (Manrique/Vice design tokens — see src/styles/tokens.css)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try {
-      const saved = localStorage.getItem('isla_theme');
+      const saved = safeLocalStorage.getItem('isla_theme');
       return saved === 'light' ? 'light' : 'dark';
     } catch (e) {
       return 'dark';
@@ -293,7 +306,7 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     try {
-      localStorage.setItem('isla_theme', theme);
+      safeLocalStorage.setItem('isla_theme', theme);
     } catch (e) {
       /* persistence best-effort */
     }
@@ -323,26 +336,21 @@ export default function App() {
   useEffect(() => {
     // Wait until both the splash and the first-run tutorial are dismissed.
     if (!showSplash && !showTutorial && !ambientFiredRef.current) {
-      ambientFiredRef.current = true;
+      // Un run actif masque l'ambient : on NE marque PAS firedRef ici, sinon il ne
+      // reviendrait jamais. activeRunLocationId est dans les deps → quand le run se
+      // termine, l'effet ré-évalue et l'ambient peut enfin s'afficher.
       if (activeRunLocationId !== null) return;
 
       const COOLDOWN_MS = 30 * 60 * 1000;
-      let last = 0;
-      try {
-        last = Number(localStorage.getItem('tenerife_denzel_ambient_ts')) || 0;
-      } catch (e) {
-        last = 0;
-      }
+      const last = Number(safeLocalStorage.getItem('tenerife_denzel_ambient_ts')) || 0;
       if (Date.now() - last >= COOLDOWN_MS) {
+        // Marqué seulement quand le message s'affiche vraiment.
+        ambientFiredRef.current = true;
         setDenzelMessage(getDenzelAmbient());
-        try {
-          localStorage.setItem('tenerife_denzel_ambient_ts', String(Date.now()));
-        } catch (e) {
-          /* best-effort */
-        }
+        safeLocalStorage.setItem('tenerife_denzel_ambient_ts', String(Date.now()));
       }
     }
-  }, [showSplash, showTutorial]);
+  }, [showSplash, showTutorial, activeRunLocationId]);
 
   // When the player returns to the app AFTER launching navigation, Denzel greets
   // them back ("you're on site"). Gated by pendingReopenRef so a plain tab switch
@@ -570,7 +578,7 @@ export default function App() {
     if (completedCourseIds.includes(course.id)) return;
     const nextDone = [...completedCourseIds, course.id];
     setCompletedCourseIds(nextDone);
-    localStorage.setItem('tenerife_completed_courses', JSON.stringify(nextDone));
+    safeLocalStorage.setItem('tenerife_completed_courses', JSON.stringify(nextDone));
   };
 
   const handleSavePhotoSouvenir = (locId: number, base64: string) => {
@@ -609,12 +617,12 @@ export default function App() {
     if (completedLocationIds.includes(location.id)) return;
     const nextCompleted = [...completedLocationIds, location.id];
     setCompletedLocationIds(nextCompleted);
-    localStorage.setItem('tenerife_completed_locations', JSON.stringify(nextCompleted));
+    safeLocalStorage.setItem('tenerife_completed_locations', JSON.stringify(nextCompleted));
 
     if (finishTime) {
       const nextTimes = { ...completedTimes, [location.id]: finishTime };
       setCompletedTimes(nextTimes);
-      localStorage.setItem('tenerife_completed_times', JSON.stringify(nextTimes));
+      safeLocalStorage.setItem('tenerife_completed_times', JSON.stringify(nextTimes));
     }
 
     // Play retro chime & trigger cinematic overlay
