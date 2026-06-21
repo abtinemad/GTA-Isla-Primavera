@@ -103,6 +103,45 @@ html, body, #root {
   border: none !important;
 }
 
+/* ─── Pulse de proximité sur les pins (HUD GTA) — anneau d'accent cyan qui
+   s'étend en fondu autour de la tête de goutte. SEULS les pins en approche le
+   portent (classe ajoutée/retirée par MapContainer selon la distance). ─── */
+.custom-div-icon.pin-pulse::before,
+.custom-div-icon.pin-pulse-strong::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px; /* centre l'anneau sur la tête du pin (16,14) */
+  border-radius: 50%;
+  border: 2px solid #00f5d4; /* accent HUD cyan */
+  box-shadow: 0 0 7px rgba(0, 245, 212, 0.5);
+  pointer-events: none;
+  animation: pin-pulse-ring 1.8s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+}
+/* État fort (rayon d'action ~50 m) : plus rapide + plus marqué. */
+.custom-div-icon.pin-pulse-strong::before {
+  animation-duration: 1.05s;
+  border-width: 2.5px;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.7);
+}
+@keyframes pin-pulse-ring {
+  0% { transform: scale(0.45); opacity: 0.85; }
+  70% { opacity: 0.18; }
+  100% { transform: scale(2.3); opacity: 0; }
+}
+/* Mouvement réduit : pas d'animation → un anneau d'accent statique. */
+@media (prefers-reduced-motion: reduce) {
+  .custom-div-icon.pin-pulse::before,
+  .custom-div-icon.pin-pulse-strong::before {
+    animation: none;
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+}
+
 .custom-marker-pin {
   display: flex !important;
   align-items: center !important;

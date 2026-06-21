@@ -28,6 +28,8 @@ interface MapContainerProps {
   selectedLocation: LocationItem | null;
   onSelectLocation: (location: LocationItem) => void;
   userCoords: { lat: number; lng: number } | null;
+  /** Pulse de proximité par id de spot : 'soft' (approche) | 'strong' (rayon d'action). */
+  pulseLevels: Record<number, 'soft' | 'strong'>;
   /** Opens El Jefe's messages (the dog) — replay of the guided onboarding. */
   onOpenDenzel: () => void;
   /** Tap on the wallet (sous l'avatar) → message d'El Jefe. */
@@ -55,6 +57,7 @@ export default function MapContainer({
   selectedLocation,
   onSelectLocation,
   userCoords,
+  pulseLevels,
   onOpenDenzel,
   onWalletClick,
   singleGroupActive = false,
@@ -239,6 +242,22 @@ export default function MapContainer({
       markersRef.current[loc.id] = marker;
     });
   }, [locations, selectedLocation, onSelectLocation, completedLocations, singleGroupActive]);
+
+  // 3b. Pulse de proximité — bascule la classe sur l'ÉLÉMENT du marker (pas de
+  // recréation d'icône). Dépend aussi de `locations` pour ré-appliquer l'état après
+  // la recréation des marqueurs (changement de filtre/proximité). Robuste : ne touche
+  // qu'aux markers existants et vérifie l'existence de l'élément avant manip.
+  useEffect(() => {
+    for (const idStr of Object.keys(markersRef.current)) {
+      const id = Number(idStr);
+      const marker = markersRef.current[id];
+      const el = marker?.getElement();
+      if (!el) continue;
+      const level = pulseLevels[id];
+      el.classList.toggle('pin-pulse', level === 'soft');
+      el.classList.toggle('pin-pulse-strong', level === 'strong');
+    }
+  }, [pulseLevels, locations]);
 
   // 4. Handle smooth focusing when selectedLocation changes (e.g., from lists or indicators)
   useEffect(() => {

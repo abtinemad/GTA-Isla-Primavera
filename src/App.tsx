@@ -12,7 +12,7 @@ import { FilterGroup, ALL_GROUP_IDS, isCategoryVisible } from './filterGroups';
 import QuickFilterBar from './components/QuickFilterBar';
 import MapFilterBar from './components/MapFilterBar';
 import MapContainer from './components/MapContainer';
-import { CATEGORY_MAP, haversineKm } from './utils/helper';
+import { CATEGORY_MAP, haversineKm, GEOFENCE_KM } from './utils/helper';
 import LocationsList from './components/LocationsList';
 import BottomSheet from './components/BottomSheet';
 import CoverQuest from './components/CoverQuest';
@@ -424,6 +424,42 @@ export default function App() {
       .filter((loc) => !loc.category.startsWith('🏆'))
       .filter((loc) => isCategoryVisible(loc.category, activeGroups));
   }, [allLocations, activeGroups]);
+
+  // Pulse de proximité — RÉUTILISE la logique d'approche existante (haversineKm +
+  // approachRadiusKm, la même qui déclenche la notif El Jefe). 'strong' dans le
+  // rayon d'action (50 m), 'soft' dans l'approche large. Un spot complété ne pulse
+  // plus. Recalculé à chaque fix GPS (userCoords).
+  const pulseLevels = useMemo<Record<number, 'soft' | 'strong'>>(() => {
+    const out: Record<number, 'soft' | 'strong'> = {};
+    if (!userCoords) return out;
+    for (const loc of allLocations) {
+      if (loc.category.startsWith('🏆')) continue;
+      if (completedLocationIds.includes(loc.id)) continue;
+      const d = haversineKm(userCoords.lat, userCoords.lng, loc.lat, loc.lng);
+      if (d <= approachRadiusKm(loc.category)) out[loc.id] = d <= GEOFENCE_KM ? 'strong' : 'soft';
+    }
+    return out;
+  }, [userCoords, allLocations, completedLocationIds]);
+
+  // PROXIMITÉ > FILTRE : un spot en approche s'affiche TOUJOURS, même si sa
+  // catégorie est masquée par le filtre (qui ne sert qu'à parcourir).
+  // `nearbyKey` = signature STABLE (ids triés) de l'ensemble en approche → évite de
+  // reconstruire tous les marqueurs à chaque fix GPS quand l'ensemble ne bouge pas
+  // (le niveau soft/strong, lui, est appliqué côté carte par un simple toggle de classe).
+  const nearbyKey = Object.keys(pulseLevels).map(Number).sort((a, b) => a - b).join(',');
+  const mapLocations = useMemo(() => {
+    const byId = new Map<number, LocationItem>();
+    for (const loc of visibleLocations) byId.set(loc.id, loc);
+    for (const idStr of nearbyKey ? nearbyKey.split(',') : []) {
+      const id = Number(idStr);
+      if (!byId.has(id)) {
+        const loc = allLocations.find((l) => l.id === id);
+        if (loc) byId.set(id, loc);
+      }
+    }
+    return [...byId.values()];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleLocations, nearbyKey, allLocations]);
 
   const toggleGroup = useCallback((group: FilterGroup) => {
     setActiveGroups((prev) =>
@@ -908,7 +944,8 @@ export default function App() {
         <section data-tour="map" className={`flex-1 h-full relative ${activeTab === 'map' ? 'block' : 'hidden md:block'} ${activeTab === 'trophies' ? 'hidden md:hidden' : ''}`}>
 
           <MapContainer
-            locations={visibleLocations}
+            locations={mapLocations}
+            pulseLevels={pulseLevels}
             selectedLocation={selectedLocation}
             onSelectLocation={handleSelectLocation}
             userCoords={userCoords}
