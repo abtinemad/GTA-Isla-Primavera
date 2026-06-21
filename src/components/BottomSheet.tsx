@@ -47,7 +47,9 @@ interface BottomSheetProps {
   userCoords?: { lat: number; lng: number } | null;
   isCompleted?: boolean;
   onCompleteLocation?: (location: LocationItem) => void;
-  
+  /** Fired when the player launches navigation (Google Maps) toward the spot. */
+  onLaunchNavigation?: () => void;
+
   // Game state injection
   activeRunLocationId: number | null;
   onStartRun: (locId: number) => void;
@@ -63,6 +65,7 @@ export default function BottomSheet({
   userCoords,
   isCompleted = false,
   onCompleteLocation,
+  onLaunchNavigation,
   activeRunLocationId,
   onStartRun,
   onStopRun,
@@ -538,6 +541,7 @@ export default function BottomSheet({
                   href={googleMapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => onLaunchNavigation?.()}
                   className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-900 text-white text-sm font-bold transition-all duration-200 shadow-lg cursor-pointer col-span-1 sm:col-span-1 active:scale-95 text-center"
                   style={{
                     boxShadow: `0 4px 14px ${catInfo.accentColor}25`

@@ -17,7 +17,12 @@ import CoverCamera from './components/CoverCamera';
 import SplashScreen from './components/SplashScreen';
 import DenzelMessage from './components/DenzelMessage';
 import { CoverSlot, approachRadiusKm, isPhotoSlot, shortLabel } from './coverData';
-import { getDenzelAmbient } from './data/denzelMessages';
+import {
+  getDenzelAmbient,
+  getDenzelReopenPrompt,
+  getDenzelPhotoPrompt,
+  getDenzelChronoPrompt,
+} from './data/denzelMessages';
 import {
   Compass,
   Map,
@@ -143,12 +148,27 @@ export default function App() {
   }, [incomingSms]);
 
   // On app open (once the splash is gone), if no mission is running, greet the
-  // player with an ambient Denzel line. Other triggers are not wired yet.
+  // player with an ambient Denzel line — but at most once every 30 min (persisted).
+  // The cooldown only gates the AMBIENT line; action messages always fire.
   useEffect(() => {
     if (!showSplash && !ambientFiredRef.current) {
       ambientFiredRef.current = true;
-      if (activeRunLocationId === null) {
+      if (activeRunLocationId !== null) return;
+
+      const COOLDOWN_MS = 30 * 60 * 1000;
+      let last = 0;
+      try {
+        last = Number(localStorage.getItem('tenirife_denzel_ambient_ts')) || 0;
+      } catch (e) {
+        last = 0;
+      }
+      if (Date.now() - last >= COOLDOWN_MS) {
         setDenzelMessage(getDenzelAmbient());
+        try {
+          localStorage.setItem('tenirife_denzel_ambient_ts', String(Date.now()));
+        } catch (e) {
+          /* best-effort */
+        }
       }
     }
   }, [showSplash]);
@@ -298,6 +318,8 @@ export default function App() {
 
   // Run stopwatch controls
   const handleStartRun = (locId: number) => {
+    // Denzel briefs the chrono run as it starts.
+    setDenzelMessage(getDenzelChronoPrompt());
     setActiveRunLocationId(locId);
     setElapsedTime(0);
     elapsedTimeRef.current = 0;
@@ -628,7 +650,11 @@ export default function App() {
             capturedPhotos={capturedPhotos}
             completedTimes={completedTimes}
             userCoords={userCoords}
-            onOpenCamera={(slot) => setCoverCameraSlot(slot)}
+            onOpenCamera={(slot) => {
+              // Photo-mission reaches its "take the photo" step.
+              setDenzelMessage(getDenzelPhotoPrompt());
+              setCoverCameraSlot(slot);
+            }}
           />
         </section>
 
@@ -642,6 +668,7 @@ export default function App() {
         userCoords={userCoords}
         isCompleted={selectedLocation ? completedLocationIds.includes(selectedLocation.id) : false}
         onCompleteLocation={handleCompleteLocation}
+        onLaunchNavigation={() => setDenzelMessage(getDenzelReopenPrompt())}
         activeRunLocationId={activeRunLocationId}
         onStartRun={handleStartRun}
         onStopRun={handleStopRun}
