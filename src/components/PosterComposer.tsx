@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { X, Plus, Check, Move } from 'lucide-react';
+import { X, Plus, Check, Move, Share2, Loader2 } from 'lucide-react';
 import logoUrl from '../assets/logo-gta-isla-primavera.png';
 import { buildPhotoCollection } from '../utils/photoCollection';
 import {
@@ -26,6 +26,32 @@ interface PosterComposerProps {
 const SELECT_RING = '#00F5D4'; // même cyan que l'épingle sélectionnée
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
+// Référence de design (le poster à l'écran fait max-w-[340px], aspect 4/5).
+// L'export scale tout par CANVAS_W / DESIGN_W pour rester WYSIWYG.
+const DESIGN_W = 340;
+const CANVAS_W = 1440;
+const CANVAS_H = 1800; // 4/5
+const EXPORT_FILENAME = 'grand-tenerife-auto-isla-primavera.jpg';
+
+const loadImage = (src: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+
+function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
 /**
  * Phase 5 — Compositeur de la jaquette finale (poster 9 cases + LOGO LIBRE). Noé
  * arrange ses photos (toute la collection, version GTA si dispo) dans un poster
@@ -44,6 +70,7 @@ export default function PosterComposer({
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [logo, setLogo] = useState<PosterLogo>(DEFAULT_POSTER_LOGO);
   const [logoEdit, setLogoEdit] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const posterRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ sx: number; sy: number; bx: number; by: number; rect: DOMRect } | null>(null);
@@ -129,6 +156,133 @@ export default function PosterComposer({
     if (dragRef.current) { e.currentTarget.releasePointerCapture?.(e.pointerId); dragRef.current = null; }
   };
 
+  // ── Export Canvas (Phase 6) — WYSIWYG strict avec le rendu écran ────────────
+  const exportPoster = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = CANVAS_W;
+      canvas.height = CANVAS_H;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const scale = CANVAS_W / DESIGN_W;
+      const pad = 8 * scale;     // p-2
+      const gap = 6 * scale;     // gap-1.5
+      const radius = 8 * scale;  // rounded-lg
+
+      // Fond sombre du poster (#0a0a0b), plein cadre.
+      ctx.fillStyle = '#0a0a0b';
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+      const gridW = CANVAS_W - 2 * pad;
+      const gridH = CANVAS_H - 2 * pad;
+      const cellW = (gridW - 2 * gap) / 3;
+      const cellH = (gridH - 2 * gap) / 3;
+
+      // Précharge les images des cases (dataURL : pas de CORS taint).
+      const slotImgs = await Promise.all(
+        slots.map(async (key) => {
+          if (!key) return null;
+          const s = srcFor(key);
+          if (!s) return null;
+          try { return await loadImage(s); } catch { return null; }
+        }),
+      );
+
+      for (let i = 0; i < 9; i++) {
+        const c = i % 3;
+        const r = Math.floor(i / 3);
+        const x = pad + c * (cellW + gap);
+        const y = pad + r * (cellH + gap);
+        ctx.save();
+        roundRectPath(ctx, x, y, cellW, cellH, radius);
+        ctx.clip();
+        const img = slotImgs[i];
+        if (img && img.naturalWidth > 0) {
+          // object-fit: cover — réplique le cadrage de l'affichage.
+          const sc = Math.max(cellW / img.naturalWidth, cellH / img.naturalHeight);
+          const dw = img.naturalWidth * sc;
+          const dh = img.naturalHeight * sc;
+          ctx.drawImage(img, x + (cellW - dw) / 2, y + (cellH - dh) / 2, dw, dh);
+        } else {
+          // Case vide : même fond sombre stylé qu'à l'écran (bg-white/[0.04]).
+          ctx.fillStyle = 'rgba(255,255,255,0.04)';
+          ctx.fillRect(x, y, cellW, cellH);
+        }
+        ctx.restore();
+      }
+
+      // Logo (scrim + drop-shadow + image) à sa position/taille sauvée.
+      try {
+        const logoImg = await loadImage(logoUrl);
+        const lw = logo.w * CANVAS_W;
+        const lh = lw * (logoImg.naturalHeight / logoImg.naturalWidth);
+        const cx = logo.x * CANVAS_W;
+        const cy = logo.y * CANVAS_H;
+
+        // Scrim radial sombre flouté (inset -10% / -14% comme à l'écran).
+        const sW = lw * 1.2;
+        const sH = lh * 1.28;
+        ctx.save();
+        ctx.filter = `blur(${Math.round(6 * scale)}px)`;
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(sW, sH) / 2);
+        grad.addColorStop(0, 'rgba(0,0,0,0.55)');
+        grad.addColorStop(0.75, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx - sW / 2, cy - sH / 2, sW, sH);
+        ctx.restore();
+
+        // Logo + drop-shadow (0 3px 10px rgba(0,0,0,.7)).
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.7)';
+        ctx.shadowBlur = 10 * scale;
+        ctx.shadowOffsetY = 3 * scale;
+        ctx.drawImage(logoImg, cx - lw / 2, cy - lh / 2, lw, lh);
+        ctx.restore();
+      } catch {
+        /* logo introuvable — on exporte sans, pas de crash */
+      }
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92),
+      );
+      if (!blob) return;
+
+      const file = new File([blob], EXPORT_FILENAME, { type: 'image/jpeg' });
+
+      // Partage natif si dispo (iOS Safari OK), sinon download.
+      const canShareFiles =
+        typeof navigator !== 'undefined' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [file] });
+      if (typeof navigator !== 'undefined' && navigator.share && canShareFiles) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Grand Tenerife Auto · Isla Primavera',
+            text: 'Ma jaquette',
+          });
+          return;
+        } catch {
+          /* annulé / échec → fallback download */
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = EXPORT_FILENAME;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[10000] bg-[#0a0a0b] flex flex-col select-none">
       {/* Top bar */}
@@ -136,13 +290,23 @@ export default function PosterComposer({
         <span className="font-display font-black uppercase tracking-wide text-white text-sm">
           Composer ma jaquette
         </span>
-        <button
-          onClick={onClose}
-          aria-label="Fermer"
-          className="p-2 rounded-full border border-white/20 text-white/80 hover:text-white active:scale-95 cursor-pointer"
-        >
-          <X size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportPoster}
+            disabled={exporting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00F5D4] text-[#062b27] text-xs font-black uppercase tracking-wide active:scale-95 cursor-pointer disabled:opacity-60"
+          >
+            {exporting ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+            <span>{exporting ? 'Export…' : 'Partager'}</span>
+          </button>
+          <button
+            onClick={onClose}
+            aria-label="Fermer"
+            className="p-2 rounded-full border border-white/20 text-white/80 hover:text-white active:scale-95 cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
