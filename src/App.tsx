@@ -39,10 +39,7 @@ import {
   Wallet,
   CheckCircle2,
   X,
-  MessageSquare,
-  Sun,
-  Moon,
-  HelpCircle
+  MessageSquare
 } from 'lucide-react';
 
 export default function App() {
@@ -391,24 +388,6 @@ export default function App() {
     }
   };
 
-  // Trigger geolocation checks
-  const requestGeolocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserCoords({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        () => {
-          alert("L'acquisition GPS a échoué. Mode Simulation actif.");
-        },
-        { enableHighAccuracy: true, timeout: 6000 }
-      );
-    }
-  };
-
   // Run stopwatch controls
   const handleStartRun = (locId: number) => {
     // Denzel briefs the chrono run as it starts.
@@ -648,58 +627,22 @@ export default function App() {
         <TutorialOverlay steps={denzelTutorial} onComplete={finishTutorial} />
       )}
 
-      {/* FLOATING GLASSMORPHIC HUD HEADER */}
-      <div className="absolute top-0 left-0 right-0 z-[600] h-12 flex items-center bg-slate-900/60 backdrop-blur-md border-b border-slate-700/30 shadow-xl pointer-events-auto">
-        <div className="w-full px-4 flex items-center justify-between gap-4 h-full">
-          
-          {/* Left / Center: Global Completion Progress Bar */}
-          <div data-tour="progress" className="flex items-center gap-2.5 flex-1 max-w-sm sm:max-w-md">
-            <span 
-              className="text-[#4ade80] text-[10px] sm:text-xs font-mono font-black tracking-wider whitespace-nowrap"
-              style={{ textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 0 5px rgba(74,222,128,0.4)' }}
-            >
-              {completionPct.toFixed(0)}% COMPLETION
-            </span>
-            <div className="flex-1 h-2 bg-slate-950/80 rounded-full overflow-hidden border border-slate-700/50 p-[1.5px] shadow-inner max-w-[124px] sm:max-w-none">
-              <div 
-                className="h-full bg-[#22c55e] rounded-full transition-all duration-700 shadow-[0_0_7px_rgba(34,197,94,0.6)]" 
-                style={{ width: `${completionPct}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Right Displays: replay tutorial + theme toggle + emerald green wealth wallet indicator */}
-          <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowTutorial(true)}
-            className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950/90 border-2 border-slate-700/50 text-cyan-300 transition-all shadow-lg active:scale-95 cursor-pointer hover:border-cyan-400/50"
-            aria-label="Revoir le didacticiel"
-            title="Revoir le didacticiel"
-          >
-            <HelpCircle size={14} />
-          </button>
-          <button
-            onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-            className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-950/90 border-2 border-slate-700/50 text-amber-300 transition-all shadow-lg active:scale-95 cursor-pointer hover:border-amber-400/50"
-            aria-label={theme === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}
-            title={theme === 'dark' ? 'Thème clair' : 'Thème sombre'}
-          >
-            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
-          <button
-            onClick={() => setIsWalletModalOpen(true)}
-            className="flex items-center gap-2 bg-slate-950/90 border-2 border-emerald-500/40 text-[#4ade80] font-mono text-xs sm:text-sm font-black px-3 py-1 rounded-lg transition-all shadow-2xl active:scale-95 cursor-pointer select-none shadow-[0_0_12px_rgba(74,222,128,0.25)] hover:border-emerald-500/60 h-7"
-            style={{
-              textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 4px rgba(74,222,128,0.5)',
-              fontStyle: 'italic'
-            }}
-          >
-            <span>{walletAmount} €</span>
-          </button>
-          </div>
-
-        </div>
-      </div>
+      {/* FLOATING WALLET INDICATOR — header supprimé : le wallet flotte seul en
+          haut à gauche, accessible depuis tous les onglets. */}
+      <button
+        onClick={() => setIsWalletModalOpen(true)}
+        className="absolute z-[600] flex items-center gap-2 bg-slate-950/90 border-2 border-emerald-500/40 text-[#4ade80] font-mono text-xs sm:text-sm font-black px-3 py-1 rounded-lg transition-all shadow-2xl active:scale-95 cursor-pointer select-none shadow-[0_0_12px_rgba(74,222,128,0.25)] hover:border-emerald-500/60 h-7"
+        style={{
+          top: 'calc(env(safe-area-inset-top) + 0.75rem)',
+          left: '0.75rem',
+          textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 4px rgba(74,222,128,0.5)',
+          fontStyle: 'italic'
+        }}
+        aria-label="Portefeuille"
+        title="Portefeuille"
+      >
+        <span>{walletAmount} €</span>
+      </button>
 
       {/* 3. Primary Viewboard container (Occupies full viewport so map tiles flow under header) */}
       <main className="absolute inset-0 w-full h-full flex overflow-hidden z-0 bg-slate-950">
@@ -742,7 +685,7 @@ export default function App() {
             selectedLocation={selectedLocation}
             onSelectLocation={handleSelectLocation}
             userCoords={userCoords}
-            onRequestGeolocation={requestGeolocation}
+            onOpenDenzel={() => setShowTutorial(true)}
             completedLocations={completedLocationIds}
             courses={courses}
             coursesActive={coursesActive}

@@ -9,14 +9,15 @@ import 'leaflet/dist/leaflet.css';
 import { LocationItem } from '../types';
 import { buildMarkerHtml, locationVariant } from '../utils/helper';
 import { CourseData } from '../data/coursesData';
-import { Compass, Navigation, Layers } from 'lucide-react';
+import { Plus, Minus, Layers } from 'lucide-react';
 
 interface MapContainerProps {
   locations: LocationItem[];
   selectedLocation: LocationItem | null;
   onSelectLocation: (location: LocationItem) => void;
   userCoords: { lat: number; lng: number } | null;
-  onRequestGeolocation: () => void;
+  /** Opens El Jefe's messages (the dog) — replay of the guided onboarding. */
+  onOpenDenzel: () => void;
   completedLocations?: number[];
   /** Races — sole source of courses (src/data/coursesData.ts). */
   courses?: CourseData[];
@@ -35,7 +36,7 @@ export default function MapContainer({
   selectedLocation,
   onSelectLocation,
   userCoords,
-  onRequestGeolocation,
+  onOpenDenzel,
   completedLocations = [],
   courses = [],
   coursesActive = false,
@@ -61,15 +62,10 @@ export default function MapContainer({
 
     // Tenerife coordinates approx lat: 28.29, lng: -16.62, zoom: 10
     const map = L.map(mapContainerRef.current, {
-      zoomControl: false, // will add customized zoom controls later or position them cleanly
+      zoomControl: false, // custom zoom buttons live in the floating control column
       minZoom: 9,
       maxZoom: 18,
     }).setView([28.18, -16.65], 11);
-
-    // Add clean zoom control on top right
-    L.control.zoom({
-      position: 'topright'
-    }).addTo(map);
 
     mapRef.current = map;
     setMapInstance(map);
@@ -356,20 +352,6 @@ export default function MapContainer({
       easeLinearity: 0.25,
     });
   }, [selectedCourseId, courses]);
-  const handleRecenterIsland = () => {
-    if (mapRef.current) {
-      mapRef.current.flyTo([28.18, -16.65], 11, { duration: 1.2 });
-    }
-  };
-
-  // Quick Action: Fly to user position
-  const handleFlyToUser = () => {
-    if (userCoords && mapRef.current) {
-      mapRef.current.flyTo([userCoords.lat, userCoords.lng], 13, { duration: 1.2 });
-    } else {
-      onRequestGeolocation();
-    }
-  };
 
   return (
     <div className={`relative w-full h-full overflow-hidden select-none ${
@@ -382,16 +364,32 @@ export default function MapContainer({
       {/* Vice/Manrique sunset wash over the tiles (below the HUD controls) */}
       <div className="map-tint" aria-hidden />
 
-      {/* Embedded floating control hub */}
-      <div className="absolute left-4 bottom-22 md:bottom-6 flex flex-col gap-2 z-[500]">
-        
-        {/* Recenter Island Button */}
+      {/* Floating control column (top-right) — single stack, top to bottom:
+          zoom +, zoom −, satellite/plan toggle, El Jefe (dog) messages.
+          Offset below the on-map filter bar so they never overlap. */}
+      <div
+        className="absolute right-3 z-[500] flex flex-col gap-2"
+        style={{ top: 'calc(env(safe-area-inset-top) + 6.5rem)' }}
+      >
+
+        {/* Zoom in */}
         <button
-          onClick={handleRecenterIsland}
-          className="bg-zinc-950 hover:bg-zinc-900 active:scale-95 text-cyan-400 p-3.5 rounded-2xl border border-zinc-800 shadow-xl transition-all cursor-pointer flex items-center justify-center"
-          title="Centrer sur Tenerife"
+          onClick={() => mapRef.current?.zoomIn()}
+          className="bg-zinc-950 hover:bg-zinc-900 active:scale-95 p-3 rounded-2xl border border-zinc-800 shadow-xl transition-all cursor-pointer flex items-center justify-center"
+          aria-label="Zoom avant"
+          title="Zoom avant"
         >
-          <Compass size={18} className="animate-spin-slow text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]" />
+          <Plus size={18} className="text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]" />
+        </button>
+
+        {/* Zoom out */}
+        <button
+          onClick={() => mapRef.current?.zoomOut()}
+          className="bg-zinc-950 hover:bg-zinc-900 active:scale-95 p-3 rounded-2xl border border-zinc-800 shadow-xl transition-all cursor-pointer flex items-center justify-center"
+          aria-label="Zoom arrière"
+          title="Zoom arrière"
+        >
+          <Minus size={18} className="text-cyan-400 drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]" />
         </button>
 
         {/* Map Style Toggle Button */}
@@ -400,7 +398,7 @@ export default function MapContainer({
             setMapStyle(prev => prev === 'satellite' ? 'plan' : 'satellite');
           }}
           className={`
-            p-3.5 rounded-2xl border shadow-xl transition-all cursor-pointer flex items-center justify-center active:scale-95
+            p-3 rounded-2xl border shadow-xl transition-all cursor-pointer flex items-center justify-center active:scale-95
             ${mapStyle === 'plan'
               ? 'bg-emerald-950/90 border-emerald-800 text-emerald-400 shadow-emerald-500/20'
               : 'bg-zinc-950 border-zinc-800 text-cyan-400 hover:text-white hover:bg-zinc-900 shadow-cyan-500/20'
@@ -416,19 +414,18 @@ export default function MapContainer({
           } />
         </button>
 
-        {/* User Geolocation Tracker Button */}
+        {/* El Jefe (dog) — replay the guided messages/onboarding */}
         <button
-          onClick={handleFlyToUser}
-          className={`
-            p-3.5 rounded-2xl border shadow-xl transition-all cursor-pointer flex items-center justify-center active:scale-95
-            ${userCoords 
-              ? 'bg-sky-500/20 text-sky-400 border-sky-500 shadow-[0_0_10px_rgba(56,189,248,0.3)]' 
-              : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900'
-            }
-          `}
-          title={userCoords ? "Aller à ma position" : "Activer la localisation"}
+          onClick={onOpenDenzel}
+          className="bg-zinc-950 hover:bg-zinc-900 active:scale-95 p-1 rounded-2xl border border-zinc-800 shadow-xl transition-all cursor-pointer flex items-center justify-center overflow-hidden"
+          aria-label="Messages d'El Jefe"
+          title="Messages d'El Jefe"
         >
-          <Navigation size={18} className={userCoords ? "rotate-45 text-sky-400 fill-sky-400/20 drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] animate-pulse" : "text-zinc-500"} />
+          <img
+            src="/assets/eljefe-avatar-circle.png"
+            alt="El Jefe"
+            className="w-9 h-9 rounded-full object-cover"
+          />
         </button>
 
       </div>
