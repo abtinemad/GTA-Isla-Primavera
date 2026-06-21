@@ -46,6 +46,7 @@ import {
   loadCapturedPhotos, putCapturedPhoto,
   loadGtaPhotos, putGtaPhoto,
 } from './utils/storage';
+import { buildPhotoCollection } from './utils/photoCollection';
 
 // Renomme les clés héritées « tenirife_* » → « tenerife_* » une fois, AVANT que
 // les initialiseurs d'état (ci-dessous) ne lisent les nouvelles clés.
@@ -110,6 +111,9 @@ export default function App() {
   // GTA-styled versions (IndexedDB), keyed by composite key (course:<id> /
   // loc:<id>). The original is never overwritten; display prefers the GTA one.
   const [gtaPhotos, setGtaPhotos] = useState<Record<string, string>>({});
+  // Transient styling status per key: 'pending' (in flight/queued) | 'error'.
+  // Not persisted — re-derived from "has an original but no GTA" on reload.
+  const [gtaStatus, setGtaStatus] = useState<Record<string, 'pending' | 'error'>>({});
 
   // El Jefe info-bulle shown when within 50 m of a course's photo point.
   const [coursePhotoPrompt, setCoursePhotoPrompt] = useState<CourseData | null>(null);
@@ -122,6 +126,88 @@ export default function App() {
     loadCapturedPhotos().then(setCapturedPhotos).catch(() => {});
     loadGtaPhotos().then(setGtaPhotos).catch(() => {});
   }, []);
+
+  // ── GTA styling queue ──────────────────────────────────────────────────────
+  // Each captured ORIGINAL is POSTed to the serverless proxy in the background;
+  // the styled result is stored (gta_photos) and the display switches to it. The
+  // original is kept intact. Sequential queue, retry-on-failure, offline-aware.
+  const gtaQueueRef = useRef<Array<{ key: string; original: string }>>([]);
+  const gtaRunningRef = useRef(false);
+  const gtaInflightRef = useRef<Set<string>>(new Set());
+
+  const postGtaify = async (original: string): Promise<string> => {
+    const data = original.includes(',') ? original.split(',')[1] : original;
+    const res = await fetch('/api/gtaify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: data }),
+    });
+    if (!res.ok) throw new Error(`gtaify ${res.status}`);
+    const json = await res.json();
+    if (!json?.image) throw new Error('no_image');
+    return `data:image/jpeg;base64,${json.image}`;
+  };
+
+  const drainGtaQueue = async () => {
+    if (gtaRunningRef.current) return;
+    gtaRunningRef.current = true;
+    try {
+      while (gtaQueueRef.current.length) {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) break; // offline → pause
+        const job = gtaQueueRef.current.shift();
+        if (!job) break;
+        gtaInflightRef.current.add(job.key);
+        setGtaStatus((s) => ({ ...s, [job.key]: 'pending' }));
+        try {
+          const styled = await postGtaify(job.original);
+          await putGtaPhoto(job.key, styled);
+          setGtaPhotos((p) => ({ ...p, [job.key]: styled }));
+          setGtaStatus((s) => { const n = { ...s }; delete n[job.key]; return n; });
+        } catch {
+          setGtaStatus((s) => ({ ...s, [job.key]: 'error' }));
+        } finally {
+          gtaInflightRef.current.delete(job.key);
+        }
+      }
+    } finally {
+      gtaRunningRef.current = false;
+    }
+  };
+
+  const enqueueGta = (key: string, original: string, force = false) => {
+    if (!original) return;
+    if (!force && gtaPhotos[key]) return;                        // already styled
+    if (gtaInflightRef.current.has(key)) return;                 // in flight
+    if (gtaQueueRef.current.some((j) => j.key === key)) return;  // already queued
+    gtaQueueRef.current.push({ key, original });
+    setGtaStatus((s) => ({ ...s, [key]: 'pending' }));
+    void drainGtaQueue();
+  };
+
+  // Auto-enqueue every original that still lacks a GTA version (mount once
+  // hydrated, after each new capture, and after each success). Same merge source
+  // as the gallery.
+  useEffect(() => {
+    const entries = buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos);
+    for (const e of entries) {
+      if (!gtaPhotos[e.key]) enqueueGta(e.key, e.original);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coursePhotos, capturedPhotos, spotPhotos, gtaPhotos]);
+
+  // Resume the queue when connectivity returns (offline → reste sur l'original).
+  useEffect(() => {
+    const onOnline = () => void drainGtaQueue();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Manual "régénérer" — force a fresh proxy call for one photo (keeps original).
+  const regenerateGta = (key: string) => {
+    const entry = buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos).find((e) => e.key === key);
+    if (entry) enqueueGta(key, entry.original, true);
+  };
 
   // DEV flag — gates the geofence simulator (kept for a full dry-run before the
   // trip). Enable with ?dev=1 (persisted), disable with ?dev=0; else localStorage.
