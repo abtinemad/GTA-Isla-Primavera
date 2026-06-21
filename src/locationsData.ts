@@ -11,7 +11,8 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "name": "Royal Hideaway Corales Villas",
     "category": "QG",
     "lat": 28.113718, "lng": -16.747526,
-    "info": "Safehouse Principal (La Caleta). Point de spawn, sauvegarde et planification."
+    "info": "Safehouse Principal (La Caleta). Point de spawn, sauvegarde et planification.",
+    "website": "https://www.barcelo.com/es-es/royal-hideaway-corales-villas/"
   },
   {
     "id": 2,
@@ -39,14 +40,16 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "name": "Secrets Tasca la Caleta",
     "category": "Restaurants",
     "lat": 28.097344, "lng": -16.748212,
-    "info": "Sélection de crus et recharges de tapas."
+    "info": "Sélection de crus et recharges de tapas.",
+    "website": "https://www.instagram.com/secretstasca2024/"
   },
   {
     "id": 6,
     "name": "Tapitas la Caleta",
     "category": "Restaurants",
     "lat": 28.102166, "lng": -16.757161,
-    "info": "Comptoir local pour un verre informel."
+    "info": "Comptoir local pour un verre informel.",
+    "website": "https://www.instagram.com/tapitaslacaleta"
   },
   {
     "id": 7,
@@ -88,21 +91,24 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "name": "Taberna Maritima Agua y Sal",
     "category": "Restaurants",
     "lat": 28.1211, "lng": -16.7769,
-    "info": "Arrêt au stand (Playa San Juan). Idéal après la descente de l'Ouest."
+    "info": "Arrêt au stand (Playa San Juan). Idéal après la descente de l'Ouest.",
+    "website": "https://aguaysalrestaurante.es/"
   },
   {
     "id": 15,
     "name": "Restaurante Salitre",
     "category": "Restaurants",
     "lat": 28.100353, "lng": -16.755306,
-    "info": "Arrêt au stand (La Caleta). Restitution d'énergie en bord de mer proche du QG."
+    "info": "Arrêt au stand (La Caleta). Restitution d'énergie en bord de mer proche du QG.",
+    "website": "https://restaurantesalitre.com/"
   },
   {
     "id": 16,
     "name": "Rosso Sul Mare",
     "category": "Restaurants",
     "lat": 28.101023, "lng": -16.755084,
-    "info": "Arrêt au stand (La Caleta). Bar à vin / Resto face au coucher de soleil."
+    "info": "Arrêt au stand (La Caleta). Bar à vin / Resto face au coucher de soleil.",
+    "website": "https://www.rossosulmare.es/"
   },
   {
     "id": 17,
@@ -137,21 +143,24 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "name": "Kaluna Beach Club",
     "category": "Beach Club",
     "lat": 28.081027, "lng": -16.735901,
-    "info": "Beach club premium (Costa Adeje). Transats, DJ sets et cocktails face à l'océan."
+    "info": "Beach club premium (Costa Adeje). Transats, DJ sets et cocktails face à l'océan.",
+    "website": "https://kalunabeachclub.com/"
   },
   {
     "id": 22,
     "name": "Papagayo Beach Club",
     "category": "Beach Club",
     "lat": 28.066523, "lng": -16.732473,
-    "info": "Beach club iconique (Playa de Troya, Las Américas). Ambiance lounge et sunset sessions."
+    "info": "Beach club iconique (Playa de Troya, Las Américas). Ambiance lounge et sunset sessions.",
+    "website": "https://papagayobeachclub.com/"
   },
   {
     "id": 23,
     "name": "Monkey Beach Club",
     "category": "Beach Club",
     "lat": 28.069213, "lng": -16.732520,
-    "info": "Beach club festif (Las Américas). Piscine, musique et cocktails au bord de l'eau."
+    "info": "Beach club festif (Las Américas). Piscine, musique et cocktails au bord de l'eau.",
+    "website": "https://www.monkeybeachclub.com/"
   },
   {
     "id": 24,

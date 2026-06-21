@@ -34,6 +34,8 @@ export interface LocationItem {
   custom?: boolean; // True if added by the user in-session
   /** Photo-mission flavour (principale / annexe). Drives the marker variant. */
   missionType?: MissionType;
+  /** Site officiel de l'établissement (Restaurants / Beach Club / hôtel du QG). */
+  website?: string;
 }
 
 export interface FilterOption {

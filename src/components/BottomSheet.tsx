@@ -24,7 +24,8 @@ import {
   Square,
   Flag,
   Timer,
-  Route
+  Route,
+  Globe
 } from 'lucide-react';
 
 const LOCATION_TROPHIES: Record<number, string> = {
@@ -753,6 +754,22 @@ export default function BottomSheet({
                     className="hidden"
                   />
                 </>
+              )}
+
+              {/* Site web officiel — Restaurants / Beach Club / QG (hôtel).
+                  Affiché uniquement si une URL `website` existe pour ce spot. */}
+              {!isAnalyzing && location.website && (
+                <a
+                  href={location.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border-2 bg-white hover:bg-zinc-50 text-sm font-bold transition-all duration-200 shadow-sm cursor-pointer active:scale-95 text-center"
+                  style={{ borderColor: `${catInfo.accentColor}55`, color: catInfo.accentColor }}
+                >
+                  <Globe size={16} />
+                  <span>Site web</span>
+                  <ExternalLink size={13} className="opacity-60" />
+                </a>
               )}
 
               {/* Share Button */}
