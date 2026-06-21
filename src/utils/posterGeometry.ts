@@ -21,27 +21,43 @@ export const CELLS: [number, number, number, number][] = [
   [0.3333, 0.8, 1.0, 1.0],     // 9 horizon bas-droit
 ];
 
-export const ASPECT = 4 / 5;             // posterW / posterH
-export const FILET_X = 0.015;            // filet ~1.5% de la largeur
-export const FILET_Y = FILET_X * ASPECT; // même épaisseur en px (fraction de la hauteur)
+export const ASPECT = 4 / 5;        // posterW / posterH
+export const DEFAULT_GUTTER = 0.015; // filet ~1.5% de la largeur (valeur historique)
 const EPS = 0.001;
 
 export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
-/** Insère le filet noir : demi-filet aux bords intérieurs, filet plein au pourtour. */
-export function insetRect([x0, y0, x1, y1]: [number, number, number, number]): Rect {
-  const il = x0 <= EPS ? FILET_X : FILET_X / 2;
-  const ir = x1 >= 1 - EPS ? FILET_X : FILET_X / 2;
-  const it = y0 <= EPS ? FILET_Y : FILET_Y / 2;
-  const ib = y1 >= 1 - EPS ? FILET_Y : FILET_Y / 2;
+/**
+ * Insère le filet noir d'épaisseur `gutter` (fraction de la LARGEUR ; même épaisseur
+ * en px côté vertical via *ASPECT). Demi-filet aux bords intérieurs, filet plein au
+ * pourtour. SOURCE UNIQUE de la conversion fractions→cases : composer/aperçu/export.
+ */
+export function insetRect(
+  [x0, y0, x1, y1]: [number, number, number, number],
+  gutter: number = DEFAULT_GUTTER,
+): Rect {
+  const fx = gutter;
+  const fy = gutter * ASPECT;
+  const il = x0 <= EPS ? fx : fx / 2;
+  const ir = x1 >= 1 - EPS ? fx : fx / 2;
+  const it = y0 <= EPS ? fy : fy / 2;
+  const ib = y1 >= 1 - EPS ? fy : fy / 2;
   return { left: x0 + il, top: y0 + it, width: x1 - x0 - il - ir, height: y1 - y0 - it - ib };
 }
 
-/** Rectangles des cases avec filets (fractions du poster). */
-export const CELL_RECTS: Rect[] = CELLS.map(insetRect);
+/** Rectangles des cases (fractions du poster) pour une épaisseur de filet donnée. */
+export function cellRects(gutter: number = DEFAULT_GUTTER): Rect[] {
+  return CELLS.map((c) => insetRect(c, gutter));
+}
 
-/** Ratio largeur/hauteur (px) de chaque case (indépendant de la résolution). */
-export const CASE_ASPECT: number[] = CELL_RECTS.map((r) => (r.width / r.height) * ASPECT);
+/** Ratio largeur/hauteur (px) d'une case (indépendant de la résolution). */
+export function caseAspectOf(rect: Rect): number {
+  return (rect.width / rect.height) * ASPECT;
+}
+
+/** Défauts (gutter = DEFAULT_GUTTER) — utilisés par l'aperçu et les tests. */
+export const CELL_RECTS: Rect[] = cellRects();
+export const CASE_ASPECT: number[] = CELL_RECTS.map(caseAspectOf);
 
 export type Placement = {
   drawWpct: number; // largeur de la photo, % de la case

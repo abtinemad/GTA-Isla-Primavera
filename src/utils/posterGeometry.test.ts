@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CELLS, CASE_ASPECT, placePhoto, clamp } from './posterGeometry';
+import { CELLS, CASE_ASPECT, placePhoto, clamp, cellRects, caseAspectOf } from './posterGeometry';
 
 describe('CELLS — mosaïque 9 cases', () => {
   it('a exactement 9 cases', () => {
@@ -107,5 +107,55 @@ describe('placePhoto — cover + pan/zoom : JAMAIS de vide', () => {
   it('SANS clamp, un offset hors-limite révèle un trou (justifie le clamp)', () => {
     const p = placePhoto(0.4, 1, 2, 1.5, 0); // offX > 1, zoom → overflow réel
     expect(p.leftPct).toBeGreaterThan(0); // bord gauche découvert
+  });
+});
+
+describe('Filets réglables (gutter) — cover toujours garanti + cases valides', () => {
+  // 0 %, 1,5 % (défaut), 4 % (max du slider).
+  const GUTTERS = [0, 0.015, 0.04];
+  const RATIOS = [2.5, 1, 0.4]; // très portrait / carré / très paysage
+  const SCALES = [1, 1.5, 2, 3];
+  const OFFSETS = [-1, 0, 1];
+  const EPS = 1e-6;
+
+  it('chaque gutter produit 9 cases de dimensions strictement positives', () => {
+    for (const gutter of GUTTERS) {
+      const rects = cellRects(gutter);
+      expect(rects).toHaveLength(9);
+      for (const r of rects) {
+        expect(r.width).toBeGreaterThan(0);
+        expect(r.height).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('placePhoto couvre toute case (jamais de vide) pour 0 % / 1,5 % / 4 %', () => {
+    let fails = 0;
+    for (const gutter of GUTTERS) {
+      // caseAspect recalculé depuis le RECT RÉEL de chaque case (dépend du gutter).
+      const aspects = cellRects(gutter).map(caseAspectOf);
+      for (const ca of aspects) {
+        for (const ratio of RATIOS) {
+          for (const scale of SCALES) {
+            for (const ox of OFFSETS) {
+              for (const oy of OFFSETS) {
+                const p = placePhoto(ca, ratio, scale, ox, oy);
+                const covers =
+                  p.leftPct <= EPS &&
+                  p.leftPct + p.drawWpct >= 100 - EPS &&
+                  p.topPct <= EPS &&
+                  p.topPct + p.drawHpct >= 100 - EPS;
+                if (!covers) fails++;
+              }
+            }
+          }
+        }
+      }
+    }
+    expect(fails).toBe(0);
+  });
+
+  it('gutter par défaut (1,5 %) == CASE_ASPECT exporté', () => {
+    expect(cellRects(0.015).map(caseAspectOf)).toEqual(CASE_ASPECT);
   });
 });

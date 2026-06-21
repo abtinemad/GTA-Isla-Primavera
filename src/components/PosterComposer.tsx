@@ -12,10 +12,11 @@ import {
   loadPosterComposition,
   emptyPosterSlots,
   DEFAULT_POSTER_LOGO,
+  DEFAULT_GUTTER,
   type PosterLogo,
   type PosterSlot,
 } from '../utils/storage';
-import { CELL_RECTS, CASE_ASPECT, placePhoto, clamp } from '../utils/posterGeometry';
+import { cellRects, caseAspectOf, placePhoto, clamp } from '../utils/posterGeometry';
 
 interface PosterComposerProps {
   onClose: () => void;
@@ -52,9 +53,14 @@ export default function PosterComposer({
   const [slots, setSlots] = useState<PosterSlot[]>(() => emptyPosterSlots());
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [logo, setLogo] = useState<PosterLogo>(DEFAULT_POSTER_LOGO);
+  const [gutter, setGutter] = useState(DEFAULT_GUTTER);
   const [logoEdit, setLogoEdit] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [ratios, setRatios] = useState<Record<string, number>>({});
+
+  // Géométrie des cases dérivée du gutter (SOURCE UNIQUE) — écran + export identiques.
+  const rects = useMemo(() => cellRects(gutter), [gutter]);
+  const aspects = useMemo(() => rects.map(caseAspectOf), [rects]);
 
   const posterRef = useRef<HTMLDivElement>(null);
   const loadedRef = useRef(false);
@@ -65,10 +71,10 @@ export default function PosterComposer({
   // Drag du logo.
   const logoDragRef = useRef<{ sx: number; sy: number; bx: number; by: number; rect: DOMRect } | null>(null);
 
-  // Charge la composition persistée (cases + logo) une fois au montage.
+  // Charge la composition persistée (cases + logo + gutter) une fois au montage.
   useEffect(() => {
     loadPosterComposition()
-      .then((c) => { setSlots(c.slots); setLogo(c.logo); })
+      .then((c) => { setSlots(c.slots); setLogo(c.logo); setGutter(c.gutter); })
       .catch(() => {})
       .finally(() => { loadedRef.current = true; });
   }, []);
@@ -76,9 +82,9 @@ export default function PosterComposer({
   // Sauvegarde debouncée (évite le spam pendant pan/zoom/drag).
   useEffect(() => {
     if (!loadedRef.current) return;
-    const t = setTimeout(() => void savePosterComposition({ slots, logo }), 350);
+    const t = setTimeout(() => void savePosterComposition({ slots, logo, gutter }), 350);
     return () => clearTimeout(t);
-  }, [slots, logo]);
+  }, [slots, logo, gutter]);
 
   const collection = useMemo(
     () => buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos, freePhotos),
@@ -110,11 +116,11 @@ export default function PosterComposer({
     const rect = posterRef.current.getBoundingClientRect();
     let mPX = 0, mPY = 0;
     if (slot.photoId) {
-      const r = CELL_RECTS[i];
+      const r = rects[i];
       const cellWpx = r.width * rect.width;
       const cellHpx = r.height * rect.height;
-      const ratio = ratios[slot.photoId] ?? 1 / CASE_ASPECT[i];
-      const g = placePhoto(CASE_ASPECT[i], ratio, slot.transform.scale, slot.transform.offsetX, slot.transform.offsetY);
+      const ratio = ratios[slot.photoId] ?? 1 / aspects[i];
+      const g = placePhoto(aspects[i], ratio, slot.transform.scale, slot.transform.offsetX, slot.transform.offsetY);
       mPX = (cellWpx * g.overW) / 100 / 2;
       mPY = (cellHpx * g.overH) / 100 / 2;
     }
@@ -216,7 +222,7 @@ export default function PosterComposer({
       );
 
       for (let i = 0; i < 9; i++) {
-        const r = CELL_RECTS[i];
+        const r = rects[i];
         const cx = r.left * CANVAS_W, cy = r.top * CANVAS_H;
         const cw = r.width * CANVAS_W, ch = r.height * CANVAS_H;
         ctx.save();
@@ -227,7 +233,7 @@ export default function PosterComposer({
         const slot = slots[i];
         if (img && img.naturalWidth > 0 && slot.photoId) {
           const ratio = img.naturalHeight / img.naturalWidth;
-          const g = placePhoto(CASE_ASPECT[i], ratio, slot.transform.scale, slot.transform.offsetX, slot.transform.offsetY);
+          const g = placePhoto(aspects[i], ratio, slot.transform.scale, slot.transform.offsetX, slot.transform.offsetY);
           const dw = (g.drawWpct / 100) * cw;
           const dh = (g.drawHpct / 100) * ch;
           const dx = cx + (g.leftPct / 100) * cw;
@@ -322,13 +328,13 @@ export default function PosterComposer({
         >
           {/* Cases */}
           {slots.map((slot, i) => {
-            const r = CELL_RECTS[i];
+            const r = rects[i];
             const selected = selectedSlot === i && !logoEdit;
             const key = slot.photoId;
             const src = key ? srcFor(key) : undefined;
             const ratio = key ? ratios[key] : undefined;
             const g = key && ratio !== undefined
-              ? placePhoto(CASE_ASPECT[i], ratio, slot.transform.scale, slot.transform.offsetX, slot.transform.offsetY)
+              ? placePhoto(aspects[i], ratio, slot.transform.scale, slot.transform.offsetX, slot.transform.offsetY)
               : null;
             return (
               <div
@@ -439,6 +445,19 @@ export default function PosterComposer({
               </label>
             )}
           </div>
+
+          {/* Épaisseur des filets noirs (gutter) — 0,5 % → 4 % de la largeur */}
+          <label className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/15 px-3 py-2">
+            <span className="font-mono text-[9px] uppercase tracking-wider text-white/50 shrink-0">Filets</span>
+            <input
+              type="range" min={0.005} max={0.04} step={0.001} value={gutter}
+              onChange={(e) => setGutter(parseFloat(e.target.value))}
+              className="flex-1 accent-[#00F5D4]"
+            />
+            <span className="font-mono text-[9px] tabular-nums text-white/40 shrink-0 w-9 text-right">
+              {(gutter * 100).toFixed(1)}%
+            </span>
+          </label>
 
           {/* Cadrage de la case sélectionnée (zoom + vider) */}
           {!logoEdit && selSlot && (

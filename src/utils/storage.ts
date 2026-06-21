@@ -13,6 +13,8 @@
  *    wallet, timestamps) restent en localStorage.
  */
 
+import { DEFAULT_GUTTER } from './posterGeometry';
+
 // --- 1. Migration des clés localStorage : tenirife_* → tenerife_* -----------
 
 // Suffixes des clés conservées en localStorage (course_photos est exclu : il
@@ -360,11 +362,13 @@ export type PosterLogo = { x: number; y: number; w: number };
 /** Cadrage d'une photo dans sa case : zoom (≥1) + pan normalisé (offset ∈ [-1,1]). */
 export type SlotTransform = { scale: number; offsetX: number; offsetY: number };
 export type PosterSlot = { photoId: string | null; transform: SlotTransform };
-export type PosterComposition = { slots: PosterSlot[]; logo: PosterLogo };
+/** `gutter` = épaisseur des filets noirs (fraction de la largeur du poster). */
+export type PosterComposition = { slots: PosterSlot[]; logo: PosterLogo; gutter: number };
 
-// Défauts : logo centré ~60% de large ; cadrage = cover centré.
-export const DEFAULT_POSTER_LOGO: PosterLogo = { x: 0.5, y: 0.16, w: 0.42 };
+// Défauts : logo centré ~30% de large ; cadrage = cover centré ; filets ~1.5%.
+export const DEFAULT_POSTER_LOGO: PosterLogo = { x: 0.5, y: 0.16, w: 0.3 };
 export const DEFAULT_SLOT_TRANSFORM: SlotTransform = { scale: 1, offsetX: 0, offsetY: 0 };
+export { DEFAULT_GUTTER };
 
 export const emptyPosterSlots = (): PosterSlot[] =>
   Array.from({ length: 9 }, () => ({ photoId: null, transform: { ...DEFAULT_SLOT_TRANSFORM } }));
@@ -399,9 +403,12 @@ export function parsePosterComposition(parsed: unknown): PosterComposition {
   const logo = Array.isArray(parsed)
     ? DEFAULT_POSTER_LOGO
     : { ...DEFAULT_POSTER_LOGO, ...((parsed as { logo?: PosterLogo })?.logo ?? {}) };
+  const rawGutter = Array.isArray(parsed) ? undefined : (parsed as { gutter?: unknown })?.gutter;
+  const gutter = typeof rawGutter === 'number' ? rawGutter : DEFAULT_GUTTER; // absent → défaut
   return {
     slots: Array.from({ length: 9 }, (_, i) => normalizeSlot(rawSlots[i] ?? null)),
     logo,
+    gutter,
   };
 }
 
@@ -419,5 +426,5 @@ export async function loadPosterComposition(): Promise<PosterComposition> {
   } catch {
     /* ignore */
   }
-  return { slots: emptyPosterSlots(), logo: DEFAULT_POSTER_LOGO };
+  return { slots: emptyPosterSlots(), logo: DEFAULT_POSTER_LOGO, gutter: DEFAULT_GUTTER };
 }
