@@ -27,14 +27,17 @@ export const INITIAL_LOCATIONS: LocationItem[] = [
     "name": "Bloom Bar & Brunch",
     "category": "Bars",
     "lat": 28.100274, "lng": -16.755073,
-    "info": "Spot cocktails premium en terrasse (La Caleta)."
+    "info": "Spot cocktails premium en terrasse (La Caleta).",
+    "website": "https://bloomtenerife.com/",
+    "instagram": "https://www.instagram.com/bloom_tenerife/"
   },
   {
     "id": 4,
     "name": "La CocKteleria",
     "category": "Bars",
     "lat": 28.0812, "lng": -16.7314,
-    "info": "Mixologie avancée (Costa Adeje)."
+    "info": "Mixologie avancée (Costa Adeje).",
+    "instagram": "https://www.instagram.com/la_cockteleria_/"
   },
   {
     "id": 5,
