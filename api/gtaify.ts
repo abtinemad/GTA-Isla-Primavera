@@ -29,6 +29,62 @@ Color palette & atmosphere — KEEP the photo's real colors true, vivid and domi
 
 No real trademarks (no "Grand Theft Auto", no "Vice City", no VCPD, no Rockstar/R* star, no real brand logos).`;
 
+// ── Garde-fous anti-abus (le proxy transmet à Google → protéger la facturation) ──
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // ~2 Mo (l'app compresse à ~1280px / JPEG q85)
+const RATE_LIMIT = 10;                    // requêtes…
+const RATE_WINDOW_MS = 60_000;            // …par minute et par IP
+// Origines autorisées : prod + previews Vercel (*.vercel.app) + localhost (dev).
+const ALLOWED_HOSTS = ['localhost', '127.0.0.1'];
+const B64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
+
+// Rate-limit en mémoire (réinitialisé par instance serverless — suffisant ici).
+const rateHits: Map<string, { count: number; start: number }> = new Map();
+
+function clientIp(req: any): string {
+  const fwd = String(req.headers['x-forwarded-for'] || '');
+  return fwd.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  if (rateHits.size > 500) {
+    for (const [k, v] of rateHits) if (now - v.start >= RATE_WINDOW_MS) rateHits.delete(k);
+  }
+  const e = rateHits.get(ip);
+  if (!e || now - e.start >= RATE_WINDOW_MS) {
+    rateHits.set(ip, { count: 1, start: now });
+    return false;
+  }
+  e.count += 1;
+  return e.count > RATE_LIMIT;
+}
+
+// Souhaité : refuse les requêtes cross-origin venant d'un navigateur. Une requête
+// SANS Origin/Referer (script serveur, outil de dev) est tolérée — la validation et
+// le rate-limit restent les garde-fous principaux dans ce cas.
+function originAllowed(req: any): boolean {
+  const ref = String(req.headers.origin || req.headers.referer || '');
+  if (!ref) return true;
+  try {
+    const host = new URL(ref).hostname;
+    return host.endsWith('.vercel.app') || ALLOWED_HOSTS.includes(host);
+  } catch {
+    return false;
+  }
+}
+
+// Valide une image base64 (sans préfixe data:) : taille ≤ ~2 Mo + magic bytes
+// JPEG (FF D8 FF) ou PNG (89 50 4E 47). Rien d'autre n'est transmis à Google.
+function isValidImageB64(image: string): boolean {
+  const approxBytes = Math.floor((image.length * 3) / 4); // estime sans allouer le buffer
+  if (approxBytes > MAX_IMAGE_BYTES) return false;
+  if (!B64_RE.test(image)) return false;
+  const head = Buffer.from(image.slice(0, 16), 'base64');
+  const jpeg = head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff;
+  const png = head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47;
+  return jpeg || png;
+}
+
 // Vercel : laisse le temps à la génération d'image.
 export const config = { maxDuration: 60 };
 
@@ -44,9 +100,24 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  // Origine (souhaité) → rate-limit (IP) → validation : tout est rejeté AVANT
+  // le moindre appel à Google.
+  if (!originAllowed(req)) {
+    res.status(403).json({ error: 'forbidden_origin' });
+    return;
+  }
+  if (isRateLimited(clientIp(req))) {
+    res.status(429).json({ error: 'rate_limited' });
+    return;
+  }
+
   const image: string | undefined = req.body?.image;
   if (!image || typeof image !== 'string') {
     res.status(400).json({ error: 'missing_image' });
+    return;
+  }
+  if (!isValidImageB64(image)) {
+    res.status(400).json({ error: 'invalid_image' });
     return;
   }
 
