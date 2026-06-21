@@ -373,6 +373,9 @@ export default function BottomSheet({
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (ctx) {
+          // Même grade GTA baké que les photos de course/cover, pour une galerie
+          // Social Club cohérente (contrast/saturate/brightness).
+          ctx.filter = 'contrast(1.18) saturate(1.35) brightness(1.02)';
           ctx.drawImage(img, 0, 0, width, height);
           resolve(canvas.toDataURL('image/jpeg', 0.65)); // 65% quality JPEG
         } else {

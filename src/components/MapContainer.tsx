@@ -27,8 +27,11 @@ interface MapContainerProps {
   coursesActive?: boolean;
   /** Reveal every course route at once (Courses filter isolated). */
   coursesFocused?: boolean;
-  /** Ids of completed courses — marks the photo-point pin with a ✓. */
+  /** Ids of completed courses (run done) — marks the photo-point pin with a ✓. */
   completedCourseIds?: string[];
+  /** Course photos ({ [courseId]: base64 }) — adds a 📸 badge on the photo-point
+   *  pin, independent of the run ✓. */
+  coursePhotos?: Record<string, string>;
   selectedCourseId?: string | null;
   onSelectCourse?: (course: CourseData) => void;
 }
@@ -45,6 +48,7 @@ export default function MapContainer({
   coursesActive = false,
   coursesFocused = false,
   completedCourseIds = [],
+  coursePhotos = {},
   selectedCourseId = null,
   onSelectCourse
 }: MapContainerProps) {
@@ -274,10 +278,14 @@ export default function MapContainer({
     courses.forEach((course) => {
       const isSelected = selectedCourseId === course.id;
       const reveal = coursesFocused || isSelected;
-      // The photo point (and thus the ✓) is the start when photoAtStart, else end.
+      // The photo point (and thus the ✓ run badge + 📸 photo badge) is the start
+      // when photoAtStart, else the end.
       const isCompleted = completedCourseIds.includes(course.id);
       const departDone = isCompleted && !!course.photoAtStart;
       const arriveeDone = isCompleted && !course.photoAtStart;
+      const hasPhoto = !!coursePhotos[course.id];
+      const departPhoto = hasPhoto && !!course.photoAtStart;
+      const arriveePhoto = hasPhoto && !course.photoAtStart;
 
       // Route (on demand only): dark casing for contrast, red top line with a
       // soft glow + animated dash flow (flow disabled by prefers-reduced-motion
@@ -306,7 +314,7 @@ export default function MapContainer({
       // Depart pin (clickable → opens the course sheet).
       const depart = L.marker([course.start.lat, course.start.lng], {
         icon: L.divIcon({
-          html: buildMarkerHtml('course-depart', isSelected, departDone),
+          html: buildMarkerHtml('course-depart', isSelected, departDone, departPhoto),
           className: 'custom-div-icon',
           iconSize: [34, 34],
           iconAnchor: [17, 17],
@@ -330,7 +338,7 @@ export default function MapContainer({
       // Finish pin (checkered flag), non-interactive.
       L.marker([course.end.lat, course.end.lng], {
         icon: L.divIcon({
-          html: buildMarkerHtml('course-arrivee', isSelected, arriveeDone),
+          html: buildMarkerHtml('course-arrivee', isSelected, arriveeDone, arriveePhoto),
           className: 'custom-div-icon',
           iconSize: [34, 34],
           iconAnchor: [17, 17],
@@ -349,7 +357,7 @@ export default function MapContainer({
         courseLayersRef.current = null;
       }
     };
-  }, [courses, coursesActive, coursesFocused, completedCourseIds, selectedCourseId, onSelectCourse, singleGroupActive]);
+  }, [courses, coursesActive, coursesFocused, completedCourseIds, coursePhotos, selectedCourseId, onSelectCourse, singleGroupActive]);
 
   // 5b. Fly to a course when it is selected (its depart pin was tapped).
   useEffect(() => {

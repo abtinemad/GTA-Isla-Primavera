@@ -16,16 +16,14 @@ import { CATEGORY_MAP, haversineKm } from './utils/helper';
 import LocationsList from './components/LocationsList';
 import BottomSheet from './components/BottomSheet';
 import CoverQuest from './components/CoverQuest';
-import CoverCamera from './components/CoverCamera';
 import CoursePhotoPrompt from './components/CoursePhotoPrompt';
 import SplashScreen from './components/SplashScreen';
 import DenzelMessage from './components/DenzelMessage';
 import TutorialOverlay from './components/TutorialOverlay';
-import { CoverSlot, approachRadiusKm, isPhotoSlot, shortLabel } from './coverData';
+import { approachRadiusKm, isPhotoSlot, shortLabel } from './coverData';
 import {
   getDenzelAmbient,
   getDenzelReopenPrompt,
-  getDenzelPhotoPrompt,
   getDenzelChronoPrompt,
   getDenzelSpotPhotoLine,
   denzelTutorial,
@@ -213,7 +211,6 @@ export default function App() {
   const elapsedTimeRef = useRef<number>(0);
 
   // Cover Quest — camera overlay for the currently-targeted cover slot
-  const [coverCameraSlot, setCoverCameraSlot] = useState<CoverSlot | null>(null);
   // Slots we've already pinged for proximity (fire-once until the player leaves).
   const approachAlertedRef = useRef<Set<number>>(new Set());
   // Courses whose 50 m photo prompt has already fired (re-armed on leaving).
@@ -503,21 +500,6 @@ export default function App() {
     setDenzelMessage(getDenzelSpotPhotoLine(locId));
   };
 
-  // Cover Quest snap = front-end of the existing validation. The camera only
-  // opens for a slot within the 50 m geofence (enforced in CoverQuest), so this
-  // routes straight through the shared souvenir + completion handlers — no
-  // parallel state. A timed mission records its elapsed run at the moment of snap.
-  const handleCoverCommit = (slot: CoverSlot, dataUrl: string) => {
-    handleSavePhotoSouvenir(slot.id, dataUrl);
-    let finishTime: string | undefined;
-    if (slot.category === 'Missions' && activeRunLocationId === slot.id) {
-      finishTime = getFormattedElapsedTime();
-      handleStopRun();
-    }
-    handleCompleteLocation(slot.location, finishTime);
-    setCoverCameraSlot(null);
-  };
-
   // Trigger game rewards
   const handleCompleteLocation = (location: LocationItem, finishTime?: string) => {
     if (completedLocationIds.includes(location.id)) return;
@@ -790,6 +772,7 @@ export default function App() {
             coursesActive={coursesActive}
             coursesFocused={coursesFocused}
             completedCourseIds={completedCourseIds}
+            coursePhotos={coursePhotos}
             selectedCourseId={selectedCourse?.id ?? null}
             onSelectCourse={handleSelectCourse}
           />
@@ -839,17 +822,10 @@ export default function App() {
         {/* UNIVERSALLY ACCESSIBLE Spectacular "SOCIAL CLUB / TROPHÉES" STANDALONE VIEW */}
         <section className={`app-bg absolute inset-0 z-[490] pt-12 pb-14 md:pb-0 overflow-y-auto ${activeTab === 'trophies' ? 'block' : 'hidden'}`}>
           <CoverQuest
-            completedLocationIds={completedLocationIds}
-            capturedPhotos={capturedPhotos}
-            completedTimes={completedTimes}
-            userCoords={userCoords}
             completedCourseIds={completedCourseIds}
             coursePhotos={coursePhotos}
-            onOpenCamera={(slot) => {
-              // Photo-mission reaches its "take the photo" step.
-              setDenzelMessage(getDenzelPhotoPrompt());
-              setCoverCameraSlot(slot);
-            }}
+            capturedPhotos={capturedPhotos}
+            spotPhotos={spotPhotos}
           />
         </section>
 
@@ -1089,13 +1065,6 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* COVER QUEST — full-screen geofenced camera overlay */}
-      <CoverCamera
-        slot={coverCameraSlot}
-        onClose={() => setCoverCameraSlot(null)}
-        onCommit={handleCoverCommit}
-      />
 
       {/* DENZEL SAG — narrator handler messages */}
       <DenzelMessage message={denzelMessage} onDismiss={() => setDenzelMessage(null)} />

@@ -317,9 +317,11 @@ function buildPinSvg(fill: string, rim: string, glyphInner: string): string {
 
 /**
  * Marker factory: one teardrop pin per variant.
- * Active = cyan rim + cyan ping ring + 1.16× scale. Completed = green ✓ badge.
+ * Active = cyan rim + cyan ping ring + 1.16× scale. Completed = green ✓ badge
+ * (top-right). `hasPhoto` adds a small 📸 badge (top-left) — independent of ✓,
+ * so a course pin can show "run done" (✓) and "photo taken" (📸) at once.
  */
-export function buildMarkerHtml(variant: MarkerVariant, isActive: boolean, isCompleted?: boolean): string {
+export function buildMarkerHtml(variant: MarkerVariant, isActive: boolean, isCompleted?: boolean, hasPhoto?: boolean): string {
   const v = MARKER_VARIANTS[variant] ?? MARKER_VARIANTS['mission-photo-principale'];
   const rim = isActive ? '#00F5D4' : '#FFFFFF';
   const scale = v.scale * (isActive ? 1.16 : 1);
@@ -330,6 +332,7 @@ export function buildMarkerHtml(variant: MarkerVariant, isActive: boolean, isCom
       ${isActive ? `<div class="absolute rounded-full animate-ping" style="width:34px;height:34px;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,245,212,.25);z-index:-1;pointer-events:none!important;"></div>` : ''}
       <div style="transform:scale(${scale});pointer-events:auto;">${pin}</div>
       ${isCompleted ? `<div style="position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;background:#46AE3C;border:1.5px solid #0a0a0b;color:#fff;font:800 9px sans-serif;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none;">✓</div>` : ''}
+      ${hasPhoto ? `<div style="position:absolute;top:-4px;left:-4px;width:15px;height:15px;border-radius:50%;background:#0a0a0b;border:1.5px solid #EA4423;font:9px sans-serif;line-height:12px;text-align:center;z-index:5;pointer-events:none;">📸</div>` : ''}
     </div>
   `;
 }
