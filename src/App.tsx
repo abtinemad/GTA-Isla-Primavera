@@ -39,7 +39,13 @@ import {
   X,
   MessageSquare
 } from 'lucide-react';
-import { migrateLegacyKeys, loadCoursePhotos, putCoursePhoto, loadSpotPhotos, putSpotPhoto } from './utils/storage';
+import {
+  migrateLegacyKeys,
+  loadCoursePhotos, putCoursePhoto,
+  loadSpotPhotos, putSpotPhoto,
+  loadCapturedPhotos, putCapturedPhoto,
+  loadGtaPhotos, putGtaPhoto,
+} from './utils/storage';
 
 // Renomme les clés héritées « tenirife_* » → « tenerife_* » une fois, AVANT que
 // les initialiseurs d'état (ci-dessous) ne lisent les nouvelles clés.
@@ -66,14 +72,10 @@ export default function App() {
     }
   });
 
-  const [capturedPhotos, setCapturedPhotos] = useState<Record<number, string>>(() => {
-    try {
-      const saved = localStorage.getItem('tenerife_captured_photos');
-      return saved ? JSON.parse(saved) : {};
-    } catch (e) {
-      return {};
-    }
-  });
+  // Escapades photos now live in IndexedDB (1280 px originals would blow the
+  // localStorage quota). Hydrated on mount via loadCapturedPhotos() (which also
+  // migrates the legacy localStorage blob once).
+  const [capturedPhotos, setCapturedPhotos] = useState<Record<number, string>>({});
 
   const [completedTimes, setCompletedTimes] = useState<Record<number, string>>(() => {
     try {
@@ -105,6 +107,10 @@ export default function App() {
   // plages) — IndexedDB, keyed by spot id. Joins the Social Club + jaquette pool.
   const [spotPhotos, setSpotPhotos] = useState<Record<number, string>>({});
 
+  // GTA-styled versions (IndexedDB), keyed by composite key (course:<id> /
+  // loc:<id>). The original is never overwritten; display prefers the GTA one.
+  const [gtaPhotos, setGtaPhotos] = useState<Record<string, string>>({});
+
   // El Jefe info-bulle shown when within 50 m of a course's photo point.
   const [coursePhotoPrompt, setCoursePhotoPrompt] = useState<CourseData | null>(null);
 
@@ -113,6 +119,8 @@ export default function App() {
   useEffect(() => {
     loadCoursePhotos().then(setCoursePhotos).catch(() => {});
     loadSpotPhotos().then(setSpotPhotos).catch(() => {});
+    loadCapturedPhotos().then(setCapturedPhotos).catch(() => {});
+    loadGtaPhotos().then(setGtaPhotos).catch(() => {});
   }, []);
 
   // DEV flag — gates the geofence simulator (kept for a full dry-run before the
@@ -469,9 +477,8 @@ export default function App() {
   };
 
   const handleSavePhotoSouvenir = (locId: number, base64: string) => {
-    const nextPhotos = { ...capturedPhotos, [locId]: base64 };
-    setCapturedPhotos(nextPhotos);
-    localStorage.setItem('tenerife_captured_photos', JSON.stringify(nextPhotos));
+    setCapturedPhotos((prev) => ({ ...prev, [locId]: base64 }));
+    void putCapturedPhoto(locId, base64); // IndexedDB (originaux 1280 px)
   };
 
   // A course's photo / geofence point: the arrival by default, the start when
@@ -826,6 +833,7 @@ export default function App() {
             coursePhotos={coursePhotos}
             capturedPhotos={capturedPhotos}
             spotPhotos={spotPhotos}
+            gtaPhotos={gtaPhotos}
           />
         </section>
 

@@ -7,16 +7,20 @@ import { useMemo } from 'react';
 import { CATEGORY_MAP } from '../utils/helper';
 import { courses } from '../data/coursesData';
 import { INITIAL_LOCATIONS } from '../locationsData';
+import { buildPhotoCollection } from '../utils/photoCollection';
 
 interface CoverQuestProps {
   /** Course completion (run done) — feeds the 🏁 counter. */
   completedCourseIds: string[];
   /** Course photos (IndexedDB) — principal photos, keyed by course id. */
   coursePhotos: Record<string, string>;
-  /** Escapades secondary photos + legacy (localStorage), keyed by spot id. */
+  /** Escapades secondary photos (IndexedDB), keyed by spot id. */
   capturedPhotos: Record<number, string>;
   /** Free "ambiance" photos (IndexedDB), keyed by spot id. */
   spotPhotos: Record<number, string>;
+  /** GTA-styled versions, keyed by composite key (course:<id> / loc:<id>).
+   *  The display prefers the GTA version when present, else the original. */
+  gtaPhotos: Record<string, string>;
 }
 
 // Course brand red (route line / El Jefe).
@@ -28,8 +32,6 @@ const GLASS = {
   backdropFilter: 'blur(var(--blur-glass))',
   WebkitBackdropFilter: 'blur(var(--blur-glass))',
 } as const;
-
-type GalleryItem = { key: string; url: string; label: string; accent: string; rank: number };
 
 function Counter({
   emoji,
@@ -62,6 +64,7 @@ export default function CoverQuest({
   coursePhotos,
   capturedPhotos,
   spotPhotos,
+  gtaPhotos,
 }: CoverQuestProps) {
   // Counters (informative X/Y, no global completion). Totals derived from data.
   const nonTutorialCourses = useMemo(() => courses.filter((c) => !c.tutorial), []);
@@ -77,31 +80,12 @@ export default function CoverQuest({
   const secondaryTotal = secondaryLocations.length; // 3
   const secondaryCount = secondaryLocations.filter((l) => capturedPhotos[l.id]).length;
 
-  // Gallery = ALL photos merged from the THREE stores, deduped + coherently
-  // sorted: course (principal, data order) → secondary (Escapades) → ambiance.
-  // Location-keyed photos (capturedPhotos + spotPhotos) dedup by spot id; the
-  // ambiance store wins for a shared id (it's the newer, intentional shot).
-  const photos = useMemo(() => {
-    const items: GalleryItem[] = [];
-
-    courses.forEach((c, i) => {
-      const url = coursePhotos[c.id];
-      if (url) items.push({ key: `c:${c.id}`, url, label: c.title, accent: COURSE_ACCENT, rank: 100 + i });
-    });
-
-    const byLoc = new Map<number, string>();
-    Object.entries(capturedPhotos).forEach(([id, url]) => { if (url) byLoc.set(Number(id), url); });
-    Object.entries(spotPhotos).forEach(([id, url]) => { if (url) byLoc.set(Number(id), url); });
-    byLoc.forEach((url, id) => {
-      const loc = INITIAL_LOCATIONS.find((l) => l.id === id);
-      if (!loc) return;
-      const isSecondary = loc.category === 'Escapades';
-      const accent = CATEGORY_MAP[loc.category]?.accentColor ?? '#9aa0ab';
-      items.push({ key: `l:${id}`, url, label: loc.name, accent, rank: (isSecondary ? 200 : 300) + id });
-    });
-
-    return items.sort((a, b) => a.rank - b.rank);
-  }, [coursePhotos, capturedPhotos, spotPhotos]);
+  // Gallery = ALL photos, merged/deduped/sorted by the shared collection helper
+  // (same source the styling queue uses). Display prefers the GTA version.
+  const photos = useMemo(
+    () => buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos),
+    [coursePhotos, capturedPhotos, spotPhotos],
+  );
 
   return (
     <div className="relative min-h-full px-3 pt-3 pb-28">
@@ -144,7 +128,11 @@ export default function CoverQuest({
               key={p.key}
               className="relative aspect-[4/5] rounded-xl overflow-hidden border border-white/15"
             >
-              <img src={p.url} alt={p.label} className="absolute inset-0 w-full h-full object-cover" />
+              <img
+                src={gtaPhotos[p.key] ?? p.original}
+                alt={p.label}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               <div
                 className="absolute inset-0"
                 style={{ background: `linear-gradient(to top, #0a0a0b 6%, ${p.accent}55 42%, transparent 80%)` }}
