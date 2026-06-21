@@ -6,7 +6,7 @@
  *  - Map tiles (Esri / CARTO): cache-first with a capped tile store so the
  *    last-visited areas of Tenerife stay available without a connection.
  */
-const VERSION = 'v6';
+const VERSION = 'v7';
 const SHELL_CACHE = `gdrive-shell-${VERSION}`;
 const ASSET_CACHE = `gdrive-assets-${VERSION}`;
 const TILE_CACHE = `gdrive-tiles-${VERSION}`;
