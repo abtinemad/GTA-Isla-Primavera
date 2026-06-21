@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { X, Plus, Check } from 'lucide-react';
-import logoUrl from '../assets/logo-gtaip.png';
+import logoUrl from '../assets/logo-gta-isla-primavera.png';
 import { buildPhotoCollection } from '../utils/photoCollection';
 import { savePosterComposition, loadPosterComposition } from '../utils/storage';
 
@@ -123,7 +123,7 @@ export default function PosterComposer({
           >
             <img
               src={logoUrl}
-              alt="GTA Isla Primavera"
+              alt="Grand Tenerife Auto · Isla Primavera"
               className="w-[82%] max-w-[250px] drop-shadow-[0_4px_14px_rgba(0,0,0,.6)]"
             />
             <span className="font-mono text-[8px] uppercase tracking-[3px] text-white/55">
