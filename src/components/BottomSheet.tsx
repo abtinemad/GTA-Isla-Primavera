@@ -95,6 +95,10 @@ export default function BottomSheet({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [gpsErrorShow, setGpsErrorShow] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Ref de l'input « Photo ici » (ambiance). DOIT rester ici, AVANT le `return null`
+  // conditionnel plus bas, sinon le nombre de hooks change entre les rendus
+  // (location null vs défini) → crash « Rendered more hooks… » (page blanche).
+  const ambianceInputRef = useRef<HTMLInputElement>(null);
 
   // Verification-flow cancellation token. Bumped whenever the targeted spot
   // changes or the sheet closes, so an in-flight (decorative) analysis can't
@@ -340,7 +344,7 @@ export default function BottomSheet({
 
   // Free "ambiance" capture (no geofence, no co-validation) — beach clubs/restos/
   // ravito/bars/plages. Compresses and hands the photo to the IndexedDB collection.
-  const ambianceInputRef = useRef<HTMLInputElement>(null);
+  // (Le ref ambianceInputRef est déclaré tout en haut, avant le return conditionnel.)
   const handleAmbianceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !location) return;
