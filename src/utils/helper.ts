@@ -174,65 +174,134 @@ export const CATEGORY_MAP: Record<Category, CategoryInfo> = {
 };
 
 /**
- * Per-category "Custom Gaming Blip" charter (Spec §4):
- * flat, ultra-contrasted badge — solid category color, hard black border,
- * no inner white ring, distinct shape per category.
+ * Unified marker system — "goutte à l'envers" (teardrop pin) for EVERY marker.
+ *
+ * One shape (SVG teardrop, modelled on the old QG pin), differentiated only by
+ * a glyph + a colour. No more square tiles or rotated diamonds. Each variant is
+ * a reusable entry consumed by `buildMarkerHtml` (the factory) below.
+ *
+ * Glyphs are tiny inline SVGs authored in a 20×20 box (centre 10,10), so they
+ * drop cleanly into the pin head. `g` = glyph colour, `fill` = pin colour
+ * (used by the filled camera to "cut out" its lens).
  */
-const BLIP_STYLE: Record<string, { color: string; emoji: string; shape: 'disk' | 'rounded' | 'diamond' }> = {
-  QG:             { color: '#EDEFF2', emoji: '🏢', shape: 'rounded' },  // Token --cat-qg (neutral)
-  Ravitaillement: { color: '#46AE3C', emoji: '🌿', shape: 'rounded' },  // Token --cat-ravito
-  Bars:           { color: '#E0479B', emoji: '🍸', shape: 'disk' },     // Token --cat-bars
-  Missions:       { color: '#EA4423', emoji: '🌋', shape: 'diamond' },  // Token --cat-missions
-  Escapades:      { color: '#9E7AD2', emoji: '🧭', shape: 'disk' },     // Token --cat-escapades
-  Plages:         { color: '#3F6CC4', emoji: '🏖️', shape: 'rounded' },  // Token --cat-plages
-  Restaurants:    { color: '#F0941E', emoji: '🍽️', shape: 'disk' },     // Token --cat-restaurants
+export type MarkerVariant =
+  | 'qg'
+  | 'restaurant'
+  | 'cocktail'
+  | 'cannabis'
+  | 'plage'
+  | 'mission-photo'         // mission photo principale (appareil photo plein)
+  | 'mission-photo-annexe'  // mission photo annexe (contour, atténué, plus petit)
+  | 'course-depart'         // course : ligne de départ (fanion)
+  | 'course-arrivee';       // course : ligne d'arrivée (drapeau à damier)
+
+interface MarkerVariantStyle {
+  fill: string;       // pin body colour
+  glyphColor: string; // glyph colour (chosen for contrast on `fill`)
+  scale: number;      // base size multiplier (annexe pins are smaller)
+  glyph: (g: string, fill: string) => string; // inner SVG of the glyph
+}
+
+const MARKER_VARIANTS: Record<MarkerVariant, MarkerVariantStyle> = {
+  // QG — doré / blanc, glyphe "H"
+  qg: {
+    fill: '#EAC54F', glyphColor: '#FFFFFF', scale: 1,
+    glyph: (g) => `<path d="M6 4V16M14 4V16M6 10H14" fill="none" stroke="${g}" stroke-width="2.6" stroke-linecap="round"/>`,
+  },
+  // Restaurant (complexe) — ambre, fourchette + couteau
+  restaurant: {
+    fill: '#F0941E', glyphColor: '#2A1400', scale: 1,
+    glyph: (g) => `<path d="M6 4v4.5a1.4 1.4 0 0 0 2.8 0V4M7.4 8.5V17M14 4c-1.6 1.4-1.6 5.6 0 7v6" fill="none" stroke="${g}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  // Coctelería — cyan néon, verre à cocktail
+  cocktail: {
+    fill: '#00E0CB', glyphColor: '#053330', scale: 1,
+    glyph: (g) => `<path d="M3.5 5h13l-6.5 7zM10 12v4M6.5 16h7" fill="none" stroke="${g}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  // Cannabis club — cyan/vert néon, feuille
+  cannabis: {
+    fill: '#2BE38A', glyphColor: '#053A22', scale: 1,
+    glyph: (g) => `<path d="M5.5 16c0-6.5 4.3-11 10.5-11C16 11.3 11.5 16 5.5 16ZM5.5 16l5.5-6.2" fill="none" stroke="${g}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  // Plage — JAUNE, parasol
+  plage: {
+    fill: '#FFD60A', glyphColor: '#3A2D00', scale: 1,
+    glyph: (g) => `<path d="M3 10a7 7 0 0 1 14 0ZM10 4V2.5M10 10v7M10 17h2.6" fill="none" stroke="${g}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  // Mission photo principale — rose néon vif, appareil photo plein
+  'mission-photo': {
+    fill: '#FF2E9A', glyphColor: '#FFFFFF', scale: 1,
+    glyph: (g, fill) => `<path d="M3 7h2.6l1.3-1.9h6.2L14.4 7H17a1.3 1.3 0 0 1 1.3 1.3V15a1.3 1.3 0 0 1-1.3 1.3H3A1.3 1.3 0 0 1 1.7 15V8.3A1.3 1.3 0 0 1 3 7Z" fill="${g}"/><circle cx="10" cy="11.7" r="3.1" fill="${fill}"/><circle cx="10" cy="11.7" r="1.4" fill="${g}"/>`,
+  },
+  // Mission photo annexe — rose atténué, appareil photo en contour, pin plus petit
+  'mission-photo-annexe': {
+    fill: '#B65C8A', glyphColor: '#FFE6F2', scale: 0.82,
+    glyph: (g) => `<path d="M3 7h2.6l1.3-1.9h6.2L14.4 7H17a1.3 1.3 0 0 1 1.3 1.3V15a1.3 1.3 0 0 1-1.3 1.3H3A1.3 1.3 0 0 1 1.7 15V8.3A1.3 1.3 0 0 1 3 7Z" fill="none" stroke="${g}" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="11.7" r="2.8" fill="none" stroke="${g}" stroke-width="1.6"/>`,
+  },
+  // Course — ligne de départ, ROUGE, fanion
+  'course-depart': {
+    fill: '#EA4423', glyphColor: '#FFFFFF', scale: 1,
+    glyph: (g) => `<path d="M5 3v14" fill="none" stroke="${g}" stroke-width="2" stroke-linecap="round"/><path d="M5 3.5h10l-3.4 3 3.4 3H5z" fill="${g}"/>`,
+  },
+  // Course — ligne d'arrivée, ROUGE, drapeau à damier
+  'course-arrivee': {
+    fill: '#EA4423', glyphColor: '#FFFFFF', scale: 1,
+    glyph: (g) => `<path d="M5 3v14" fill="none" stroke="${g}" stroke-width="2" stroke-linecap="round"/><rect x="5" y="3.5" width="11" height="7" fill="none" stroke="${g}" stroke-width="1.1"/><rect x="5" y="3.5" width="3.67" height="3.5" fill="${g}"/><rect x="12.33" y="3.5" width="3.67" height="3.5" fill="${g}"/><rect x="8.67" y="7" width="3.67" height="3.5" fill="${g}"/>`,
+  },
 };
 
 /**
- * Vice / Manrique category marker (divIcon HTML).
- *  - Mission   → red diamond, white rim, white centre dot.
- *  - QG        → white teardrop pin with a black "H".
- *  - others    → rounded tile in the category colour + white rim + emoji glyph.
- * Active = cyan rim + cyan ping ring. Completed = green check badge.
+ * Default mapping of a data `Category` onto a marker variant. The data only
+ * carries seven families, so the finer pairs (photo annexe, course départ) are
+ * not auto-assigned here — pass an explicit variant to `buildMarkerHtml` when a
+ * given spot needs one. Trophy categories are filtered out before rendering.
  */
-export function getMarkerHtml(category: Category, isActive: boolean, label: string, isCompleted?: boolean): string {
-  // Normalize category to one of the seven primary families
-  let cleanCategory = 'Escapades';
-  if (category.includes('QG')) cleanCategory = 'QG';
-  else if (category.includes('Ravitaillement')) cleanCategory = 'Ravitaillement';
-  else if (category.includes('Bars')) cleanCategory = 'Bars';
-  else if (category.includes('Missions')) cleanCategory = 'Missions';
-  else if (category.includes('Escapades')) cleanCategory = 'Escapades';
-  else if (category.includes('Plages')) cleanCategory = 'Plages';
-  else if (category.includes('Restaurants')) cleanCategory = 'Restaurants';
+export function categoryToVariant(category: Category): MarkerVariant {
+  if (category.includes('QG')) return 'qg';
+  if (category.includes('Restaurants')) return 'restaurant';
+  if (category.includes('Bars')) return 'cocktail';
+  if (category.includes('Ravitaillement')) return 'cannabis';
+  if (category.includes('Plages')) return 'plage';
+  if (category.includes('Escapades')) return 'mission-photo';
+  if (category.includes('Missions')) return 'course-arrivee';
+  return 'mission-photo';
+}
 
-  const blip = BLIP_STYLE[cleanCategory];
+/**
+ * The shared teardrop SVG (head centred at 16,14 in a 32×38 box). The glyph is
+ * scaled into the head; the rim gives the GTA-HUD white/cyan contour and the
+ * drop-shadow matches the depth of the old pins.
+ */
+function buildPinSvg(fill: string, rim: string, glyphInner: string): string {
+  return `<svg width="32" height="38" viewBox="0 0 32 38" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;filter:drop-shadow(0 2px 3px rgba(0,0,0,.55));">
+    <path d="M16 1.5C9 1.5 3.5 7 3.5 14 3.5 22 16 35 16 35S28.5 22 28.5 14C28.5 7 23 1.5 16 1.5Z" fill="${fill}" stroke="${rim}" stroke-width="2" stroke-linejoin="round"/>
+    <g transform="translate(16 14) scale(0.86) translate(-10 -10)">${glyphInner}</g>
+  </svg>`;
+}
+
+/**
+ * Marker factory: one teardrop pin per variant.
+ * Active = cyan rim + cyan ping ring + 1.16× scale. Completed = green ✓ badge.
+ */
+export function buildMarkerHtml(variant: MarkerVariant, isActive: boolean, isCompleted?: boolean): string {
+  const v = MARKER_VARIANTS[variant] ?? MARKER_VARIANTS['mission-photo'];
   const rim = isActive ? '#00F5D4' : '#FFFFFF';
-  const scale = isActive ? 'scale(1.16)' : 'scale(1)';
-
-  let body: string;
-  if (cleanCategory === 'Missions') {
-    // Red diamond + volcano glyph (counter-rotated so it stays upright)
-    body = `<div style="width:26px;height:26px;background:${blip.color};border:2px solid ${rim};border-radius:6px;transform:rotate(45deg) ${scale};box-shadow:0 2px 6px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:auto;">
-      <span style="font-size:14px;line-height:1;transform:rotate(-45deg);filter:drop-shadow(0 1px 1px rgba(0,0,0,.55));">${blip.emoji}</span>
-    </div>`;
-  } else if (cleanCategory === 'QG') {
-    // White teardrop pin + black H
-    body = `<div style="width:26px;height:26px;background:#EDEFF2;border:2px solid ${isActive ? rim : '#0a0a0b'};border-radius:50% 50% 50% 0;transform:rotate(-45deg) ${scale};box-shadow:0 2px 6px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:auto;">
-      <span style="transform:rotate(45deg);font:800 13px 'Space Grotesk',sans-serif;color:#0a0a0b;">H</span>
-    </div>`;
-  } else {
-    // Rounded tile + emoji glyph
-    body = `<div style="width:26px;height:26px;background:${blip.color};border:1.8px solid ${rim};border-radius:9px;transform:${scale};box-shadow:0 2px 6px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;pointer-events:auto;">
-      <span style="font-size:15px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.55));">${blip.emoji}</span>
-    </div>`;
-  }
+  const scale = v.scale * (isActive ? 1.16 : 1);
+  const pin = buildPinSvg(v.fill, rim, v.glyph(v.glyphColor, v.fill));
 
   return `
     <div class="relative flex items-center justify-center select-none" style="width:34px;height:34px;background:none!important;border:none!important;pointer-events:auto!important;">
       ${isActive ? `<div class="absolute rounded-full animate-ping" style="width:34px;height:34px;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,245,212,.25);z-index:-1;pointer-events:none!important;"></div>` : ''}
-      ${body}
+      <div style="transform:scale(${scale});pointer-events:auto;">${pin}</div>
       ${isCompleted ? `<div style="position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;background:#46AE3C;border:1.5px solid #0a0a0b;color:#fff;font:800 9px sans-serif;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none;">✓</div>` : ''}
     </div>
   `;
+}
+
+/**
+ * Back-compat wrapper used by the map: resolves a data category to its default
+ * variant. `label` is kept in the signature for call-site compatibility.
+ */
+export function getMarkerHtml(category: Category, isActive: boolean, _label: string, isCompleted?: boolean): string {
+  return buildMarkerHtml(categoryToVariant(category), isActive, isCompleted);
 }
