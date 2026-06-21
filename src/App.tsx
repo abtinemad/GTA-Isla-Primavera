@@ -27,6 +27,7 @@ import {
   getDenzelReopenPrompt,
   getDenzelPhotoPrompt,
   getDenzelChronoPrompt,
+  getDenzelSpotPhotoLine,
   denzelTutorial,
   DenzelLine,
   PanelKey,
@@ -45,13 +46,6 @@ import { migrateLegacyKeys, loadCoursePhotos, putCoursePhoto, loadSpotPhotos, pu
 // Renomme les clés héritées « tenirife_* » → « tenerife_* » une fois, AVANT que
 // les initialiseurs d'état (ci-dessous) ne lisent les nouvelles clés.
 migrateLegacyKeys();
-
-// Lignes Denzel à la capture d'une photo "ambiance", par id de spot. Spécifique
-// quand fournie, générique sinon (voir handleCaptureSpotPhoto). N'altère PAS
-// denzelMessages.ts — ce sont des lignes propres au spot.
-const AMBIANCE_DENZEL: Record<number, string> = {
-  2: 'Le seul Social Club où le patron est un chien. Profil bas, respect maximal.',
-};
 
 export default function App() {
   // --- CORE GAMEPLAY STATE ---
@@ -121,6 +115,19 @@ export default function App() {
   useEffect(() => {
     loadCoursePhotos().then(setCoursePhotos).catch(() => {});
     loadSpotPhotos().then(setSpotPhotos).catch(() => {});
+  }, []);
+
+  // DEV flag — gates the geofence simulator (kept for a full dry-run before the
+  // trip). Enable with ?dev=1 (persisted), disable with ?dev=0; else localStorage.
+  const devMode = useMemo(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('dev') === '1') { localStorage.setItem('dev', '1'); return true; }
+      if (params.get('dev') === '0') { localStorage.removeItem('dev'); return false; }
+      return localStorage.getItem('dev') === '1';
+    } catch {
+      return false;
+    }
   }, []);
 
   // UI state
@@ -493,8 +500,7 @@ export default function App() {
   const handleCaptureSpotPhoto = (locId: number, base64: string) => {
     setSpotPhotos((prev) => ({ ...prev, [locId]: base64 }));
     void putSpotPhoto(locId, base64);
-    const line = AMBIANCE_DENZEL[locId] ?? 'Belle prise. Direction la collection.';
-    setDenzelMessage({ text: line, panel: 'happy' });
+    setDenzelMessage(getDenzelSpotPhotoLine(locId));
   };
 
   // Cover Quest snap = front-end of the existing validation. The camera only
@@ -909,9 +915,10 @@ export default function App() {
         </div>
       )}
 
-      {/* ════ DEV · TEMP — simulateur de géofence (À RETIRER après tests) ════
-          Teste à froid : chrono-stop + validation run + prompt photo, sans GPS
+      {/* ════ DEV — simulateur de géofence, gated derrière ?dev=1 / localStorage.
+          Dry-run à froid : chrono-stop + validation run + prompt photo, sans GPS
           réel. Appelle le vrai applyGeofence aux coords cibles. */}
+      {devMode && (
       <div className="fixed left-2 bottom-20 md:bottom-4 z-[9000] flex flex-col gap-1 p-2 rounded-xl bg-fuchsia-950/95 border border-fuchsia-500/60 shadow-2xl font-mono text-[10px] select-none">
         <span className="text-fuchsia-300 font-black uppercase tracking-wider">DEV · géofence</span>
         <button
@@ -936,6 +943,7 @@ export default function App() {
                 : 'lance/sélectionne une course'}
         </span>
       </div>
+      )}
 
       {/* 4. MOBILE PERSISTENT BOTTOM NAVIGATION SWITCHER FOOTER */}
       <footer className="fixed bottom-0 left-0 right-0 h-14 bg-slate-900/80 backdrop-blur-md border-t border-slate-800 z-[9999] pb-safe flex items-center justify-around select-none md:hidden">

@@ -62,6 +62,9 @@ const LEGACY_PHOTO_KEYS = ['tenerife_course_photos', 'tenirife_course_photos'];
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
+    // Upgrade STRICTEMENT additif : on ne crée un store que s'il manque, jamais
+    // de delete/clear. v1→v2 conserve donc intégralement course_photos ; v2
+    // ajoute seulement spot_photos.
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(PHOTO_STORE)) {

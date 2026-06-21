@@ -324,3 +324,18 @@ export function getDenzelAmbient(nudgeChance = 0.35): DenzelLine {
   }
   return nextFlavor();
 }
+
+/* ------------------------------------------------------------------ *
+ *  Photos « ambiance » de spots — ligne propre au lieu (par id).      *
+ * ------------------------------------------------------------------ */
+
+/** Lignes Denzel à la capture d'une photo « ambiance », indexées par id de spot. */
+export const denzelSpotPhotoLines: Record<number, string> = {
+  2: "Le seul Social Club où le patron est un chien. Profil bas, respect maximal.",
+};
+
+/** Photo d'ambiance d'un spot : ligne spécifique si fournie, sinon générique. */
+export function getDenzelSpotPhotoLine(spotId: number): DenzelLine {
+  const text = denzelSpotPhotoLines[spotId] ?? "Belle prise. Direction la collection.";
+  return { text, panel: SPEAKER_PANEL };
+}

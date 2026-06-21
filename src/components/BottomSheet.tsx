@@ -663,8 +663,10 @@ export default function BottomSheet({
             {/* Interactive Actions Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               
-              {/* PHOTO VALIDATION BUTTON (Specifically for Escapades or Plages) */}
-              {(location.category === 'Escapades' || location.category === 'Plages') && !isCompleted && !isAnalyzing && (
+              {/* PHOTO VALIDATION (Escapades only — secondary photo, géofence <500 m).
+                  Les Plages ne valident plus rien (système de complétion retiré) :
+                  elles passent par le bouton « 📸 Photo ici » comme les autres POI. */}
+              {location.category === 'Escapades' && !isCompleted && !isAnalyzing && (
                 <button
                   onClick={clickInput}
                   className="flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-2xl border border-dashed border-sky-300 bg-sky-50/70 hover:bg-sky-50 text-sky-900 text-sm font-extrabold transition-all duration-200 cursor-pointer active:scale-95 shadow-sm hover:border-sky-400 group col-span-1 sm:col-span-2"
@@ -727,10 +729,9 @@ export default function BottomSheet({
               )}
 
               {/* 📸 Photo ici — capture "ambiance" libre (sans géofence) sur les POI
-                  non-photo (ravito/beach club/restos/bars) → collection IndexedDB.
-                  Les Plages gardent leur co-validation (réconciliation Phase 3). */}
+                  (ravito/beach club/restos/bars/plages) → collection IndexedDB. */}
               {!isAnalyzing && onCaptureSpotPhoto &&
-                ['Ravitaillement', 'Beach Club', 'Restaurants', 'Bars'].includes(location.category) && (
+                ['Ravitaillement', 'Beach Club', 'Restaurants', 'Bars', 'Plages'].includes(location.category) && (
                 <>
                   <button
                     onClick={() => ambianceInputRef.current?.click()}
