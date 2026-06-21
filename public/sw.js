@@ -6,7 +6,7 @@
  *  - Map tiles (Esri / CARTO): cache-first with a capped tile store so the
  *    last-visited areas of Tenerife stay available without a connection.
  */
-const VERSION = 'v5';
+const VERSION = 'v6';
 const SHELL_CACHE = `gdrive-shell-${VERSION}`;
 const ASSET_CACHE = `gdrive-assets-${VERSION}`;
 const TILE_CACHE = `gdrive-tiles-${VERSION}`;
@@ -76,6 +76,22 @@ self.addEventListener('fetch', (event) => {
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req).catch(() => caches.match('/index.html').then((r) => r || caches.match('/')))
+    );
+    return;
+  }
+
+  // PWA identity (manifest) — network-first so the installed app name/icons
+  // refresh instead of being served stale from cache.
+  if (url.origin === self.location.origin && url.pathname === '/manifest.webmanifest') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.status === 200) {
+            caches.open(ASSET_CACHE).then((c) => c.put(req, res.clone()));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((r) => r || Response.error())),
     );
     return;
   }
