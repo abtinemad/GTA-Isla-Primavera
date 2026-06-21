@@ -30,6 +30,8 @@ interface MapContainerProps {
   userCoords: { lat: number; lng: number } | null;
   /** Pulse de proximité par id de spot : 'soft' (approche) | 'strong' (rayon d'action). */
   pulseLevels: Record<number, 'soft' | 'strong'>;
+  /** Pulse de proximité par id de COURSE (pin depart) : 'soft' | 'strong'. */
+  coursePulseLevels?: Record<string, 'soft' | 'strong'>;
   /** Opens El Jefe's messages (the dog) — replay of the guided onboarding. */
   onOpenDenzel: () => void;
   /** Tap on the wallet (sous l'avatar) → message d'El Jefe. */
@@ -60,6 +62,7 @@ export default function MapContainer({
   onSelectLocation,
   userCoords,
   pulseLevels,
+  coursePulseLevels = {},
   onOpenDenzel,
   onWalletClick,
   singleGroupActive = false,
@@ -91,6 +94,9 @@ export default function MapContainer({
   }, []);
   // Course tracks (route line + finish pin) — only mounted when revealed.
   const courseLayersRef = useRef<L.LayerGroup | null>(null);
+  // Markers « depart » des courses indexés par id → pour appliquer le pulse de
+  // proximité dessus (même mécanisme que les pins de spot).
+  const courseDepartMarkersRef = useRef<Record<string, L.Marker>>({});
 
   // 1. Initialize Map (run only once on mount)
   useEffect(() => {
@@ -321,6 +327,7 @@ export default function MapContainer({
       courseLayersRef.current.remove();
       courseLayersRef.current = null;
     }
+    courseDepartMarkersRef.current = {};
 
     if (!coursesActive) return;
 
@@ -373,6 +380,7 @@ export default function MapContainer({
         zIndexOffset: isSelected ? 900 : 300,
       });
       depart.on('click', () => onSelectCourse?.(course));
+      courseDepartMarkersRef.current[course.id] = depart;
       // Label = the course title only, on the depart pin only (the arrival pin
       // never carries one, so short courses don't double up). Shown only when a
       // single filter group is isolated.
@@ -407,8 +415,22 @@ export default function MapContainer({
         courseLayersRef.current.remove();
         courseLayersRef.current = null;
       }
+      courseDepartMarkersRef.current = {};
     };
   }, [courses, coursesActive, coursesFocused, completedCourseIds, coursePhotos, selectedCourseId, onSelectCourse, singleGroupActive]);
+
+  // 5c. Pulse de proximité sur les pins de course (depart) — MÊME mécanisme que les
+  // pins de spot : toggle de classe sur l'élément, garde d'existence. Dépend aussi des
+  // déclencheurs de recréation du layer course → ré-appliqué après reconstruction.
+  useEffect(() => {
+    for (const id of Object.keys(courseDepartMarkersRef.current)) {
+      const el = courseDepartMarkersRef.current[id]?.getElement();
+      if (!el) continue;
+      const level = coursePulseLevels[id];
+      el.classList.toggle('pin-pulse', level === 'soft');
+      el.classList.toggle('pin-pulse-strong', level === 'strong');
+    }
+  }, [coursePulseLevels, courses, coursesActive, coursesFocused, completedCourseIds, coursePhotos, selectedCourseId]);
 
   // 5b. Fly to a course when it is selected (its depart pin was tapped).
   useEffect(() => {

@@ -54,6 +54,10 @@ import { buildPhotoCollection } from './utils/photoCollection';
 // les initialiseurs d'état (ci-dessous) ne lisent les nouvelles clés.
 migrateLegacyKeys();
 
+// Rayon d'approche ANTICIPÉE des courses (km) : large car on roule jusqu'au départ —
+// signal précoce, complémentaire du CoursePhotoPrompt (action sur place à 50 m).
+const COURSE_APPROACH_KM = 5;
+
 export default function App() {
   // --- CORE GAMEPLAY STATE ---
   // Shared filter state: which groups are currently visible (multi-select).
@@ -462,6 +466,21 @@ export default function App() {
     }
     return out;
   }, [userCoords, allLocations, completedLocationIds, visitedSpotIds]);
+
+  // Pulse de proximité des COURSES (pin depart) — MÊME mécanisme (haversineKm vers le
+  // départ). Approche ANTICIPÉE large (5 km : on roule jusqu'au spot, signal précoce),
+  // 'strong' dans le rayon d'action (GEOFENCE_KM 50 m). Une course dont le run est fait
+  // ne pulse plus. Complémentaire du CoursePhotoPrompt (action sur place).
+  const coursePulseLevels = useMemo<Record<string, 'soft' | 'strong'>>(() => {
+    const out: Record<string, 'soft' | 'strong'> = {};
+    if (!userCoords) return out;
+    for (const c of courses) {
+      if (completedCourseIds.includes(c.id)) continue;
+      const d = haversineKm(userCoords.lat, userCoords.lng, c.start.lat, c.start.lng);
+      if (d <= COURSE_APPROACH_KM) out[c.id] = d <= GEOFENCE_KM ? 'strong' : 'soft';
+    }
+    return out;
+  }, [userCoords, completedCourseIds]);
 
   // PROXIMITÉ > FILTRE : un spot en approche s'affiche TOUJOURS, même si sa
   // catégorie est masquée par le filtre (qui ne sert qu'à parcourir).
@@ -968,6 +987,7 @@ export default function App() {
           <MapContainer
             locations={mapLocations}
             pulseLevels={pulseLevels}
+            coursePulseLevels={coursePulseLevels}
             visitedLocations={visitedSpotIds}
             selectedLocation={selectedLocation}
             onSelectLocation={handleSelectLocation}
