@@ -351,26 +351,42 @@ export async function deleteFreePhoto(id: string): Promise<void> {
   await deleteFromStore(GTA_STORE, `free:${id}`);
 }
 
-// --- 7. Composition du poster jaquette (9 cases → clé photo ou null) ----------
+// --- 7. Composition du poster jaquette (9 cases + logo positionnable) ----------
 
 const POSTER_KEY = 'composition';
 
-/** Persiste la composition du poster (tableau de 9 clés photo ou null). */
-export async function savePosterComposition(slots: (string | null)[]): Promise<void> {
-  await putInStore(POSTER_STORE, POSTER_KEY, JSON.stringify(slots));
+/** Logo libre : centre (x,y en fraction 0..1 du poster) + largeur (fraction). */
+export type PosterLogo = { x: number; y: number; w: number };
+export type PosterComposition = { slots: (string | null)[]; logo: PosterLogo };
+
+// Défaut : haut-centre, taille raisonnable (déjà beau sans rien toucher).
+export const DEFAULT_POSTER_LOGO: PosterLogo = { x: 0.5, y: 0.17, w: 0.8 };
+
+/** Persiste TOUTE la composition : photos par case + position/taille du logo. */
+export async function savePosterComposition(comp: PosterComposition): Promise<void> {
+  await putInStore(POSTER_STORE, POSTER_KEY, JSON.stringify(comp));
 }
 
-/** Charge la composition du poster (9 cases ; tout null par défaut). */
-export async function loadPosterComposition(): Promise<(string | null)[]> {
+/** Charge la composition. Rétro-compatible avec l'ancien format (tableau seul). */
+export async function loadPosterComposition(): Promise<PosterComposition> {
   try {
     for (const [k, v] of await getAllFromStore(POSTER_STORE)) {
       if (String(k) === POSTER_KEY) {
-        const arr = JSON.parse(v) as (string | null)[];
-        return Array.from({ length: 9 }, (_, i) => arr[i] ?? null);
+        const parsed = JSON.parse(v) as unknown;
+        const rawSlots = Array.isArray(parsed)
+          ? (parsed as (string | null)[])
+          : ((parsed as PosterComposition)?.slots ?? []);
+        const logo = Array.isArray(parsed)
+          ? DEFAULT_POSTER_LOGO
+          : { ...DEFAULT_POSTER_LOGO, ...((parsed as PosterComposition)?.logo ?? {}) };
+        return {
+          slots: Array.from({ length: 9 }, (_, i) => rawSlots[i] ?? null),
+          logo,
+        };
       }
     }
   } catch {
     /* ignore */
   }
-  return Array(9).fill(null);
+  return { slots: Array(9).fill(null), logo: DEFAULT_POSTER_LOGO };
 }
