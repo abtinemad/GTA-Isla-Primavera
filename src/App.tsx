@@ -78,6 +78,9 @@ export default function App() {
   // Denzel Sag — narrator handler messages (src/data/denzelMessages).
   const [denzelMessage, setDenzelMessage] = useState<string | null>(null);
   const ambientFiredRef = useRef(false);
+  // Set when the player launches navigation; the reopen prompt fires only when
+  // they actually come BACK to the app (visibilitychange), not at launch.
+  const pendingReopenRef = useRef(false);
 
   const [showGtaOverlay, setShowGtaOverlay] = useState(false);
   const [completedMissionName, setCompletedMissionName] = useState('');
@@ -172,6 +175,20 @@ export default function App() {
       }
     }
   }, [showSplash]);
+
+  // When the player returns to the app AFTER launching navigation, Denzel greets
+  // them back ("you're on site"). Gated by pendingReopenRef so a plain tab switch
+  // doesn't trigger it.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && pendingReopenRef.current) {
+        pendingReopenRef.current = false;
+        setDenzelMessage(getDenzelReopenPrompt());
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   const allLocations = useMemo(() => {
     return INITIAL_LOCATIONS;
@@ -668,7 +685,7 @@ export default function App() {
         userCoords={userCoords}
         isCompleted={selectedLocation ? completedLocationIds.includes(selectedLocation.id) : false}
         onCompleteLocation={handleCompleteLocation}
-        onLaunchNavigation={() => setDenzelMessage(getDenzelReopenPrompt())}
+        onLaunchNavigation={() => { pendingReopenRef.current = true; }}
         activeRunLocationId={activeRunLocationId}
         onStartRun={handleStartRun}
         onStopRun={handleStopRun}
