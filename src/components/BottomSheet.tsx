@@ -61,6 +61,10 @@ interface BottomSheetProps {
   onStopRun: () => void;
   elapsedTime: number;
   onSavePhoto: (locId: number, base64: string) => void;
+  // Course chrono run (string id) — separate from the spot run above.
+  activeRunCourseId?: string | null;
+  onStartCourseRun?: (course: CourseData) => void;
+  completedCourseIds?: string[];
 }
 
 export default function BottomSheet({
@@ -76,7 +80,10 @@ export default function BottomSheet({
   onStartRun,
   onStopRun,
   elapsedTime,
-  onSavePhoto
+  onSavePhoto,
+  activeRunCourseId = null,
+  onStartCourseRun,
+  completedCourseIds = [],
 }: BottomSheetProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisLogs, setAnalysisLogs] = useState<string[]>([]);
@@ -206,6 +213,29 @@ export default function BottomSheet({
                   {course.visuel}
                 </p>
               </div>
+
+              {/* Démarrer le run (chrono) — run fait / en cours / à lancer. Le
+                  chrono s'arrête seul au géofence 50 m de l'arrivée. */}
+              {onStartCourseRun && (
+                <div className="mb-3">
+                  {completedCourseIds.includes(course.id) ? (
+                    <div className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-sm font-bold">
+                      <Trophy size={16} /> Run validé · « {course.trophy} »
+                    </div>
+                  ) : activeRunCourseId === course.id ? (
+                    <div className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-red-50 border border-red-300 text-red-700 text-sm font-bold animate-pulse">
+                      <Timer size={16} /> Run en cours…
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => onStartCourseRun(course)}
+                      className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-[#EA4423] hover:bg-[#d63d1f] text-white text-sm font-black uppercase tracking-wide transition-all shadow-lg active:scale-95 cursor-pointer"
+                    >
+                      <Timer size={16} /> Démarrer le run (chrono)
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* "Y aller" — deep-link navigation to the START */}
               <div className="flex flex-col gap-2">

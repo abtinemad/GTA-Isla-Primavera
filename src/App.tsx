@@ -183,6 +183,9 @@ export default function App() {
   
   // Custom HUD states
   const [activeRunLocationId, setActiveRunLocationId] = useState<number | null>(null);
+  // Course chrono run (string id) — parallel to the legacy mission run above.
+  // Only one run (mission OR course) is ever active at a time.
+  const [activeRunCourseId, setActiveRunCourseId] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const startTimeRef = useRef<number | null>(null);
   const stopwatchIntervalRef = useRef<any>(null);
@@ -387,15 +390,11 @@ export default function App() {
     }
   };
 
-  // Run stopwatch controls
-  const handleStartRun = (locId: number) => {
-    // Denzel briefs the chrono run as it starts.
-    setDenzelMessage(getDenzelChronoPrompt());
-    setActiveRunLocationId(locId);
+  // Shared stopwatch engine (one timer; mission run OR course run uses it).
+  const startStopwatch = () => {
     setElapsedTime(0);
     elapsedTimeRef.current = 0;
     startTimeRef.current = Date.now();
-
     if (stopwatchIntervalRef.current) clearInterval(stopwatchIntervalRef.current);
     stopwatchIntervalRef.current = setInterval(() => {
       if (startTimeRef.current) {
@@ -406,15 +405,51 @@ export default function App() {
     }, 33);
   };
 
-  const handleStopRun = () => {
+  const stopStopwatch = () => {
     if (stopwatchIntervalRef.current) {
       clearInterval(stopwatchIntervalRef.current);
       stopwatchIntervalRef.current = null;
     }
-    setActiveRunLocationId(null);
     startTimeRef.current = null;
     elapsedTimeRef.current = 0;
     setElapsedTime(0);
+  };
+
+  // Run stopwatch controls (legacy Mission spots — pins are hidden now, so in
+  // practice the active run is a course; kept for completeness).
+  const handleStartRun = (locId: number) => {
+    setDenzelMessage(getDenzelChronoPrompt());
+    setActiveRunCourseId(null); // only one run at a time
+    setActiveRunLocationId(locId);
+    startStopwatch();
+  };
+
+  const handleStopRun = () => {
+    stopStopwatch();
+    setActiveRunLocationId(null);
+  };
+
+  // Course chrono run — ported from the mission chrono. Starts at the depart;
+  // auto-stops at the 50 m arrival geofence (watchPosition). "Run done" lands in
+  // completedCourseIds; the course PHOTO is an INDEPENDENT state (coursePhotos).
+  const handleStartCourseRun = (course: CourseData) => {
+    setSelectedCourse(null);      // close the sheet → run HUD unobstructed
+    setActiveRunLocationId(null); // only one run at a time
+    setDenzelMessage(getDenzelChronoPrompt());
+    setActiveRunCourseId(course.id);
+    startStopwatch();
+  };
+
+  const handleStopCourseRun = () => {
+    stopStopwatch();
+    setActiveRunCourseId(null);
+  };
+
+  const markCourseRunDone = (course: CourseData) => {
+    if (completedCourseIds.includes(course.id)) return;
+    const nextDone = [...completedCourseIds, course.id];
+    setCompletedCourseIds(nextDone);
+    localStorage.setItem('tenerife_completed_courses', JSON.stringify(nextDone));
   };
 
   const handleSavePhotoSouvenir = (locId: number, base64: string) => {
@@ -428,21 +463,16 @@ export default function App() {
   const coursePhotoPoint = (course: CourseData) =>
     course.photoAtStart ? course.start : course.end;
 
-  // Capture committed from the El Jefe info-bulle: persist the photo, mark the
-  // course done (dedicated state) and close the prompt with a success line.
+  // Capture committed from the El Jefe info-bulle: persist the PHOTO only. The
+  // course's completion (its run/chrono) is a SEPARATE state — taking the photo
+  // no longer marks the course done. The shot just joins the Social Club + pool.
   const handleCaptureCoursePhoto = (course: CourseData, base64: string) => {
     setCoursePhotos((prev) => ({ ...prev, [course.id]: base64 }));
     // Heavy base64 → IndexedDB, never localStorage (quota). Fire-and-forget.
     void putCoursePhoto(course.id, base64);
 
-    if (!completedCourseIds.includes(course.id)) {
-      const nextDone = [...completedCourseIds, course.id];
-      setCompletedCourseIds(nextDone);
-      localStorage.setItem('tenerife_completed_courses', JSON.stringify(nextDone));
-    }
-
     setCoursePhotoPrompt(null);
-    setDenzelMessage({ text: `Beau cliché. « ${course.trophy} » est dans la poche.`, panel: 'happy' });
+    setDenzelMessage({ text: `Beau cliché. « ${course.title} » rejoint ta collection.`, panel: 'happy' });
   };
 
   // Cover Quest snap = front-end of the existing validation. The camera only
@@ -533,6 +563,20 @@ export default function App() {
           }
         }
 
+        // Course run completion = crossing the 50 m line at the ARRIVAL. Marks
+        // the run done (a state SEPARATE from the course photo).
+        if (activeRunCourseId !== null) {
+          const runCourse = courses.find((c) => c.id === activeRunCourseId);
+          if (runCourse) {
+            const d = computeDistance(userLat, userLng, runCourse.end.lat, runCourse.end.lng);
+            if (d <= 0.050) {
+              markCourseRunDone(runCourse);
+              handleStopCourseRun();
+              setDenzelMessage({ text: `Run bouclé — « ${runCourse.trophy} » décroché.`, panel: 'happy' });
+            }
+          }
+        }
+
         // Approach notification — ping once when entering an incomplete slot's
         // zone (Missions 100 m, Escapades/Plages 500 m). Reuses the QG toast.
         completableLocations.forEach((loc) => {
@@ -559,7 +603,7 @@ export default function App() {
         // arrival by default, the start when photoAtStart), El Jefe pops the
         // info-bulle to take the best shot. Fire-once until the player leaves.
         courses.forEach((course) => {
-          if (completedCourseIds.includes(course.id)) return;
+          if (coursePhotos[course.id]) return; // photo already taken (independent of the run)
           const pt = course.photoAtStart ? course.start : course.end;
           const d = computeDistance(userLat, userLng, pt.lat, pt.lng);
           const alerted = coursePromptAlertedRef.current.has(course.id);
@@ -584,7 +628,7 @@ export default function App() {
     };
     // elapsedTime intentionally excluded — read via elapsedTimeRef so the watch
     // is not torn down and re-registered on every stopwatch tick (~30x/s).
-  }, [completedLocationIds, completedCourseIds, allLocations, activeRunLocationId]);
+  }, [completedLocationIds, completedCourseIds, allLocations, activeRunLocationId, activeRunCourseId, coursePhotos]);
 
   // When a spot is targeted (closes any open race sheet — one sheet at a time).
   const handleSelectLocation = (location: LocationItem) => {
@@ -771,10 +815,13 @@ export default function App() {
         onStopRun={handleStopRun}
         elapsedTime={elapsedTime}
         onSavePhoto={handleSavePhotoSouvenir}
+        activeRunCourseId={activeRunCourseId}
+        onStartCourseRun={handleStartCourseRun}
+        completedCourseIds={completedCourseIds}
       />
 
       {/* ACTIVE STOPWATCH RUN DYNAMIC MULTI-VIEW GLOBAL HUD OVERLAY */}
-      {activeRunLocationId !== null && (
+      {(activeRunLocationId !== null || activeRunCourseId !== null) && (
         <div className="fixed top-[52px] left-1/2 -translate-x-1/2 w-[92%] max-w-sm sm:max-w-md bg-zinc-950/95 backdrop-blur-md border border-red-500/40 p-3.5 rounded-2xl flex flex-col gap-2 shadow-[0_15px_30px_rgba(0,0,0,0.65)] z-[800] font-mono animate-pulse" style={{ animationDuration: '4s' }}>
           <div className="w-full flex items-center justify-between text-[8px] sm:text-[9px] text-zinc-400 font-bold uppercase tracking-wider">
             <span className="flex items-center gap-1.5 text-rose-500">
@@ -793,7 +840,9 @@ export default function App() {
             <div className="flex items-center gap-1 min-w-0">
               <span className="text-zinc-500 shrink-0">CIBLE :</span>
               <span className="font-sans font-bold text-white truncate max-w-[130px] sm:max-w-[180px]">
-                {allLocations.find(l => l.id === activeRunLocationId)?.name}
+                {activeRunCourseId !== null
+                  ? courses.find((c) => c.id === activeRunCourseId)?.title
+                  : allLocations.find((l) => l.id === activeRunLocationId)?.name}
               </span>
             </div>
             <div className="font-mono text-[9px] text-emerald-400 font-bold shrink-0">128 km/h • Δ -0.4s</div>
@@ -801,7 +850,7 @@ export default function App() {
 
           <div className="mt-1 shrink-0">
             <button
-              onClick={handleStopRun}
+              onClick={activeRunCourseId !== null ? handleStopCourseRun : handleStopRun}
               className="w-full py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-[9px] uppercase cursor-pointer border border-zinc-800 transition-colors"
             >
               Abandonner le run
