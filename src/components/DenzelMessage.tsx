@@ -6,6 +6,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Radio, X } from 'lucide-react';
+import elJefeAvatar from '../assets/eljefe-avatar.webp';
 
 interface DenzelMessageProps {
   /** The line to show (from src/data/denzelMessages). Null = hidden. */
@@ -54,13 +55,18 @@ export default function DenzelMessage({ message, onDismiss, autoHideMs = 6000 }:
               style={{ background: 'var(--isla-cash)' }}
             />
 
-            {/* Avatar */}
-            <div
-              className="shrink-0 w-9 h-9 rounded-full border flex items-center justify-center font-mono font-black text-xs"
-              style={{ borderColor: 'var(--isla-cash)', color: 'var(--isla-cash)', background: 'rgba(0,0,0,0.28)' }}
-            >
-              DS
-            </div>
+            {/* El Jefe avatar — round vignette with a GTA-HUD ring */}
+            <img
+              src={elJefeAvatar}
+              alt="El Jefe"
+              className="shrink-0 rounded-full object-cover"
+              style={{
+                width: 52,
+                height: 52,
+                border: '2px solid var(--isla-cash)',
+                boxShadow: '0 0 0 3px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.5)',
+              }}
+            />
 
             <div className="min-w-0 text-left">
               <div className="flex items-center gap-1.5 mb-0.5">
@@ -69,7 +75,7 @@ export default function DenzelMessage({ message, onDismiss, autoHideMs = 6000 }:
                   className="font-mono text-[9px] font-black uppercase tracking-[2px]"
                   style={{ color: 'var(--isla-cash)' }}
                 >
-                  Denzel Sag · Handler
+                  El Jefe
                 </span>
               </div>
               <p className="font-display text-[12.5px] leading-snug text-[color:var(--text)]">

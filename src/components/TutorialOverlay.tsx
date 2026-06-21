@@ -7,6 +7,7 @@ import { useState, useLayoutEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Radio, ChevronRight, Check } from 'lucide-react';
 import { DenzelTutorialStep } from '../data/denzelMessages';
+import elJefeAvatar from '../assets/eljefe-avatar.webp';
 
 interface TutorialOverlayProps {
   steps: DenzelTutorialStep[];
@@ -176,17 +177,11 @@ export default function TutorialOverlay({ steps, onComplete }: TutorialOverlayPr
             visibility: pos ? 'visible' : 'hidden',
           }}
         >
-          {/* Top row: handler tag + Passer */}
+          {/* Top row: step counter + Passer */}
           <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center gap-1.5">
-              <Radio size={11} style={{ color: 'var(--isla-cash)' }} />
-              <span
-                className="font-mono text-[8.5px] font-black uppercase tracking-[2.5px]"
-                style={{ color: 'var(--isla-cash)' }}
-              >
-                Denzel Sag · Briefing
-              </span>
-            </div>
+            <span className="font-mono text-[9px] font-bold tracking-[2px] text-white/40">
+              {String(index + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}
+            </span>
             <button
               onClick={onComplete}
               className="font-mono text-[9px] uppercase tracking-[2px] text-white/55 hover:text-white/90 transition-colors cursor-pointer"
@@ -195,18 +190,41 @@ export default function TutorialOverlay({ steps, onComplete }: TutorialOverlayPr
             </button>
           </div>
 
-          <span className="block font-mono text-[9px] font-bold tracking-[2px] text-white/40 mb-1.5">
-            {String(index + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}
-          </span>
           <h2
-            className="font-display font-black text-white uppercase leading-[1.08] mb-2"
+            className="font-display font-black text-white uppercase leading-[1.08] mb-3"
             style={{ fontSize: 'clamp(20px, 5.5vw, 26px)', letterSpacing: '-0.4px' }}
           >
             {step.title}
           </h2>
-          <p className="font-display text-white/85 leading-relaxed text-[13.5px] mb-4">
-            {step.message}
-          </p>
+
+          {/* El Jefe speaker block — avatar + label above the line */}
+          <div className="flex gap-3 items-start mb-4">
+            <img
+              src={elJefeAvatar}
+              alt="El Jefe"
+              className="shrink-0 rounded-full object-cover"
+              style={{
+                width: 76,
+                height: 76,
+                border: '2.5px solid var(--isla-cash)',
+                boxShadow: '0 0 0 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.55)',
+              }}
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Radio size={11} style={{ color: 'var(--isla-cash)' }} />
+                <span
+                  className="font-mono text-[9px] font-black uppercase tracking-[2.5px]"
+                  style={{ color: 'var(--isla-cash)' }}
+                >
+                  El Jefe
+                </span>
+              </div>
+              <p className="font-display text-white/85 leading-relaxed text-[13.5px]">
+                {step.message}
+              </p>
+            </div>
+          </div>
 
           {/* Footer: dots + Next/Start */}
           <div className="flex items-center justify-between gap-3">
