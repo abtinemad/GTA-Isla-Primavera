@@ -41,10 +41,11 @@ export default function LocationsList({
   const [showCanaryStats, setShowCanaryStats] = useState(true);
 
   // Trophy entries (category "🏆 Trophées - …", id 101-105) are fly-to targets,
-  // not spot cards. Missions are now shown as races on the map (see coursesData),
-  // so they are excluded from the spot list too.
+  // not spot cards → excluded. Missions ARE first-class spots (like map + sheet) :
+  // visibles sous le chip « Missions », ouvrables en fiche (chrono manuel). Seules
+  // les entrées trophées restent hors liste.
   const physicalLocations = useMemo(
-    () => locations.filter((loc) => !loc.category.startsWith('🏆') && loc.category !== 'Missions'),
+    () => locations.filter((loc) => !loc.category.startsWith('🏆')),
     [locations]
   );
 
