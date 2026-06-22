@@ -331,11 +331,3 @@ export function buildMarkerHtml(variant: MarkerVariant, isActive: boolean, isCom
     </div>
   `;
 }
-
-/**
- * Back-compat wrapper used by the map: resolves a data category to its default
- * variant. `label` is kept in the signature for call-site compatibility.
- */
-export function getMarkerHtml(category: Category, isActive: boolean, _label: string, isCompleted?: boolean): string {
-  return buildMarkerHtml(categoryToVariant(category), isActive, isCompleted);
-}

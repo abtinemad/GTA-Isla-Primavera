@@ -4,18 +4,13 @@
  */
 
 import { Category, LocationItem } from './types';
-import { INITIAL_LOCATIONS } from './locationsData';
 
 /**
  * Cover Quest — "jaquette GRAND TENERIFE AUTO · IP".
- *
- * The completable spots are DERIVED, not invented: a location is completable
- * iff its category has a real validation mechanism in the app. Today that is
- * Missions (geofenced chrono run), Escapades and Plages (geofenced photo).
- * QG / Ravitaillement / Bars / Restaurants have no completion path, so they
- * are intentionally excluded. This yields exactly 11 cover slots.
+ * Rayons de géofence, libellés éditoriaux et petits helpers consommés par
+ * App.tsx / BottomSheet. Les cases de la jaquette sont dérivées au runtime dans
+ * CoverQuest (à partir de INITIAL_LOCATIONS), pas ici.
  */
-export const COMPLETABLE_CATEGORIES: Category[] = ['Missions', 'Escapades', 'Plages'];
 
 // Geofence radii aligned with the canonical model (CLAUDE.md):
 //  • Escapades/Plages validate by PHOTO at < 500 m (paysages cadrés de loin).
@@ -52,23 +47,6 @@ export const COVER_LABELS: Record<number, string> = {
   26: 'GIGANTES',   // Mirador de Archipenque, Los Gigantes (Escapade photo)
   27: 'M. ROJA',    // Montaña Roja, El Médano (Escapade photo)
 };
-
-export type CoverSlotStatus = 'locked' | 'unlockable' | 'filled';
-
-export type CoverSlot = {
-  id: number;
-  position: number;
-  status: CoverSlotStatus;
-  photoUrl?: string;
-  category: Category;
-  label: string;
-  location: LocationItem;
-};
-
-// The completable locations, in data order, as the immutable slot backbone.
-export const COVER_LOCATIONS: LocationItem[] = INITIAL_LOCATIONS.filter((l) =>
-  COMPLETABLE_CATEGORIES.includes(l.category),
-);
 
 export const shortLabel = (loc: LocationItem): string =>
   COVER_LABELS[loc.id] || loc.name.toUpperCase().slice(0, 10);

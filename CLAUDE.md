@@ -52,7 +52,7 @@ Tout l'état vit dans `src/App.tsx` (composant racine, pas de lib d'état).
 - `src/locationsData.ts` — **source de vérité des spots** (`INITIAL_LOCATIONS`).
 - `src/roadsData.ts` — tracés des routes TF (polylignes).
 - `src/utils/helper.ts` — `CATEGORY_MAP` (couleurs/emojis par catégorie) et
-  `getMarkerHtml` (HTML des « blips » de la carte).
+  `buildMarkerHtml` (HTML des « blips » de la carte, via `locationVariant`).
 - `src/types.ts` — types (`Category`, `LocationItem`).
 - `public/sw.js` — service worker (offline : shell network-first, assets
   stale-while-revalidate, tuiles cache-first plafonnées). Enregistré **en prod
@@ -92,9 +92,11 @@ Vision / confidence ». Aucune clé API n'est requise.
 L'onglet « Social Club » rend `src/components/CoverQuest.tsx` : une **jaquette
 façon GTA V** (montage inégal de panneaux + logo central fixe « GRAND TENERIFE
 AUTO · IP » + barre de progression). Une case = un des **13 spots complétables**,
-dérivés au runtime (`src/coverData.ts`, `COVER_LOCATIONS`). Labels courts éditoriaux
-dans `COVER_LABELS`. **Pas de seconde source de vérité** : une case est `filled`
-quand `completedLocationIds` contient son id ; `progress = filled / 13`.
+dérivés au runtime **dans `CoverQuest` à partir de `INITIAL_LOCATIONS`**. Libellés
+courts éditoriaux et helpers de géofence dans `src/coverData.ts` (`COVER_LABELS`,
+`shortLabel`, `isPhotoSlot`, `approachRadiusKm`). **Pas de seconde source de
+vérité** : une case est `filled` quand `completedLocationIds` contient son id ;
+`progress = filled / 13`.
 
 États d'une case et **rayons de déverrouillage** (alignés sur le modèle ci-dessus) :
 - **Escapades/Plages** → `unlockable` à **< 500 m** (`PHOTO_UNLOCK_KM`). La caméra
