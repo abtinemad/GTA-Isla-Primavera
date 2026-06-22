@@ -388,14 +388,18 @@ export default function MapContainer({
       // Tracé + pin d'arrivée : détails complets UNIQUEMENT quand le filtre Courses
       // est actif. Une course juste « proche » (hors filtre) n'affiche que son départ.
       if (coursesActive) {
-        const reveal = coursesFocused || isSelected;
-        if (reveal && course.route.length >= 2) {
+        // Tous les trajets s'affichent dès que le filtre Courses est actif (plus
+        // besoin d'isoler le filtre ni de sélectionner une course). Emphase : la
+        // course sélectionnée (ou quand aucune n'est sélectionnée) garde le trait
+        // plein ; les autres sont légèrement atténuées pour éviter le spaghetti.
+        if (course.route.length >= 2) {
           const pts = course.route.map((p) => [p.lat, p.lng] as [number, number]);
+          const emphasized = !selectedCourseId || isSelected;
           L.polyline(pts, {
-            color: '#000000', weight: 8, opacity: 0.5, lineCap: 'round', lineJoin: 'round', interactive: false,
+            color: '#000000', weight: emphasized ? 8 : 6, opacity: emphasized ? 0.5 : 0.32, lineCap: 'round', lineJoin: 'round', interactive: false,
           }).addTo(group);
           L.polyline(pts, {
-            color: '#EA4423', weight: 4, opacity: 0.97, lineCap: 'round', lineJoin: 'round', interactive: false, className: 'course-route',
+            color: '#EA4423', weight: emphasized ? 4 : 3, opacity: emphasized ? 0.97 : 0.72, lineCap: 'round', lineJoin: 'round', interactive: false, className: 'course-route',
           }).addTo(group);
         }
         L.marker([course.end.lat, course.end.lng], {
