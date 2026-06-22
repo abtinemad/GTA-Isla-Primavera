@@ -10,3 +10,5 @@ coverage/
 # Photos d'aperçu dev-only (lourdes) — jamais committées ni dans le build de prod.
 preview-photos*
 preview-photos-gta*
+src/preview-photos/
+src/preview-photos-gta/
