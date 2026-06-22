@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type SyntheticEvent } from 'react';
-import { X, Plus, Check, Move, Share2, Loader2, Trash2 } from 'lucide-react';
+import { X, Plus, Check, Move, Share2, Loader2, Trash2, Grid2x2, RotateCcw } from 'lucide-react';
 import logoUrl from '../assets/logo-gta-isla-primavera.png';
 import { buildPhotoCollection } from '../utils/photoCollection';
 import {
@@ -13,10 +13,20 @@ import {
   emptyPosterSlots,
   DEFAULT_POSTER_LOGO,
   DEFAULT_GUTTER,
+  DEFAULT_CUTS,
   type PosterLogo,
   type PosterSlot,
 } from '../utils/storage';
-import { cellRects, caseAspectOf, placePhoto, clamp } from '../utils/posterGeometry';
+import {
+  cellRects,
+  caseAspectOf,
+  placePhoto,
+  clamp,
+  cutHandles,
+  clampCutValue,
+  type Cuts,
+  type CutHandle,
+} from '../utils/posterGeometry';
 
 interface PosterComposerProps {
   onClose: () => void;
@@ -55,13 +65,16 @@ export default function PosterComposer({
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [logo, setLogo] = useState<PosterLogo>(DEFAULT_POSTER_LOGO);
   const [gutter, setGutter] = useState(DEFAULT_GUTTER);
+  const [cuts, setCuts] = useState<Cuts>(DEFAULT_CUTS);
   const [logoEdit, setLogoEdit] = useState(false);
+  const [cutEdit, setCutEdit] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [ratios, setRatios] = useState<Record<string, number>>({});
 
-  // Géométrie des cases dérivée du gutter (SOURCE UNIQUE) — écran + export identiques.
-  const rects = useMemo(() => cellRects(gutter), [gutter]);
+  // Géométrie des cases dérivée du gutter + cuts (SOURCE UNIQUE) — écran + export identiques.
+  const rects = useMemo(() => cellRects(gutter, cuts), [gutter, cuts]);
   const aspects = useMemo(() => rects.map(caseAspectOf), [rects]);
+  const handles = useMemo(() => cutHandles(cuts), [cuts]);
 
   const posterRef = useRef<HTMLDivElement>(null);
   const loadedRef = useRef(false);
@@ -71,11 +84,13 @@ export default function PosterComposer({
   >(null);
   // Drag du logo.
   const logoDragRef = useRef<{ sx: number; sy: number; bx: number; by: number; rect: DOMRect } | null>(null);
+  // Drag d'une ligne de découpe (barre intérieure).
+  const cutDragRef = useRef<{ axis: 'x' | 'y'; index: number; base: number; sx: number; sy: number; rect: DOMRect } | null>(null);
 
-  // Charge la composition persistée (cases + logo + gutter) une fois au montage.
+  // Charge la composition persistée (cases + logo + gutter + cuts) une fois au montage.
   useEffect(() => {
     loadPosterComposition()
-      .then((c) => { setSlots(c.slots); setLogo(c.logo); setGutter(c.gutter); })
+      .then((c) => { setSlots(c.slots); setLogo(c.logo); setGutter(c.gutter); setCuts(c.cuts); })
       .catch(() => {})
       .finally(() => { loadedRef.current = true; });
   }, []);
@@ -83,9 +98,9 @@ export default function PosterComposer({
   // Sauvegarde debouncée (évite le spam pendant pan/zoom/drag).
   useEffect(() => {
     if (!loadedRef.current) return;
-    const t = setTimeout(() => void savePosterComposition({ slots, logo, gutter }), 350);
+    const t = setTimeout(() => void savePosterComposition({ slots, logo, gutter, cuts }), 350);
     return () => clearTimeout(t);
-  }, [slots, logo, gutter]);
+  }, [slots, logo, gutter, cuts]);
 
   const collection = useMemo(
     () => buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos, freePhotos),
@@ -198,6 +213,32 @@ export default function PosterComposer({
   const onLogoPointerUp = (e: ReactPointerEvent) => {
     if (logoDragRef.current) { e.currentTarget.releasePointerCapture?.(e.pointerId); logoDragRef.current = null; }
   };
+
+  // ── Lignes de découpe : drag d'une barre intérieure (le pourtour ne bouge jamais) ──
+  const onCutPointerDown = (h: CutHandle, e: ReactPointerEvent) => {
+    if (!cutEdit || !posterRef.current) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    cutDragRef.current = {
+      axis: h.axis, index: h.index, base: cuts[h.axis][h.index],
+      sx: e.clientX, sy: e.clientY, rect: posterRef.current.getBoundingClientRect(),
+    };
+  };
+  const onCutPointerMove = (e: ReactPointerEvent) => {
+    const d = cutDragRef.current;
+    if (!d) return;
+    const delta = d.axis === 'x' ? (e.clientX - d.sx) / d.rect.width : (e.clientY - d.sy) / d.rect.height;
+    setCuts((prev) => {
+      const val = clampCutValue(prev, d.axis, d.index, d.base + delta);
+      const arr = prev[d.axis].slice();
+      arr[d.index] = val;
+      return { ...prev, [d.axis]: arr };
+    });
+  };
+  const onCutPointerUp = (e: ReactPointerEvent) => {
+    if (cutDragRef.current) { e.currentTarget.releasePointerCapture?.(e.pointerId); cutDragRef.current = null; }
+  };
+  const resetCuts = () => setCuts(DEFAULT_CUTS);
 
   // ── Export Canvas (WYSIWYG) ─────────────────────────────────────────────────
   const exportPoster = async () => {
@@ -338,7 +379,7 @@ export default function PosterComposer({
           {/* Cases */}
           {slots.map((slot, i) => {
             const r = rects[i];
-            const selected = selectedSlot === i && !logoEdit;
+            const selected = selectedSlot === i && !logoEdit && !cutEdit;
             const key = slot.photoId;
             const src = key ? srcFor(key) : undefined;
             const ratio = key ? ratios[key] : undefined;
@@ -358,8 +399,8 @@ export default function PosterComposer({
                   width: `${r.width * 100}%`,
                   height: `${r.height * 100}%`,
                   touchAction: 'none',
-                  cursor: logoEdit ? 'default' : src ? 'grab' : 'pointer',
-                  pointerEvents: logoEdit ? 'none' : 'auto',
+                  cursor: logoEdit || cutEdit ? 'default' : src ? 'grab' : 'pointer',
+                  pointerEvents: logoEdit || cutEdit ? 'none' : 'auto',
                   boxShadow: selected ? `inset 0 0 0 2px ${SELECT_RING}` : undefined,
                   zIndex: selected ? 2 : 1,
                 }}
@@ -428,6 +469,54 @@ export default function PosterComposer({
               className="relative w-full select-none pointer-events-none drop-shadow-[0_3px_10px_rgba(0,0,0,.7)]"
             />
           </div>
+
+          {/* Poignées de redimensionnement (mode « Ajuster les cases ») — sur les
+              coutures intérieures uniquement ; le pourtour reste fixe. */}
+          {cutEdit && handles.map((h) => {
+            const vertical = h.axis === 'x';
+            return (
+              <div
+                key={`${h.axis}${h.index}`}
+                onPointerDown={(e) => onCutPointerDown(h, e)}
+                onPointerMove={onCutPointerMove}
+                onPointerUp={onCutPointerUp}
+                className="absolute flex items-center justify-center"
+                style={{
+                  left: vertical ? `${h.pos * 100}%` : `${h.start * 100}%`,
+                  top: vertical ? `${h.start * 100}%` : `${h.pos * 100}%`,
+                  width: vertical ? 22 : `${(h.end - h.start) * 100}%`,
+                  height: vertical ? `${(h.end - h.start) * 100}%` : 22,
+                  transform: vertical ? 'translateX(-50%)' : 'translateY(-50%)',
+                  touchAction: 'none',
+                  cursor: vertical ? 'col-resize' : 'row-resize',
+                  zIndex: 6,
+                }}
+              >
+                {/* trait de la couture */}
+                <div
+                  className="absolute"
+                  style={{
+                    background: SELECT_RING,
+                    boxShadow: `0 0 0 1px rgba(0,0,0,.45)`,
+                    ...(vertical
+                      ? { width: 2, top: 0, bottom: 0 }
+                      : { height: 2, left: 0, right: 0 }),
+                  }}
+                />
+                {/* grip central */}
+                <div
+                  className="relative rounded-full border-2"
+                  style={{
+                    width: vertical ? 14 : 26,
+                    height: vertical ? 26 : 14,
+                    background: BRAND,
+                    borderColor: '#160E22',
+                    boxShadow: '0 2px 6px rgba(0,0,0,.5)',
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
 
         {/* ── Atelier (réglages) ── */}
@@ -444,7 +533,7 @@ export default function PosterComposer({
             {/* Logo : déplacer + taille */}
             <div className="flex items-center gap-3">
               <button
-                onClick={() => { setLogoEdit((v) => !v); setSelectedSlot(null); }}
+                onClick={() => { setLogoEdit((v) => !v); setCutEdit(false); setSelectedSlot(null); }}
                 className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all active:scale-95 cursor-pointer border ${
                   logoEdit ? 'text-white border-transparent' : 'bg-white/5 text-white/80 border-white/15'
                 }`}
@@ -465,6 +554,29 @@ export default function PosterComposer({
               )}
             </div>
 
+            {/* Redimensionnement des cases : glisser les barres intérieures (le tour reste fixe) */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { setCutEdit((v) => !v); setLogoEdit(false); setSelectedSlot(null); }}
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all active:scale-95 cursor-pointer border ${
+                  cutEdit ? 'text-white border-transparent' : 'bg-white/5 text-white/80 border-white/15'
+                }`}
+                style={cutEdit ? { background: BRAND } : undefined}
+              >
+                <Grid2x2 size={14} />
+                {cutEdit ? 'Cases : OK' : 'Ajuster les cases'}
+              </button>
+              {cutEdit && (
+                <button
+                  onClick={resetCuts}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wide bg-white/5 text-white/70 border border-white/15 active:scale-95 cursor-pointer"
+                >
+                  <RotateCcw size={13} />
+                  Réinitialiser le layout
+                </button>
+              )}
+            </div>
+
             {/* Épaisseur des filets noirs (gutter) — 0,5 % → 4 % de la largeur */}
             <label className="flex items-center gap-2.5">
               <span className="font-mono text-[9px] uppercase tracking-wider text-white/45 shrink-0 w-9">Filets</span>
@@ -479,7 +591,7 @@ export default function PosterComposer({
             </label>
 
             {/* Cadrage de la case sélectionnée (zoom + vider) */}
-            {!logoEdit && selSlot && (
+            {!logoEdit && !cutEdit && selSlot && (
               selSlot.photoId ? (
                 <div className="flex items-center gap-2.5 pt-2.5 border-t border-white/10">
                   <span className="font-mono text-[9px] uppercase tracking-wider text-white/45 shrink-0 w-9">Zoom</span>

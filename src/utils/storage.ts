@@ -13,7 +13,7 @@
  *    wallet, timestamps) restent en localStorage.
  */
 
-import { DEFAULT_GUTTER } from './posterGeometry';
+import { DEFAULT_GUTTER, DEFAULT_CUTS, clampCuts, type Cuts } from './posterGeometry';
 
 /**
  * Accès localStorage DÉFENSIF. En navigation privée Safari, en mode restreint ou
@@ -394,13 +394,16 @@ export type PosterLogo = { x: number; y: number; w: number };
 /** Cadrage d'une photo dans sa case : zoom (≥1) + pan normalisé (offset ∈ [-1,1]). */
 export type SlotTransform = { scale: number; offsetX: number; offsetY: number };
 export type PosterSlot = { photoId: string | null; transform: SlotTransform };
-/** `gutter` = épaisseur des filets noirs (fraction de la largeur du poster). */
-export type PosterComposition = { slots: PosterSlot[]; logo: PosterLogo; gutter: number };
+/**
+ * `gutter` = épaisseur des filets noirs (fraction de la largeur du poster).
+ * `cuts` = positions des lignes de découpe intérieures de la mosaïque (cf. posterGeometry).
+ */
+export type PosterComposition = { slots: PosterSlot[]; logo: PosterLogo; gutter: number; cuts: Cuts };
 
 // Défauts : logo centré ~30% de large ; cadrage = cover centré ; filets ~1.5%.
 export const DEFAULT_POSTER_LOGO: PosterLogo = { x: 0.5, y: 0.16, w: 0.3 };
 export const DEFAULT_SLOT_TRANSFORM: SlotTransform = { scale: 1, offsetX: 0, offsetY: 0 };
-export { DEFAULT_GUTTER };
+export { DEFAULT_GUTTER, DEFAULT_CUTS };
 
 export const emptyPosterSlots = (): PosterSlot[] =>
   Array.from({ length: 9 }, () => ({ photoId: null, transform: { ...DEFAULT_SLOT_TRANSFORM } }));
@@ -437,11 +440,23 @@ export function parsePosterComposition(parsed: unknown): PosterComposition {
     : { ...DEFAULT_POSTER_LOGO, ...((parsed as { logo?: PosterLogo })?.logo ?? {}) };
   const rawGutter = Array.isArray(parsed) ? undefined : (parsed as { gutter?: unknown })?.gutter;
   const gutter = typeof rawGutter === 'number' ? rawGutter : DEFAULT_GUTTER; // absent → défaut
+  const rawCuts = Array.isArray(parsed) ? undefined : (parsed as { cuts?: unknown })?.cuts;
   return {
     slots: Array.from({ length: 9 }, (_, i) => normalizeSlot(rawSlots[i] ?? null)),
     logo,
     gutter,
+    cuts: parseCuts(rawCuts), // absent/invalide → DEFAULT_CUTS
   };
+}
+
+// Valide la forme des cuts (3 x + 5 y finis) puis les borne ; sinon → défaut.
+function parseCuts(raw: unknown): Cuts {
+  if (!raw || typeof raw !== 'object') return DEFAULT_CUTS;
+  const { x, y } = raw as { x?: unknown; y?: unknown };
+  const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
+  if (!Array.isArray(x) || x.length !== 3 || !x.every(finite)) return DEFAULT_CUTS;
+  if (!Array.isArray(y) || y.length !== 5 || !y.every(finite)) return DEFAULT_CUTS;
+  return clampCuts({ x: x as [number, number, number], y: y as [number, number, number, number, number] });
 }
 
 /** Persiste TOUTE la composition : cases {photoId,transform} + logo {x,y,w}. */
@@ -458,5 +473,5 @@ export async function loadPosterComposition(): Promise<PosterComposition> {
   } catch {
     /* ignore */
   }
-  return { slots: emptyPosterSlots(), logo: DEFAULT_POSTER_LOGO, gutter: DEFAULT_GUTTER };
+  return { slots: emptyPosterSlots(), logo: DEFAULT_POSTER_LOGO, gutter: DEFAULT_GUTTER, cuts: DEFAULT_CUTS };
 }
