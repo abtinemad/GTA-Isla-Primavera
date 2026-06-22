@@ -27,8 +27,9 @@ interface PosterComposerProps {
   gtaPhotos: Record<string, string>;
 }
 
-const SELECT_RING = '#00F5D4';
-const POSTER_BG = '#0A0A0D'; // fond + filets noirs
+const SELECT_RING = '#FF7A4E'; // surbrillance / sélection — primaire vif (charte)
+const BRAND = '#EA4423';       // primaire plein — boutons (charte)
+const POSTER_BG = '#0A0A0D';   // fond + filets noirs
 
 const loadImage = (src: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -297,14 +298,22 @@ export default function PosterComposer({
 
   return (
     <div className="fixed inset-0 z-[10000] bg-[#0a0a0b] flex flex-col select-none">
+      <style>{`
+        .jq-range { -webkit-appearance:none; appearance:none; height:4px; border-radius:99px; background:rgba(255,255,255,.14); outline:none; }
+        .jq-range::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:#FF7A4E; border:2px solid #160E22; box-shadow:0 0 0 1px rgba(255,122,78,.45), 0 2px 6px rgba(0,0,0,.5); cursor:pointer; }
+        .jq-range::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:#FF7A4E; border:2px solid #160E22; box-shadow:0 0 0 1px rgba(255,122,78,.45); cursor:pointer; }
+      `}</style>
       {/* Top bar */}
       <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <span className="font-display font-black uppercase tracking-wide text-white text-sm">Composer ma jaquette</span>
+        <div className="flex flex-col gap-0.5 leading-none">
+          <span className="font-mono text-[8px] font-bold uppercase tracking-[0.22em] text-[#FF7A4E]">Atelier · Jaquette</span>
+          <span className="font-display font-black uppercase tracking-wide text-white text-lg">Composer ma jaquette</span>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={exportPoster}
             disabled={exporting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00F5D4] text-[#062b27] text-xs font-black uppercase tracking-wide active:scale-95 cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#EA4423] text-white text-xs font-black uppercase tracking-wide shadow-lg active:scale-95 cursor-pointer disabled:opacity-60"
           >
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
             <span>{exporting ? 'Export…' : 'Partager'}</span>
@@ -421,72 +430,86 @@ export default function PosterComposer({
           </div>
         </div>
 
-        {/* ── Barre d'outils ── */}
-        <div className="mx-auto w-full max-w-[340px] mt-3 flex flex-col gap-2">
-          {/* Logo : déplacer + taille */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => { setLogoEdit((v) => !v); setSelectedSlot(null); }}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all active:scale-95 cursor-pointer border ${
-                logoEdit ? 'bg-[#00F5D4] text-[#062b27] border-transparent' : 'bg-white/5 text-white/80 border-white/20'
-              }`}
-            >
-              <Move size={14} />
-              {logoEdit ? 'Logo : OK' : 'Déplacer le logo'}
-            </button>
-            {logoEdit && (
-              <label className="flex-1 flex items-center gap-2">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-white/50">Taille</span>
-                <input
-                  type="range" min={0.15} max={1.05} step={0.01} value={logo.w}
-                  onChange={(e) => setLogo((l) => ({ ...l, w: parseFloat(e.target.value) }))}
-                  className="flex-1 accent-[#00F5D4]"
-                />
-              </label>
-            )}
+        {/* ── Atelier (réglages) ── */}
+        <div
+          className="mx-auto w-full max-w-[340px] mt-3 rounded-xl border border-white/10 overflow-hidden"
+          style={{ background: 'rgba(20,12,32,.96)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}
+        >
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-white/10">
+            <span className="font-display font-black uppercase tracking-wide text-white text-xs">Atelier</span>
+            <span className="font-mono text-[9px] uppercase tracking-wider text-white/40">9 cases</span>
           </div>
 
-          {/* Épaisseur des filets noirs (gutter) — 0,5 % → 4 % de la largeur */}
-          <label className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/15 px-3 py-2">
-            <span className="font-mono text-[9px] uppercase tracking-wider text-white/50 shrink-0">Filets</span>
-            <input
-              type="range" min={0.005} max={0.04} step={0.001} value={gutter}
-              onChange={(e) => setGutter(parseFloat(e.target.value))}
-              className="flex-1 accent-[#00F5D4]"
-            />
-            <span className="font-mono text-[9px] tabular-nums text-white/40 shrink-0 w-9 text-right">
-              {(gutter * 100).toFixed(1)}%
-            </span>
-          </label>
+          <div className="flex flex-col gap-2.5 px-3.5 py-3">
+            {/* Logo : déplacer + taille */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { setLogoEdit((v) => !v); setSelectedSlot(null); }}
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all active:scale-95 cursor-pointer border ${
+                  logoEdit ? 'text-white border-transparent' : 'bg-white/5 text-white/80 border-white/15'
+                }`}
+                style={logoEdit ? { background: BRAND } : undefined}
+              >
+                <Move size={14} />
+                {logoEdit ? 'Logo : OK' : 'Déplacer le logo'}
+              </button>
+              {logoEdit && (
+                <label className="flex-1 flex items-center gap-2.5">
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-white/45 shrink-0 w-9">Taille</span>
+                  <input
+                    type="range" min={0.15} max={1.05} step={0.01} value={logo.w}
+                    onChange={(e) => setLogo((l) => ({ ...l, w: parseFloat(e.target.value) }))}
+                    className="jq-range flex-1"
+                  />
+                </label>
+              )}
+            </div>
 
-          {/* Cadrage de la case sélectionnée (zoom + vider) */}
-          {!logoEdit && selSlot && (
-            selSlot.photoId ? (
-              <div className="flex items-center gap-3 rounded-lg bg-white/5 border border-white/15 px-3 py-2">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-white/50 shrink-0">Zoom</span>
-                <input
-                  type="range" min={1} max={3} step={0.01} value={selSlot.transform.scale}
-                  onChange={(e) => setSlotScale(selectedSlot!, parseFloat(e.target.value))}
-                  className="flex-1 accent-[#00F5D4]"
-                />
-                <button
-                  onClick={() => emptySlot(selectedSlot!)}
-                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md bg-red-950/70 border border-red-500/50 text-red-300 text-[10px] font-bold uppercase active:scale-95 cursor-pointer"
-                >
-                  <Trash2 size={11} /> Vider
-                </button>
-              </div>
-            ) : (
-              <p className="font-mono text-[10px] uppercase tracking-wider px-1" style={{ color: SELECT_RING }}>
-                Touche une photo de la réserve pour la case
-              </p>
-            )
-          )}
+            {/* Épaisseur des filets noirs (gutter) — 0,5 % → 4 % de la largeur */}
+            <label className="flex items-center gap-2.5">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-white/45 shrink-0 w-9">Filets</span>
+              <input
+                type="range" min={0.005} max={0.04} step={0.001} value={gutter}
+                onChange={(e) => setGutter(parseFloat(e.target.value))}
+                className="jq-range flex-1"
+              />
+              <span className="font-mono text-[9px] tabular-nums text-white/40 shrink-0 w-9 text-right">
+                {(gutter * 100).toFixed(1)}%
+              </span>
+            </label>
+
+            {/* Cadrage de la case sélectionnée (zoom + vider) */}
+            {!logoEdit && selSlot && (
+              selSlot.photoId ? (
+                <div className="flex items-center gap-2.5 pt-2.5 border-t border-white/10">
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-white/45 shrink-0 w-9">Zoom</span>
+                  <input
+                    type="range" min={1} max={3} step={0.01} value={selSlot.transform.scale}
+                    onChange={(e) => setSlotScale(selectedSlot!, parseFloat(e.target.value))}
+                    className="jq-range flex-1"
+                  />
+                  <button
+                    onClick={() => emptySlot(selectedSlot!)}
+                    className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md bg-red-950/70 border border-red-500/50 text-red-300 text-[10px] font-bold uppercase active:scale-95 cursor-pointer"
+                  >
+                    <Trash2 size={11} /> Vider
+                  </button>
+                </div>
+              ) : (
+                <p className="font-mono text-[10px] uppercase tracking-wider pt-1" style={{ color: SELECT_RING }}>
+                  Touche une photo de la réserve pour la case
+                </p>
+              )
+            )}
+          </div>
         </div>
 
         {/* ── RÉSERVE (toute la collection) ── */}
         <div className="mx-auto w-full max-w-[480px] mt-5">
-          <span className="block font-mono text-[10px] uppercase tracking-wider text-white/60 mb-2 px-0.5">Ta collection</span>
+          <div className="flex items-baseline justify-between mb-2.5 px-0.5">
+            <span className="font-display font-black uppercase tracking-wide text-white text-sm">Ta collection</span>
+            <span className="font-mono text-[9px] uppercase tracking-wider text-white/40">{collection.length} photo{collection.length > 1 ? 's' : ''}</span>
+          </div>
           {collection.length === 0 ? (
             <p className="text-white/40 text-xs leading-relaxed px-0.5">
               Pas encore de photos. Capture des clichés (runs, spots, perso) pour composer ta jaquette.
@@ -499,7 +522,7 @@ export default function PosterComposer({
                   <button
                     key={e.key}
                     onClick={() => tapReserve(e.key)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border ${placed ? 'border-[#00F5D4]/60' : 'border-white/10'} active:scale-95 cursor-pointer`}
+                    className={`relative aspect-square rounded-lg overflow-hidden border ${placed ? 'border-[#FF7A4E]/70' : 'border-white/10'} active:scale-95 cursor-pointer`}
                   >
                     <img src={gtaPhotos[e.key] ?? e.original} alt={e.label} className="absolute inset-0 w-full h-full object-cover" />
                     {placed && (
