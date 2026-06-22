@@ -213,6 +213,7 @@ export default function MapContainer({
     locations
       .filter((loc) => !loc.category.startsWith('🏆'))
       .forEach((loc) => {
+      try {
       // Match by coordinates, not id: a selected trophy entry (id 101-105)
       // shares the exact coords of its physical twin, so the twin pin lights up.
       const isSelected = !!selectedLocation
@@ -249,6 +250,10 @@ export default function MapContainer({
 
       marker.addTo(map);
       markersRef.current[loc.id] = marker;
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('[pin build] marqueur ignoré', loc?.id, e);
+      }
     });
   }, [locations, selectedLocation, onSelectLocation, completedLocations, singleGroupActive]);
 
@@ -259,18 +264,23 @@ export default function MapContainer({
   // vérifie l'existence de l'élément avant manip.
   useEffect(() => {
     for (const idStr of Object.keys(markersRef.current)) {
-      const id = Number(idStr);
-      const marker = markersRef.current[id];
-      const el = marker?.getElement();
-      if (!el) continue;
-      const level = pulseLevels[id];
-      el.classList.toggle('pin-pulse', level === 'soft');
-      el.classList.toggle('pin-pulse-strong', level === 'strong');
-      // « Fait » (validé : photo/chrono — ✓ déjà dans le SVG) vs « visité » (lien
-      // ouvert, signal plus léger). Validé prime sur visité.
-      const done = completedLocations.includes(id);
-      el.classList.toggle('pin-done', done);
-      el.classList.toggle('pin-visited', !done && visitedLocations.includes(id));
+      try {
+        const id = Number(idStr);
+        const marker = markersRef.current[id];
+        const el = marker?.getElement();
+        if (!el) continue;
+        const level = pulseLevels[id];
+        el.classList.toggle('pin-pulse', level === 'soft');
+        el.classList.toggle('pin-pulse-strong', level === 'strong');
+        // « Fait » (validé : photo/chrono — ✓ déjà dans le SVG) vs « visité » (lien
+        // ouvert, signal plus léger). Validé prime sur visité.
+        const done = completedLocations.includes(id);
+        el.classList.toggle('pin-done', done);
+        el.classList.toggle('pin-visited', !done && visitedLocations.includes(id));
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('[pin state] toggle échoué', idStr, e);
+      }
     }
   }, [pulseLevels, completedLocations, visitedLocations, locations]);
 
@@ -337,6 +347,7 @@ export default function MapContainer({
     const group = L.layerGroup();
 
     courses.forEach((course) => {
+      try {
       // PROXIMITÉ > FILTRE : une course s'affiche si le filtre Courses est actif OU
       // si on est dans son rayon d'approche (coursePulseLevels) — même chip masqué.
       const nearby = coursePulseLevels[course.id] !== undefined;
@@ -398,6 +409,10 @@ export default function MapContainer({
           zIndexOffset: isSelected ? 880 : 280,
         }).addTo(group);
       }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('[course build] course ignorée', course?.id, e);
+      }
     });
 
     group.addTo(map);
@@ -420,11 +435,16 @@ export default function MapContainer({
   // déclencheurs de recréation du layer course → ré-appliqué après reconstruction.
   useEffect(() => {
     for (const id of Object.keys(courseDepartMarkersRef.current)) {
-      const el = courseDepartMarkersRef.current[id]?.getElement();
-      if (!el) continue;
-      const level = coursePulseLevels[id];
-      el.classList.toggle('pin-pulse', level === 'soft');
-      el.classList.toggle('pin-pulse-strong', level === 'strong');
+      try {
+        const el = courseDepartMarkersRef.current[id]?.getElement();
+        if (!el) continue;
+        const level = coursePulseLevels[id];
+        el.classList.toggle('pin-pulse', level === 'soft');
+        el.classList.toggle('pin-pulse-strong', level === 'strong');
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('[course pulse] toggle échoué', id, e);
+      }
     }
   }, [coursePulseLevels, courses, coursesActive, coursesFocused, completedCourseIds, coursePhotos, selectedCourseId]);
 

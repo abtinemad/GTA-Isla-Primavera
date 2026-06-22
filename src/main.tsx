@@ -2,6 +2,7 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import PosterPreview from './components/PosterPreview.tsx';
+import ErrorBoundary from './components/ErrorBoundary.tsx';
 import './styles/tokens.css';
 import './index.css';
 
@@ -11,7 +12,9 @@ const posterPreview =
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {posterPreview ? <PosterPreview /> : <App />}
+    <ErrorBoundary>
+      {posterPreview ? <PosterPreview /> : <App />}
+    </ErrorBoundary>
   </StrictMode>,
 );
 
