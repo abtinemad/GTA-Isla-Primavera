@@ -33,7 +33,7 @@ import {
 } from './data/denzelMessages';
 import {
   Compass,
-  Map,
+  Map as MapIcon,
   Trophy,
   CheckCircle2,
   X,
@@ -1173,7 +1173,7 @@ export default function App() {
           }`}
         >
           <div className="relative">
-            <Map size={18} className={activeTab === 'map' ? 'text-[#FF6A4A]' : ''} />
+            <MapIcon size={18} className={activeTab === 'map' ? 'text-[#FF6A4A]' : ''} />
             {selectedLocation && activeTab !== 'map' && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
             )}
