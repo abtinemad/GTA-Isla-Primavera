@@ -39,9 +39,3 @@ export interface LocationItem {
   instagram?: string;
   tiktok?: string;
 }
-
-export interface FilterOption {
-  label: string;
-  categoryValue: Category | 'Tous';
-  icon: string;
-}

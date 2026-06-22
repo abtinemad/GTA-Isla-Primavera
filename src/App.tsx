@@ -12,7 +12,7 @@ import { FilterGroup, ALL_GROUP_IDS, isCategoryVisible } from './filterGroups';
 import QuickFilterBar from './components/QuickFilterBar';
 import MapFilterBar from './components/MapFilterBar';
 import MapContainer from './components/MapContainer';
-import { CATEGORY_MAP, haversineKm, GEOFENCE_KM } from './utils/helper';
+import { haversineKm, GEOFENCE_KM } from './utils/helper';
 import LocationsList from './components/LocationsList';
 import BottomSheet from './components/BottomSheet';
 import CoverQuest from './components/CoverQuest';
@@ -35,9 +35,7 @@ import {
   Compass,
   Map as MapIcon,
   Trophy,
-  CheckCircle2,
   X,
-  MessageSquare
 } from 'lucide-react';
 import {
   migrateLegacyKeys,
@@ -709,11 +707,6 @@ export default function App() {
     setCapturedPhotos((prev) => ({ ...prev, [locId]: base64 }));
     void putCapturedPhoto(locId, base64); // IndexedDB (originaux 1280 px)
   };
-
-  // A course's photo / geofence point: the arrival by default, the start when
-  // photoAtStart (RUN 2 — San Andrés / Las Teresitas).
-  const coursePhotoPoint = (course: CourseData) =>
-    course.photoAtStart ? course.start : course.end;
 
   // Capture committed from the El Jefe info-bulle: persist the PHOTO only. The
   // course's completion (its run/chrono) is a SEPARATE state — taking the photo
