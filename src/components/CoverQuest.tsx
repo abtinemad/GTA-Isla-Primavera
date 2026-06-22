@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useState, useRef, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { RefreshCw, Plus, Trash2, LayoutGrid, X, Download } from 'lucide-react';
+import { RefreshCw, Plus, Trash2, LayoutGrid, X, Download, Sun, Moon } from 'lucide-react';
 import { CATEGORY_MAP } from '../utils/helper';
 import { courses } from '../data/coursesData';
 import { INITIAL_LOCATIONS } from '../locationsData';
@@ -36,6 +36,10 @@ interface CoverQuestProps {
   onAddFreePhoto: (base64: string) => void;
   /** Delete a perso photo by its uuid (original + GTA version). */
   onDeleteFreePhoto: (id: string) => void;
+  /** Fond Manrique clair actif (data-bg) — découplé du thème. */
+  bgLight?: boolean;
+  /** Bascule le fond Manrique clair/sombre. */
+  onToggleBg?: () => void;
 }
 
 // Course brand red (route line / El Jefe).
@@ -86,6 +90,8 @@ export default function CoverQuest({
   onRegenerate,
   onAddFreePhoto,
   onDeleteFreePhoto,
+  bgLight = false,
+  onToggleBg,
 }: CoverQuestProps) {
   // Per-tile "show the original" override (default: show GTA when available).
   const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
@@ -186,9 +192,21 @@ export default function CoverQuest({
           <span className="font-display font-black uppercase tracking-wide text-[color:var(--text)] text-sm">
             Social Club
           </span>
-          <span className="font-mono text-[10px] text-[color:var(--text-muted)]">
-            {photos.length} cliché{photos.length > 1 ? 's' : ''}
-          </span>
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-[10px] text-[color:var(--text-muted)]">
+              {photos.length} cliché{photos.length > 1 ? 's' : ''}
+            </span>
+            {onToggleBg && (
+              <button
+                onClick={onToggleBg}
+                className="p-1 -m-1 rounded-full text-[color:var(--text-muted)] hover:text-[color:var(--text)] transition-colors cursor-pointer"
+                aria-label={bgLight ? 'Fond clair (toucher pour assombrir)' : 'Fond sombre (toucher pour éclaircir)'}
+                title="Fond Manrique clair / sombre"
+              >
+                {bgLight ? <Sun size={14} /> : <Moon size={14} />}
+              </button>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-3 border-t border-[color:var(--hairline)] divide-x divide-[color:var(--hairline)]">
           <Counter emoji="🏁" label="Courses" x={courseDoneCount} y={courseTotal} accent={COURSE_ACCENT} />

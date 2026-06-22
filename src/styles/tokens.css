@@ -23,3 +23,6 @@
 }
 .app-bg{background:linear-gradient(var(--scrim),var(--scrim)),url('/assets/manrique-fields.svg') center/cover no-repeat,var(--bg-screen);}
 [data-theme="light"] .app-bg{background:linear-gradient(var(--scrim),var(--scrim)),url('/assets/manrique-fields-light.svg') center/cover no-repeat,var(--bg-screen);}
+/* Fond Manrique clair DÉCOUPLÉ du thème : bascule via data-bg sur <html> (le reste
+   de l'UI reste piloté par data-theme). Valeurs claires figées (cf. [data-theme="light"]). */
+[data-bg="light"] .app-bg{background:linear-gradient(rgba(247,243,233,.58),rgba(247,243,233,.58)),url('/assets/manrique-fields-light.svg') center/cover no-repeat,#F1EAD9;}

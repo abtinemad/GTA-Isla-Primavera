@@ -344,7 +344,26 @@ export default function App() {
       /* persistence best-effort */
     }
   }, [theme]);
-  
+
+  // Fond Manrique clair — DÉCOUPLÉ du thème (data-bg sur <html>). Ne change QUE
+  // l'image de fond (cf. tokens.css [data-bg="light"]), pas le reste de l'UI.
+  const [bgLight, setBgLight] = useState<boolean>(() => {
+    try {
+      return safeLocalStorage.getItem('isla_bg_light') === '1';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-bg', bgLight ? 'light' : 'dark');
+    try {
+      safeLocalStorage.setItem('isla_bg_light', bgLight ? '1' : '0');
+    } catch (e) {
+      /* persistence best-effort */
+    }
+  }, [bgLight]);
+
   // Custom HUD states
   const [activeRunLocationId, setActiveRunLocationId] = useState<number | null>(null);
   // Course chrono run (string id) — parallel to the legacy mission run above.
@@ -1056,6 +1075,8 @@ export default function App() {
             onRegenerate={regenerateGta}
             onAddFreePhoto={handleAddFreePhoto}
             onDeleteFreePhoto={handleDeleteFreePhoto}
+            bgLight={bgLight}
+            onToggleBg={() => setBgLight((v) => !v)}
           />
         </section>
 
