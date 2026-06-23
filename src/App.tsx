@@ -47,6 +47,7 @@ import {
   loadGtaPhotos, putGtaPhoto,
 } from './utils/storage';
 import { buildPhotoCollection } from './utils/photoCollection';
+import { shouldEnqueueGta, shouldProcessGta, seedDoneKeys } from './utils/gtaGate';
 
 // Renomme les clés héritées « tenirife_* » → « tenerife_* » une fois, AVANT que
 // les initialiseurs d'état (ci-dessous) ne lisent les nouvelles clés.
@@ -166,7 +167,13 @@ export default function App() {
     loadSpotPhotos().then(setSpotPhotos).catch(() => {});
     loadCapturedPhotos().then(setCapturedPhotos).catch(() => {});
     loadFreePhotos().then(setFreePhotos).catch(() => {});
-    loadGtaPhotos().then(setGtaPhotos).catch(() => {});
+    // Amorce gtaDoneRef AVANT le commit d'état : ce ref synchrone ferme la race
+    // d'hydratation (si les originaux résolvent en premier, l'auto-enqueue voit
+    // déjà ces clés comme « faites » → aucun ré-appel proxy pour du déjà gtaifié).
+    loadGtaPhotos().then((persisted) => {
+      seedDoneKeys(persisted).forEach((k) => gtaDoneRef.current.add(k));
+      setGtaPhotos(persisted);
+    }).catch(() => {});
   }, []);
 
   // ── GTA styling queue ──────────────────────────────────────────────────────
@@ -203,6 +210,12 @@ export default function App() {
         if (typeof navigator !== 'undefined' && navigator.onLine === false) break; // offline → pause
         const job = gtaQueueRef.current.shift();
         if (!job) break;
+        // Dernière barrière avant l'appel facturé : un job déjà marqué « fait »
+        // (ex. seedé au montage, ou stylisé entre-temps) ne part jamais au proxy.
+        if (!shouldProcessGta(job.key, gtaDoneRef.current)) {
+          setGtaStatus((s) => { const n = { ...s }; delete n[job.key]; return n; });
+          continue;
+        }
         gtaInflightRef.current.add(job.key);
         setGtaStatus((s) => ({ ...s, [job.key]: 'pending' }));
         try {
@@ -226,12 +239,14 @@ export default function App() {
   };
 
   const enqueueGta = (key: string, original: string, force = false) => {
-    if (!original) return;
-    // already styled — gtaPhotos (état) OU gtaDoneRef (marqueur synchrone, comble
-    // la fenêtre avant le commit de gtaPhotos).
-    if (!force && (gtaPhotos[key] || gtaDoneRef.current.has(key))) return;
-    if (gtaInflightRef.current.has(key)) return;                 // in flight
-    if (gtaQueueRef.current.some((j) => j.key === key)) return;  // already queued
+    // Garde-fou pur partagé (gtaPhotos état + gtaDoneRef synchrone seedé au
+    // montage + in-flight + déjà en file). `force` = régénération manuelle.
+    if (!shouldEnqueueGta(key, original, force, {
+      gtaPhotos,
+      done: gtaDoneRef.current,
+      inflight: gtaInflightRef.current,
+      isQueued: (k) => gtaQueueRef.current.some((j) => j.key === k),
+    })) return;
     gtaQueueRef.current.push({ key, original });
     setGtaStatus((s) => ({ ...s, [key]: 'pending' }));
     void drainGtaQueue();
@@ -259,7 +274,12 @@ export default function App() {
   // Manual "régénérer" — force a fresh proxy call for one photo (keeps original).
   const regenerateGta = (key: string) => {
     const entry = buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos, freePhotos).find((e) => e.key === key);
-    if (entry) enqueueGta(key, entry.original, true);
+    if (entry) {
+      // Régénération volontaire : lève le marqueur « fait » sinon les deux gardes
+      // (enqueue + drain) bloqueraient ce ré-traitement demandé par l'utilisateur.
+      gtaDoneRef.current.delete(key);
+      enqueueGta(key, entry.original, true);
+    }
   };
 
   // Photos perso ajoutées depuis le Social Club (déjà compressées ~1280 px).
