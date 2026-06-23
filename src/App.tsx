@@ -148,6 +148,12 @@ export default function App() {
   // Transient styling status per key: 'pending' (in flight/queued) | 'error'.
   // Not persisted — re-derived from "has an original but no GTA" on reload.
   const [gtaStatus, setGtaStatus] = useState<Record<string, 'pending' | 'error'>>({});
+  // Passe à true UNIQUEMENT après la résolution de loadGtaPhotos() (seed de
+  // gtaDoneRef inclus). Tant qu'il est false, l'auto-enqueue ne touche à rien :
+  // c'est ce qui rend le démarrage indépendant de l'ordre de résolution des 5
+  // lectures IndexedDB (sinon, originaux résolus en premier → enqueue avant seed
+  // → ré-appel proxy pour du déjà gtaifié).
+  const [gtaHydrated, setGtaHydrated] = useState(false);
 
   // El Jefe info-bulle shown when within 50 m of a course's photo point.
   const [coursePhotoPrompt, setCoursePhotoPrompt] = useState<CourseData | null>(null);
@@ -173,7 +179,12 @@ export default function App() {
     loadGtaPhotos().then((persisted) => {
       seedDoneKeys(persisted).forEach((k) => gtaDoneRef.current.add(k));
       setGtaPhotos(persisted);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => {
+      // Hydratation GTA terminée (succès OU échec) → l'auto-enqueue peut tourner.
+      // En cas d'échec, gtaDoneRef reste vide : enfiler les originaux est alors
+      // le comportement correct (aucune version persistée à préserver).
+      setGtaHydrated(true);
+    });
   }, []);
 
   // ── GTA styling queue ──────────────────────────────────────────────────────
@@ -256,12 +267,13 @@ export default function App() {
   // hydrated, after each new capture, and after each success). Same merge source
   // as the gallery.
   useEffect(() => {
+    if (!gtaHydrated) return; // attend le seed de gtaDoneRef (race d'hydratation)
     const entries = buildPhotoCollection(coursePhotos, capturedPhotos, spotPhotos, freePhotos);
     for (const e of entries) {
       if (!gtaPhotos[e.key]) enqueueGta(e.key, e.original);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coursePhotos, capturedPhotos, spotPhotos, freePhotos, gtaPhotos]);
+  }, [coursePhotos, capturedPhotos, spotPhotos, freePhotos, gtaPhotos, gtaHydrated]);
 
   // Resume the queue when connectivity returns (offline → reste sur l'original).
   useEffect(() => {
